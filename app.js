@@ -560,8 +560,8 @@ function buildTableHTML(rows) {
   const baseline = getBaselineWeight();
   const dailyDelta = WEEKLY_TARGET_DELTA / 7;
   const out = [];
-  out.push('<table class="sheet-table">');
-  out.push('<thead><tr><th>#</th><th>Data</th><th class="weight-col">Kcal</th><th class="weight-col">Waga</th><th>Roznica</th><th>Srednia Tygodniowa</th><th>Roznica Tygodniowa</th><th class="actions">X</th></tr></thead><tbody>');
+  out.push('<table class="sheet-table weight-sheet-table">');
+  out.push('<thead><tr><th class="row-col">#</th><th class="date-col">Data</th><th class="weight-col kcal-col">Kcal</th><th class="weight-col">Waga</th><th class="delta-col">Roznica</th><th class="week-col">Sr. tyg.</th><th class="week-col">Roz. tyg.</th><th class="actions">X</th></tr></thead><tbody>');
 
   rows.forEach((entry, idx) => {
     const dayNum = getDayNumber(new Date(entry.dayAnchor));
@@ -571,8 +571,8 @@ function buildTableHTML(rows) {
     const dailyClass = daily === null ? "" : ` day-diff ${dailyTone}`;
 
     out.push("<tr>");
-    out.push(`<td class="num">${dayNum}</td>`);
-    out.push(`<td>${formatDateCell(new Date(entry.dayAnchor))}</td>`);
+    out.push(`<td class="num row-col">${dayNum}</td>`);
+    out.push(`<td class="date-cell">${formatWeightDateCell(new Date(entry.dayAnchor))}</td>`);
     let weightCell = "";
     if (Number.isFinite(entry.weight)) {
       weightCell = formatTableWeight(entry.weight);
@@ -580,9 +580,9 @@ function buildTableHTML(rows) {
       const forecast = baseline + ((dayNum - 1) * dailyDelta);
       weightCell = `<span class="forecast-hint">${formatTableWeight(forecast)}</span>`;
     }
-    out.push(`<td class="num">${Number.isFinite(entry.kcal) ? formatKcal(entry.kcal) : ""}</td>`);
-    out.push(`<td class="num weight-cell">${weightCell}</td>`);
-    out.push(`<td class="num${dailyClass}">${daily === null ? "" : formatSignedTableDeltaOne(daily)}</td>`);
+    out.push(`<td class="num kcal-cell" data-edit-field="kcal" data-day-anchor="${entry.dayAnchor}" title="Kliknij, aby edytowac kcal">${Number.isFinite(entry.kcal) ? formatKcal(entry.kcal) : ""}</td>`);
+    out.push(`<td class="num weight-cell" data-edit-field="weight" data-day-anchor="${entry.dayAnchor}" title="Kliknij, aby edytowac wage">${weightCell}</td>`);
+    out.push(`<td class="num delta-cell${dailyClass}">${daily === null ? "" : formatSignedTableDeltaOne(daily)}</td>`);
 
     const wm = weekMeta.get(weekIdx);
     if (wm && wm.firstRow === idx) {
@@ -611,8 +611,8 @@ function buildTrainingTableHTML(rows) {
   const averageTone = getTrainingTone(averageDiff);
   const averageDiffClass = averageDiff === null ? "" : ` week-diff ${averageTone}`;
   const out = [];
-  out.push('<table class="sheet-table">');
-  out.push('<thead><tr><th>#</th><th>Data</th><th class="weight-col">Czas do 135 bpm</th><th class="weight-col">Dystans [km]</th><th>Roznica</th><th>Srednia 5 biegow</th><th>Roznica do sredniej</th><th class="actions">X</th></tr></thead><tbody>');
+  out.push('<table class="sheet-table training-sheet-table">');
+  out.push('<thead><tr><th class="row-col">#</th><th class="date-col">Data</th><th class="time-col">Czas 135</th><th class="distance-col">Dyst. [km]</th><th class="delta-col">Roz.</th><th class="avg-col">Sr. 5</th><th class="avg-diff-col">Roz. sr.</th><th class="actions">X</th></tr></thead><tbody>');
 
   rows.forEach((entry, idx) => {
     const daily = getTrainingDailyDiffByTrainingIndex(entry.trainingIndex);
@@ -622,14 +622,14 @@ function buildTrainingTableHTML(rows) {
     const timeClass = entry.id === latestId ? "num weight-cell last-result" : "num weight-cell";
 
     out.push(isLatest ? '<tr class="last-result-row">' : "<tr>");
-    out.push(`<td class="num">${entry.trainingIndex}</td>`);
-    out.push(`<td>${formatDateCell(new Date(entry.recordedAt))}</td>`);
-    out.push(`<td class="${timeClass}">${formatDuration(entry.seconds)}</td>`);
-    out.push(`<td class="num">${Number.isFinite(entry.distanceKm) ? formatDistanceKm(entry.distanceKm) : ""}</td>`);
-    out.push(`<td class="num${dailyClass}">${daily === null ? "" : formatSignedDurationDelta(daily)}</td>`);
+    out.push(`<td class="num row-col">${entry.trainingIndex}</td>`);
+    out.push(`<td class="date-cell">${formatShortDateCell(new Date(entry.recordedAt))}</td>`);
+    out.push(`<td class="${timeClass} time-cell">${formatDuration(entry.seconds)}</td>`);
+    out.push(`<td class="num distance-cell">${Number.isFinite(entry.distanceKm) ? formatDistanceKm(entry.distanceKm) : ""}</td>`);
+    out.push(`<td class="num delta-cell${dailyClass}">${daily === null ? "" : formatSignedDurationDelta(daily)}</td>`);
     if (idx === 0) {
-      out.push(`<td class="week week-avg" rowspan="${rows.length}">${averageLastFive === null ? "" : formatDuration(averageLastFive)}</td>`);
-      out.push(`<td class="week${averageDiffClass}" rowspan="${rows.length}">${averageDiff === null ? "" : formatSignedDurationDelta(averageDiff)}</td>`);
+      out.push(`<td class="week week-avg avg-cell" rowspan="${rows.length}">${averageLastFive === null ? "" : formatDuration(averageLastFive)}</td>`);
+      out.push(`<td class="week avg-diff-cell${averageDiffClass}" rowspan="${rows.length}">${averageDiff === null ? "" : formatSignedDurationDelta(averageDiff)}</td>`);
     }
 
     out.push(`<td class="actions"><button class="delete-btn" type="button" data-training-entry-id="${entry.id}" aria-label="Usun wpis">X</button></td>`);
@@ -644,16 +644,16 @@ function buildTrainingRankingTableHTML(rows) {
   const latest = getLatestTraining();
   const latestId = latest ? latest.id : "";
   const out = [];
-  out.push('<table class="sheet-table">');
-  out.push('<thead><tr><th>#</th><th>Data</th><th class="weight-col">Czas do 135 bpm</th><th class="actions">X</th></tr></thead><tbody>');
+  out.push('<table class="sheet-table training-sheet-table training-ranking-table">');
+  out.push('<thead><tr><th class="row-col">#</th><th class="date-col">Data</th><th class="time-col">Czas 135</th><th class="actions">X</th></tr></thead><tbody>');
 
   rows.forEach(entry => {
     const isLatest = entry.id === latestId;
     const timeClass = isLatest ? "num weight-cell last-result" : "num weight-cell";
     out.push(isLatest ? '<tr class="last-result-row">' : "<tr>");
-    out.push(`<td class="num">${entry.trainingIndex}</td>`);
-    out.push(`<td>${formatDateCell(new Date(entry.recordedAt))}</td>`);
-    out.push(`<td class="${timeClass}">${formatDuration(entry.seconds)}</td>`);
+    out.push(`<td class="num row-col">${entry.trainingIndex}</td>`);
+    out.push(`<td class="date-cell">${formatShortDateCell(new Date(entry.recordedAt))}</td>`);
+    out.push(`<td class="${timeClass} time-cell">${formatDuration(entry.seconds)}</td>`);
     out.push(`<td class="actions"><button class="delete-btn" type="button" data-training-entry-id="${entry.id}" aria-label="Usun wpis">X</button></td>`);
     out.push("</tr>");
   });
@@ -668,6 +668,80 @@ function attachDeleteHandlers(container) {
   });
   container.querySelectorAll("[data-training-entry-id]").forEach(btn => {
     btn.addEventListener("click", () => deleteTrainingEntry(btn.dataset.trainingEntryId));
+  });
+  attachEditableWeightHandlers(container);
+}
+
+function attachEditableWeightHandlers(container) {
+  container.querySelectorAll("[data-edit-field][data-day-anchor]").forEach(cell => {
+    cell.addEventListener("click", event => {
+      if (cell.dataset.editing === "1") return;
+      if (event.target instanceof HTMLElement && event.target.closest("input")) return;
+      startInlineWeightEdit(cell);
+    });
+  });
+}
+
+function startInlineWeightEdit(cell) {
+  const field = cell.dataset.editField;
+  const dayAnchor = Number(cell.dataset.dayAnchor);
+  if (!Number.isFinite(dayAnchor) || (field !== "weight" && field !== "kcal")) return;
+
+  const row = getEntryForDay(dayAnchor);
+  const value = field === "weight" ? row?.weight : row?.kcal;
+  const inputValue = Number.isFinite(value)
+    ? (field === "weight" ? formatTableTwo(value) : String(Math.round(value)))
+    : "";
+
+  const initialHtml = cell.innerHTML;
+  const input = document.createElement("input");
+  input.type = "text";
+  input.inputMode = field === "weight" ? "decimal" : "numeric";
+  input.className = "table-inline-input";
+  input.value = inputValue;
+
+  cell.dataset.editing = "1";
+  cell.classList.add("editing");
+  cell.innerHTML = "";
+  cell.appendChild(input);
+  input.focus();
+  input.select();
+
+  const restore = () => {
+    cell.dataset.editing = "0";
+    cell.classList.remove("editing");
+    cell.innerHTML = initialHtml;
+  };
+
+  const commit = () => {
+    const raw = input.value.trim();
+    if (!raw) {
+      setWeightEntryFieldByDay(dayAnchor, field, null);
+      return;
+    }
+
+    const parsed = field === "weight" ? parseInlineWeightInput(raw) : parseInlineKcalInput(raw);
+    if (parsed === null) {
+      restore();
+      return;
+    }
+
+    setWeightEntryFieldByDay(dayAnchor, field, parsed);
+  };
+
+  input.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commit();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      restore();
+    }
+  });
+
+  input.addEventListener("blur", () => {
+    if (cell.dataset.editing !== "1") return;
+    commit();
   });
 }
 function getNow() {
@@ -889,6 +963,44 @@ function saveKcalEntry(kcal) {
   upsertEntryForDay({ kcal: Number(kcal) });
 }
 
+function setWeightEntryFieldByDay(dayAnchor, field, value) {
+  if (field !== "weight" && field !== "kcal") return;
+  const existing = getEntryForDay(dayAnchor);
+  const id = existing?.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
+  const nowIso = getNow().toISOString();
+  let nextWeight = Number.isFinite(existing?.weight) ? existing.weight : null;
+  let nextKcal = Number.isFinite(existing?.kcal) ? existing.kcal : null;
+
+  if (field === "weight") nextWeight = Number.isFinite(value) ? Number(value) : null;
+  if (field === "kcal") nextKcal = Number.isFinite(value) ? Math.round(Number(value)) : null;
+
+  const hasWeight = Number.isFinite(nextWeight);
+  const hasKcal = Number.isFinite(nextKcal);
+  entries = entries.filter(e => e.dayAnchor !== dayAnchor);
+
+  if (hasWeight || hasKcal) {
+    const entry = { id, dayAnchor, weight: hasWeight ? nextWeight : null, kcal: hasKcal ? nextKcal : null, recordedAt: nowIso };
+    entries.push(entry);
+    persistEntries();
+    if (firebaseEnabled && entriesRef) {
+      entriesRef.orderByChild("dayAnchor").equalTo(dayAnchor).once("value", snap => {
+        const data = snap.val() || {};
+        Object.keys(data).forEach(key => { if (key !== id) entriesRef.child(key).remove(); });
+        entriesRef.child(id).set(entry);
+      });
+    }
+    return;
+  }
+
+  persistEntries();
+  if (firebaseEnabled && entriesRef) {
+    entriesRef.orderByChild("dayAnchor").equalTo(dayAnchor).once("value", snap => {
+      const data = snap.val() || {};
+      Object.keys(data).forEach(key => entriesRef.child(key).remove());
+    });
+  }
+}
+
 function upsertEntryForDay(patch) {
   const now = getNow();
   const dayAnchor = getDayAnchor(now).getTime();
@@ -1082,6 +1194,29 @@ function parseKcalValue(value) {
   return Math.round(numeric);
 }
 
+function parseInlineWeightInput(value) {
+  const normalized = normalizeNumericInput(value);
+  if (!normalized) return null;
+  const numeric = Number(normalized);
+  if (!Number.isFinite(numeric) || numeric <= 0) return null;
+  return numeric;
+}
+
+function parseInlineKcalInput(value) {
+  const normalized = normalizeNumericInput(value);
+  if (!normalized || !/^\d+(\.\d+)?$/.test(normalized)) return null;
+  const kcal = Number(normalized);
+  if (!Number.isFinite(kcal) || kcal < 0) return null;
+  return Math.round(kcal);
+}
+
+function normalizeNumericInput(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[\s\u00A0\u202F]/g, "")
+    .replace(",", ".");
+}
+
 function inferDistanceRequired(entry) {
   if (typeof entry?.distanceRequired === "boolean") return entry.distanceRequired;
   return Object.prototype.hasOwnProperty.call(entry || {}, "distanceKm");
@@ -1103,11 +1238,17 @@ function toInt(value, fallback) {
 function formatWeight(value) { return `${value.toFixed(2)} kg`; }
 function formatDeltaKg(value) { const sign = value > 0 ? "+" : ""; return `${sign}${value.toFixed(2)} kg`; }
 function formatDateCell(date) { return date.toLocaleDateString("pl-PL", { day: "numeric", month: "long" }); }
+function formatWeightDateCell(date) {
+  return date.toLocaleDateString("pl-PL", { day: "2-digit", month: "2-digit" });
+}
+function formatShortDateCell(date) {
+  return date.toLocaleDateString("pl-PL", { day: "2-digit", month: "2-digit" });
+}
 function formatFullDate(date) { return date.toLocaleString("pl-PL", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }); }
-function formatTableWeight(value) { return value.toLocaleString("pl-PL", { minimumFractionDigits: 0, maximumFractionDigits: 1 }); }
+function formatTableWeight(value) { return value.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function formatSignedTableDeltaOne(value) {
   const sign = value > 0 ? "+" : "";
-  return `${sign}${value.toLocaleString("pl-PL", { minimumFractionDigits: 0, maximumFractionDigits: 1 })}`;
+  return `${sign}${value.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 function formatTableTwo(value) { return value.toFixed(2).replace(".", ","); }
 function formatSignedTableTwo(value) {

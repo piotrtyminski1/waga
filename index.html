@@ -76,13 +76,14 @@
     .chart-wrap{position:relative;width:100%;height:300px;border-radius:16px;overflow:hidden;background:radial-gradient(120% 120% at 50% 0%, rgba(93,208,255,.18), rgba(8,16,36,.94))}
     .chart-wrap canvas{display:block;width:100%!important;height:100%!important}
 
+    .table-panel{margin-bottom:16px}
     .sheet-wrap{overflow:auto;border-radius:14px;border:1px solid var(--border);background:rgba(6,14,31,.72);-webkit-overflow-scrolling:touch}
-    .sheet-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px}
-    .sheet-table th,.sheet-table td{border:1px solid rgba(255,255,255,.14);padding:8px 6px;background:rgba(255,255,255,.04);overflow-wrap:anywhere}
+    .sheet-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px}
+    .sheet-table th,.sheet-table td{border:1px solid rgba(255,255,255,.14);padding:7px 5px;background:rgba(255,255,255,.04);overflow-wrap:break-word}
     .sheet-table thead th{position:sticky;top:0;background:rgba(93,208,255,.16);text-align:left}
     .sheet-table td.num{text-align:right;font-variant-numeric:tabular-nums}
     .sheet-table th.weight-col{text-align:center}
-    .sheet-table td.weight-cell{text-align:center;font-size:18px;font-weight:700}
+    .sheet-table td.weight-cell{text-align:center;font-size:17px;font-weight:700}
     .sheet-table td.week{vertical-align:middle;text-align:center;font-size:21px;font-weight:700;background:rgba(255,255,255,.06)}
     .sheet-table td.week-diff.good{color:var(--good)}
     .sheet-table td.week-diff.bad{color:var(--bad)}
@@ -93,8 +94,42 @@
     .sheet-table tr.last-result-row td{background:rgba(106,245,168,.1)}
     .sheet-table .forecast-hint{display:block;font-size:11px;color:rgba(199,208,220,.66);font-weight:500}
     .sheet-table td.week-diff.gold.gold-glow{animation:goldGlow 2.1s ease-in-out infinite}
-    .sheet-table th.actions,.sheet-table td.actions{text-align:center;width:52px}
-    .delete-btn{padding:0 8px;background:transparent;color:var(--bad);line-height:1;font-size:18px;font-weight:800}
+    .sheet-table th.actions,.sheet-table td.actions{text-align:center;width:40px}
+    .delete-btn{padding:0 6px;background:transparent;color:var(--bad);line-height:1;font-size:16px;font-weight:800}
+    .weight-sheet-table{width:100%;min-width:0;table-layout:auto}
+    .weight-sheet-table th,.weight-sheet-table td{white-space:nowrap;overflow-wrap:normal;word-break:normal}
+    .weight-sheet-table th.row-col,.weight-sheet-table td.row-col{width:1%;padding-left:4px;padding-right:4px}
+    .weight-sheet-table th.date-col,.weight-sheet-table td.date-cell{width:1%}
+    .weight-sheet-table th.actions,.weight-sheet-table td.actions{width:1%;padding-left:3px;padding-right:3px}
+    .weight-sheet-table th.kcal-col,.weight-sheet-table td.kcal-cell{width:1%}
+    .weight-sheet-table th.weight-col,.weight-sheet-table td.weight-cell{width:1%}
+    .weight-sheet-table th.delta-col,.weight-sheet-table td.delta-cell{width:1%}
+    .weight-sheet-table th.week-col,.weight-sheet-table td.week{width:1%}
+    .weight-sheet-table td.kcal-cell{color:rgba(234,243,255,.78);font-size:12px;font-weight:600;line-height:1.1}
+    .weight-sheet-table td.weight-cell,.weight-sheet-table td.delta-cell{font-size:inherit;font-weight:500;color:var(--text)}
+    .weight-sheet-table td.week{font-size:18px;font-weight:800}
+    .training-sheet-table{width:100%;min-width:0;table-layout:auto}
+    .training-sheet-table th,.training-sheet-table td{white-space:nowrap;overflow-wrap:normal;word-break:normal}
+    .training-sheet-table th.row-col,.training-sheet-table td.row-col{width:1%;padding-left:4px;padding-right:4px}
+    .training-sheet-table th.date-col,.training-sheet-table td.date-cell{width:1%}
+    .training-sheet-table th.time-col,.training-sheet-table td.time-cell{width:1%}
+    .training-sheet-table th.distance-col,.training-sheet-table td.distance-cell{width:1%}
+    .training-sheet-table th.delta-col,.training-sheet-table td.delta-cell{width:1%}
+    .training-sheet-table th.avg-col,.training-sheet-table td.avg-cell{width:1%}
+    .training-sheet-table th.avg-diff-col,.training-sheet-table td.avg-diff-cell{width:1%}
+    .training-sheet-table th.actions,.training-sheet-table td.actions{width:1%;padding-left:3px;padding-right:3px}
+    .training-sheet-table td.time-cell{font-size:inherit;font-weight:500;color:var(--text)}
+    .training-sheet-table td.distance-cell{color:var(--muted)}
+    .training-sheet-table td.week{font-size:18px;font-weight:800}
+    .training-ranking-table td.time-cell{font-size:18px;font-weight:800;color:var(--text)}
+    .training-ranking-table tr.last-result-row td{background:rgba(106,245,168,.14)}
+    .weight-sheet-table td[data-edit-field]{cursor:text}
+    .weight-sheet-table td[data-edit-field]:hover{background:rgba(100,211,255,.1)}
+    .weight-sheet-table td.editing{padding:3px}
+    .table-inline-input{width:100%;border:1px solid rgba(100,211,255,.7);border-radius:6px;background:rgba(5,12,28,.96);color:var(--text);font:inherit;font-variant-numeric:tabular-nums;line-height:1.2;padding:4px 6px;outline:none}
+    .table-inline-input:focus{border-color:#64d3ff;box-shadow:0 0 0 1px rgba(100,211,255,.25)}
+    .weight-sheet-table td.weight-cell .table-inline-input{text-align:center}
+    .weight-sheet-table td.kcal-cell .table-inline-input{text-align:right}
     .delete-btn:hover{background:transparent;opacity:.85}
     .sheet-empty{padding:14px;color:var(--muted);font-size:14px}
 
@@ -117,9 +152,19 @@
       .time-grid{grid-template-columns:1fr}
       .time-actions{justify-content:flex-start}
       .app{padding:12px}
-      .sheet-table{font-size:12px}
-      .sheet-table th,.sheet-table td{padding:7px 4px}
+      .sheet-table{font-size:11px}
+      .sheet-table th,.sheet-table td{padding:6px 3px}
       .sheet-table td.week{font-size:16px}
+      .weight-sheet-table th.row-col,.weight-sheet-table td.row-col{padding-left:3px;padding-right:3px}
+      .weight-sheet-table th.actions,.weight-sheet-table td.actions{padding-left:2px;padding-right:2px}
+      .weight-sheet-table td.week{font-size:16px}
+      .weight-sheet-table td.kcal-cell{font-size:11px}
+      .training-sheet-table th.row-col,.training-sheet-table td.row-col{padding-left:3px;padding-right:3px}
+      .training-sheet-table th.actions,.training-sheet-table td.actions{padding-left:2px;padding-right:2px}
+      .training-sheet-table td.week{font-size:16px}
+      .training-ranking-table td.time-cell{font-size:16px}
+      .training-ranking-table tr.last-result-row td{background:rgba(106,245,168,.12)}
+      .table-inline-input{padding:3px 4px}
     }
   </style>
 </head>
@@ -196,14 +241,14 @@
 
           <section class="card"><div class="chart-wrap"><canvas id="weightChart"></canvas></div></section>
 
-          <section id="week-table-card" class="card" style="display:none;">
+          <section id="week-table-card" class="table-panel" style="display:none;">
             <h3 style="margin-top:0; margin-bottom:12px;">Tabela tygodnia</h3>
             <div class="sheet-wrap" id="week-table-wrap"></div>
           </section>
         </section>
 
         <section id="weight-table" class="tab-panel weight-panel">
-          <section class="card">
+          <section class="table-panel">
             <h3 style="margin-top:0; margin-bottom:12px;">Tabela</h3>
             <div class="sheet-wrap" id="table-wrap"></div>
           </section>
@@ -242,14 +287,14 @@
         </section>
 
         <section id="training-table" class="tab-panel training-panel">
-          <section class="card">
+          <section class="table-panel">
             <h3 style="margin-top:0; margin-bottom:12px;">Tabela</h3>
             <div class="sheet-wrap" id="training-table-wrap"></div>
           </section>
         </section>
 
         <section id="training-ranking" class="tab-panel training-panel">
-          <section class="card">
+          <section class="table-panel">
             <h3 style="margin-top:0; margin-bottom:12px;">Ranking</h3>
             <div class="sheet-wrap" id="training-ranking-wrap"></div>
           </section>
