@@ -94,6 +94,7 @@
     .sheet-table tr.last-result-row td{background:rgba(106,245,168,.1)}
     .sheet-table .forecast-hint{display:block;font-size:11px;color:rgba(199,208,220,.66);font-weight:500}
     .sheet-table td.week-diff.gold.gold-glow{animation:goldGlow 2.1s ease-in-out infinite}
+    .sheet-table td.week-diff.good.good-glow{animation:goodGlow 2.1s ease-in-out infinite}
     .sheet-table th.actions,.sheet-table td.actions{text-align:center;width:40px}
     .delete-btn{padding:0 6px;background:transparent;color:var(--bad);line-height:1;font-size:16px;font-weight:800}
     .weight-sheet-table{width:100%;min-width:0;table-layout:auto}
@@ -101,11 +102,14 @@
     .weight-sheet-table th.row-col,.weight-sheet-table td.row-col{width:1%;padding-left:4px;padding-right:4px}
     .weight-sheet-table th.date-col,.weight-sheet-table td.date-cell{width:1%}
     .weight-sheet-table th.actions,.weight-sheet-table td.actions{width:1%;padding-left:3px;padding-right:3px}
-    .weight-sheet-table th.kcal-col,.weight-sheet-table td.kcal-cell{width:1%}
+    .weight-sheet-table th.kcal-col,.weight-sheet-table td.kcal-cell{width:132px;min-width:132px}
     .weight-sheet-table th.weight-col,.weight-sheet-table td.weight-cell{width:1%}
     .weight-sheet-table th.delta-col,.weight-sheet-table td.delta-cell{width:1%}
     .weight-sheet-table th.week-col,.weight-sheet-table td.week{width:1%}
-    .weight-sheet-table td.kcal-cell{color:rgba(234,243,255,.78);font-size:12px;font-weight:600;line-height:1.1}
+    .weight-sheet-table td.kcal-cell{color:rgba(234,243,255,.78);font-size:12px;font-weight:600;line-height:1.1;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;padding-left:3px;padding-right:3px}
+    .weight-sheet-table td.kcal-cell .kcal-day-dot{margin-left:4px}
+    .weight-sheet-table td.kcal-cell.good{color:var(--good)}
+    .weight-sheet-table td.kcal-cell.bad{color:var(--bad)}
     .weight-sheet-table td.weight-cell,.weight-sheet-table td.delta-cell{font-size:inherit;font-weight:500;color:var(--text)}
     .weight-sheet-table td.week{font-size:18px;font-weight:800}
     .training-sheet-table{width:100%;min-width:0;table-layout:auto}
@@ -123,6 +127,29 @@
     .training-sheet-table td.week{font-size:18px;font-weight:800}
     .training-ranking-table td.time-cell{font-size:18px;font-weight:800;color:var(--text)}
     .training-ranking-table tr.last-result-row td{background:rgba(106,245,168,.14)}
+    .training-ranking-table tbody tr[data-rank-key]{will-change:transform}
+    .training-ranking-table tr.live-ranking-row td{background:rgba(255,213,106,1);color:var(--bg-1)}
+    .training-ranking-table tr.live-running td{position:relative;z-index:1;animation:liveCellPulse 1.35s ease-in-out infinite}
+    .training-ranking-table tr.live-running td::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.28;animation:liveGlowOverlay 1.35s ease-in-out infinite;box-shadow:inset 0 0 0 2px rgba(255,213,106,.8),inset 0 0 24px rgba(255,213,106,.42)}
+    .training-ranking-table td.live-time-cell{color:var(--bg-1)}
+    .live-time-value{color:var(--bg-1);text-shadow:none}
+    .live-time-value.running{animation:liveTextGlowPulse 1.35s ease-in-out infinite}
+    .ranking-live-controls{display:flex;gap:10px;align-items:stretch;margin:0 0 8px}
+    .ranking-live-toggle-btn{border:none;border-radius:14px;font-weight:800;cursor:pointer}
+    .ranking-live-toggle-btn{width:100%;padding:15px 18px;font-size:24px;letter-spacing:.03em;background:linear-gradient(135deg,#ffd56a,#ffe8a8);color:#2e2308;box-shadow:0 10px 26px rgba(255,213,106,.28)}
+    .ranking-live-toggle-btn.running{background:linear-gradient(135deg,#ff8da8,#ffd0db);color:#3b0e1a;box-shadow:0 10px 26px rgba(255,151,170,.3)}
+    .ranking-live-toggle-btn.save-mode{background:linear-gradient(135deg,#7ae2ff,#b2f1ff);color:#041017;box-shadow:0 10px 26px rgba(122,226,255,.3)}
+    .ranking-live-status{margin:0 0 10px;font-size:13px;color:var(--muted);min-height:18px}
+    .ranking-manual-add-wrap{display:flex;justify-content:center;margin-top:12px}
+    .ranking-manual-add-btn{width:48px;height:48px;border-radius:50%;border:1px solid rgba(100,211,255,.42);background:linear-gradient(135deg,rgba(100,211,255,.28),rgba(100,211,255,.08));color:var(--text);font-size:30px;line-height:1;font-weight:700;cursor:pointer;box-shadow:0 8px 18px rgba(0,0,0,.24)}
+    .ranking-manual-form{display:none;margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:12px;background:rgba(5,12,28,.55)}
+    .ranking-manual-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    .ranking-manual-grid input{width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text)}
+    .ranking-manual-actions{display:flex;gap:8px;align-items:center;margin-top:10px}
+    .ranking-manual-save,.ranking-manual-cancel{border:none;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer}
+    .ranking-manual-save{background:linear-gradient(135deg,#7ae2ff,#b2f1ff);color:#041017}
+    .ranking-manual-cancel{background:rgba(255,255,255,.08);color:var(--text)}
+    .ranking-manual-error{margin:0;font-size:12px;color:var(--bad);min-height:16px}
     .weight-sheet-table td[data-edit-field]{cursor:text}
     .weight-sheet-table td[data-edit-field]:hover{background:rgba(100,211,255,.1)}
     .weight-sheet-table td.editing{padding:3px}
@@ -134,11 +161,32 @@
     .sheet-empty{padding:14px;color:var(--muted);font-size:14px}
 
     .metric-value.gold.gold-glow{animation:goldGlow 2.1s ease-in-out infinite}
+    .metric-value.good.good-glow{animation:goodGlow 2.1s ease-in-out infinite}
 
     @keyframes goldGlow{
       0%{opacity:.68;text-shadow:0 0 6px rgba(255,213,106,.45),0 0 16px rgba(255,213,106,.24)}
       50%{opacity:1;text-shadow:0 0 10px rgba(255,213,106,.95),0 0 24px rgba(255,213,106,.6)}
       100%{opacity:.68;text-shadow:0 0 6px rgba(255,213,106,.45),0 0 16px rgba(255,213,106,.24)}
+    }
+    @keyframes goodGlow{
+      0%{opacity:.68;text-shadow:0 0 6px rgba(106,245,168,.45),0 0 16px rgba(106,245,168,.24)}
+      50%{opacity:1;text-shadow:0 0 10px rgba(106,245,168,.95),0 0 24px rgba(106,245,168,.6)}
+      100%{opacity:.68;text-shadow:0 0 6px rgba(106,245,168,.45),0 0 16px rgba(106,245,168,.24)}
+    }
+    @keyframes liveCellPulse{
+      0%{filter:brightness(1) saturate(1)}
+      50%{filter:brightness(1.22) saturate(1.16)}
+      100%{filter:brightness(1) saturate(1)}
+    }
+    @keyframes liveGlowOverlay{
+      0%{opacity:.2;box-shadow:inset 0 0 0 1px rgba(255,213,106,.5),inset 0 0 14px rgba(255,213,106,.24)}
+      50%{opacity:.7;box-shadow:inset 0 0 0 2px rgba(255,213,106,1),inset 0 0 28px rgba(255,213,106,.68),inset 0 0 46px rgba(255,213,106,.38)}
+      100%{opacity:.2;box-shadow:inset 0 0 0 1px rgba(255,213,106,.5),inset 0 0 14px rgba(255,213,106,.24)}
+    }
+    @keyframes liveTextGlowPulse{
+      0%{text-shadow:0 0 1px rgba(3,8,20,.2),0 0 0 rgba(3,8,20,0)}
+      50%{text-shadow:0 0 1px rgba(3,8,20,.45),0 0 10px rgba(255,255,255,.5)}
+      100%{text-shadow:0 0 1px rgba(3,8,20,.2),0 0 0 rgba(3,8,20,0)}
     }
 
     @media (max-width:720px){
@@ -164,6 +212,8 @@
       .training-sheet-table td.week{font-size:16px}
       .training-ranking-table td.time-cell{font-size:16px}
       .training-ranking-table tr.last-result-row td{background:rgba(106,245,168,.12)}
+      .ranking-live-toggle-btn{font-size:22px}
+      .ranking-manual-grid{grid-template-columns:1fr}
       .table-inline-input{padding:3px 4px}
     }
   </style>
@@ -242,7 +292,7 @@
           <section class="card"><div class="chart-wrap"><canvas id="weightChart"></canvas></div></section>
 
           <section id="week-table-card" class="table-panel" style="display:none;">
-            <h3 style="margin-top:0; margin-bottom:12px;">Tabela tygodnia</h3>
+            <h3 style="margin-top:0; margin-bottom:12px;">Tabela do dzisiaj</h3>
             <div class="sheet-wrap" id="week-table-wrap"></div>
           </section>
         </section>
@@ -296,7 +346,26 @@
         <section id="training-ranking" class="tab-panel training-panel">
           <section class="table-panel">
             <h3 style="margin-top:0; margin-bottom:12px;">Ranking</h3>
+            <div class="ranking-live-controls">
+              <button id="ranking-live-toggle-btn" class="ranking-live-toggle-btn" type="button">START!</button>
+            </div>
+            <p id="ranking-live-status" class="ranking-live-status"></p>
             <div class="sheet-wrap" id="training-ranking-wrap"></div>
+            <div class="ranking-manual-add-wrap">
+              <button id="ranking-manual-add-btn" class="ranking-manual-add-btn" type="button" aria-label="Dodaj wpis recznie">+</button>
+            </div>
+            <div id="ranking-manual-form" class="ranking-manual-form">
+              <div class="ranking-manual-grid">
+                <input id="ranking-manual-date" type="date" aria-label="Data treningu" />
+                <input id="ranking-manual-time" type="text" inputmode="text" placeholder="MM:SS" aria-label="Czas treningu" />
+                <input id="ranking-manual-distance" type="text" inputmode="decimal" placeholder="Dystans km" aria-label="Dystans treningu" />
+              </div>
+              <div class="ranking-manual-actions">
+                <button id="ranking-manual-save-btn" class="ranking-manual-save" type="button">Dodaj</button>
+                <button id="ranking-manual-cancel-btn" class="ranking-manual-cancel" type="button">Anuluj</button>
+              </div>
+              <p id="ranking-manual-error" class="ranking-manual-error"></p>
+            </div>
           </section>
         </section>
       </section>
@@ -306,5 +375,3 @@
     <script src="app.js"></script>
 </body>
 </html>
-
-
