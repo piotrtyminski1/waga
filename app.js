@@ -2,14 +2,18 @@ Chart.defaults.color = "#c8ddff";
 Chart.defaults.font.family = "Space Grotesk, system-ui, -apple-system, sans-serif";
 Chart.defaults.font.size = 13;
 
-const START_DATE = new Date("2026-02-18T04:00:00");
+const START_DATE = new Date("2026-02-19T04:00:00");
 const CHALLENGE_DAYS = 70;
 const TRAINING_TARGET_COUNT = 70;
 const WEEKLY_TARGET_DELTA = -0.6;
+const KCAL_TARGET_REST_DAY = 1900;
+const KCAL_TARGET_TRAINING_DAY = 2400;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const STORAGE_KEY = "waga-single-entries-v1";
 const TRAINING_STORAGE_KEY = "waga-training-entries-v1";
 const TEST_TIME_KEY = "waga-test-time-v3";
+const LIVE_RANKING_ROW_KEY = "__live-ranking-row__";
+const LIVE_RANKING_TICK_MS = 50;
 
 const firebaseConfig = {
   apiKey: "AIzaSyA7JqE7bNPU6FHqJSad5lKwjm-c8ozY9rg",
@@ -31,6 +35,14 @@ let trainingChartInstance = null;
 let testTime = loadTestTimeState();
 testTime.enabled = 0;
 testTime.offsetDays = 0;
+const liveRankingState = {
+  running: false,
+  elapsedMs: 0,
+  startedPerfMs: 0,
+  recordedAtIso: "",
+  intervalId: null,
+  lastRankIndex: null
+};
 
 const weightInput = document.getElementById("weight-input");
 const kcalInput = document.getElementById("kcal-input");
@@ -50,12 +62,23 @@ const trainingSaveTimeBtn = document.getElementById("training-save-time-btn");
 const trainingSaveDistanceBtn = document.getElementById("training-save-distance-btn");
 const trainingTimeSaved = document.getElementById("training-time-saved");
 const trainingEntryHint = document.getElementById("training-entry-hint");
+const rankingLiveToggleBtn = document.getElementById("ranking-live-toggle-btn");
+const rankingLiveStatus = document.getElementById("ranking-live-status");
+const rankingManualAddBtn = document.getElementById("ranking-manual-add-btn");
+const rankingManualForm = document.getElementById("ranking-manual-form");
+const rankingManualDateInput = document.getElementById("ranking-manual-date");
+const rankingManualTimeInput = document.getElementById("ranking-manual-time");
+const rankingManualDistanceInput = document.getElementById("ranking-manual-distance");
+const rankingManualSaveBtn = document.getElementById("ranking-manual-save-btn");
+const rankingManualCancelBtn = document.getElementById("ranking-manual-cancel-btn");
+const rankingManualError = document.getElementById("ranking-manual-error");
 
 setupModeTabs();
 setupWeightTabs();
 setupTrainingTabs();
 setupInputs();
 setupTrainingInputs();
+setupTrainingRankingControls();
 setupTestControls();
 setupStorage();
 loadData();
@@ -173,6 +196,38 @@ function setupTrainingInputs() {
   });
 
   refreshTrainingInputState();
+}
+
+function setupTrainingRankingControls() {
+  if (!rankingLiveToggleBtn || !rankingLiveStatus) return;
+
+  rankingLiveToggleBtn.addEventListener("click", () => {
+    if (liveRankingState.running) {
+      stopLiveRankingRun();
+      return;
+    }
+    if (liveRankingState.elapsedMs > 0) {
+      saveLiveRankingRun();
+      return;
+    }
+    startLiveRankingRun();
+  });
+
+  if (rankingManualAddBtn && rankingManualForm && rankingManualDateInput && rankingManualTimeInput && rankingManualDistanceInput && rankingManualSaveBtn && rankingManualCancelBtn) {
+    rankingManualAddBtn.addEventListener("click", () => {
+      toggleRankingManualForm(rankingManualForm.style.display !== "block");
+    });
+
+    rankingManualCancelBtn.addEventListener("click", () => {
+      toggleRankingManualForm(false);
+    });
+
+    rankingManualSaveBtn.addEventListener("click", () => {
+      saveManualRankingEntry();
+    });
+  }
+
+  renderLiveRankingControls();
 }
 
 function setupTestControls() {
@@ -355,7 +410,7 @@ function renderMetrics() {
   weeklyEl.textContent = weeklyDiff === null ? "Brak" : formatDeltaKg(weeklyDiff);
   const weeklyTone = getWeeklyTone(weeklyDiff);
   weeklyEl.classList.add(weeklyTone);
-  if (weeklyTone === "gold") weeklyEl.classList.add("gold-glow");
+  if (weeklyTone === "good") weeklyEl.classList.add("good-glow");
 }
 
 function renderTrainingMetrics() {
@@ -513,30 +568,34 @@ function renderTrainingTable() {
 }
 
 function renderTrainingRanking() {
+  renderLiveRankingControls();
   const wrap = document.getElementById("training-ranking-wrap");
-  const rows = getTrainingRowsSortedBySecondsDesc();
+  const rows = getTrainingRankingViewRows(shouldShowLiveRankingRow() ? liveRankingState.elapsedMs / 1000 : null);
   if (!rows.length) {
     wrap.innerHTML = '<div class="sheet-empty">Brak danych do rankingu.</div>';
     return;
   }
   wrap.innerHTML = buildTrainingRankingTableHTML(rows);
   attachDeleteHandlers(wrap);
+  const tbody = wrap.querySelector("tbody");
+  if (tbody) updateRankingOrdinalNumbers(tbody);
+  const liveRankIndex = rows.findIndex(row => row.rankKey === LIVE_RANKING_ROW_KEY);
+  liveRankingState.lastRankIndex = liveRankIndex >= 0 ? liveRankIndex : null;
 }
 
 function renderCurrentWeekTable() {
   const card = document.getElementById("week-table-card");
   const wrap = document.getElementById("week-table-wrap");
-  const currentWeek = getWeekIndexFromAnchor(getDayAnchor().getTime());
-  const weekRows = getEntriesByDayAsc().filter(e => getWeekIndexFromAnchor(e.dayAnchor) === currentWeek);
+  const rowsToDate = getChallengeTableRowsUpToDisplayDay();
 
-  if (!weekRows.length) {
+  if (!rowsToDate.length) {
     card.style.display = "none";
     wrap.innerHTML = "";
     return;
   }
 
   card.style.display = "block";
-  wrap.innerHTML = buildTableHTML(weekRows);
+  wrap.innerHTML = buildTableHTML(rowsToDate);
   attachDeleteHandlers(wrap);
 }
 
@@ -555,8 +614,15 @@ function getChallengeTableRows() {
   return rows;
 }
 
+function getChallengeTableRowsUpToDisplayDay() {
+  const maxDay = Math.min(CHALLENGE_DAYS, getDisplayDayNumber(getDisplayAnchor().getTime()));
+  if (maxDay <= 0) return [];
+  return getChallengeTableRows().slice(0, maxDay);
+}
+
 function buildTableHTML(rows) {
   const weekMeta = buildWeekMeta(rows);
+  const trainingDayAnchors = getTrainingDayAnchorSet();
   const baseline = getBaselineWeight();
   const dailyDelta = WEEKLY_TARGET_DELTA / 7;
   const out = [];
@@ -580,7 +646,15 @@ function buildTableHTML(rows) {
       const forecast = baseline + ((dayNum - 1) * dailyDelta);
       weightCell = `<span class="forecast-hint">${formatTableWeight(forecast)}</span>`;
     }
-    out.push(`<td class="num kcal-cell" data-edit-field="kcal" data-day-anchor="${entry.dayAnchor}" title="Kliknij, aby edytowac kcal">${Number.isFinite(entry.kcal) ? formatKcal(entry.kcal) : ""}</td>`);
+    const kcalDelta = getKcalDeltaForDay(entry.dayAnchor, entry.kcal, trainingDayAnchors);
+    const kcalTone = getKcalTone(kcalDelta);
+    const kcalToneClass = kcalTone === "neutral" ? "" : ` ${kcalTone}`;
+    const isTrainingDay = trainingDayAnchors.has(entry.dayAnchor);
+    const kcalDayDot = isTrainingDay ? "&#9679;" : "&#9675;";
+    const kcalDisplay = kcalDelta === null
+      ? ""
+      : `${formatSignedKcalDelta(kcalDelta)} <span class="kcal-day-dot" aria-hidden="true">${kcalDayDot}</span>`;
+    out.push(`<td class="num kcal-cell${kcalToneClass}" data-edit-field="kcal" data-day-anchor="${entry.dayAnchor}" title="Kliknij, aby edytowac kcal">${kcalDisplay}</td>`);
     out.push(`<td class="num weight-cell" data-edit-field="weight" data-day-anchor="${entry.dayAnchor}" title="Kliknij, aby edytowac wage">${weightCell}</td>`);
     out.push(`<td class="num delta-cell${dailyClass}">${daily === null ? "" : formatSignedTableDeltaOne(daily)}</td>`);
 
@@ -589,7 +663,7 @@ function buildTableHTML(rows) {
       const avg = getWeekAverage(weekIdx);
       const diff = getWeeklyDiffForWeek(weekIdx);
       const diffTone = getWeeklyTone(diff);
-      const diffGlowClass = diffTone === "gold" ? " gold-glow" : "";
+      const diffGlowClass = diffTone === "good" ? " good-glow" : "";
       out.push(`<td class="week week-avg" rowspan="${wm.rowCount}">${avg === null ? "" : formatTableTwo(avg)}</td>`);
       out.push(`<td class="week week-diff ${diffTone}${diffGlowClass}" rowspan="${wm.rowCount}">${diff === null ? "" : formatSignedTableTwo(diff)}</td>`);
     }
@@ -640,18 +714,72 @@ function buildTrainingTableHTML(rows) {
   return out.join("");
 }
 
-function buildTrainingRankingTableHTML(rows) {
+function shouldShowLiveRankingRow() {
+  return liveRankingState.running || liveRankingState.elapsedMs > 0;
+}
+
+function getLiveRankingTrainingIndex() {
+  return trainingEntries.length + 1;
+}
+
+function getTrainingRankingViewRows(liveSeconds = null) {
   const latest = getLatestTraining();
   const latestId = latest ? latest.id : "";
+  const rows = getTrainingRowsWithIndex().map(entry => ({
+    ...entry,
+    isLive: false,
+    isLatest: entry.id === latestId,
+    rankKey: entry.id,
+    sortSeconds: Number(entry.seconds)
+  }));
+
+  if (Number.isFinite(liveSeconds)) {
+    rows.push({
+      id: LIVE_RANKING_ROW_KEY,
+      trainingIndex: getLiveRankingTrainingIndex(),
+      recordedAt: liveRankingState.recordedAtIso || getNow().toISOString(),
+      seconds: Number(liveSeconds),
+      elapsedMs: liveRankingState.elapsedMs,
+      isLive: true,
+      isLatest: false,
+      rankKey: LIVE_RANKING_ROW_KEY,
+      sortSeconds: Number(liveSeconds)
+    });
+  }
+
+  rows.sort(compareTrainingRankingRows);
+  return rows;
+}
+
+function compareTrainingRankingRows(a, b) {
+  if (b.sortSeconds !== a.sortSeconds) return b.sortSeconds - a.sortSeconds;
+  if (a.isLive && !b.isLive) return 1;
+  if (!a.isLive && b.isLive) return -1;
+  return a.trainingIndex - b.trainingIndex;
+}
+
+function buildTrainingRankingTableHTML(rows) {
   const out = [];
   out.push('<table class="sheet-table training-sheet-table training-ranking-table">');
   out.push('<thead><tr><th class="row-col">#</th><th class="date-col">Data</th><th class="time-col">Czas 135</th><th class="actions">X</th></tr></thead><tbody>');
 
-  rows.forEach(entry => {
-    const isLatest = entry.id === latestId;
-    const timeClass = isLatest ? "num weight-cell last-result" : "num weight-cell";
-    out.push(isLatest ? '<tr class="last-result-row">' : "<tr>");
-    out.push(`<td class="num row-col">${entry.trainingIndex}</td>`);
+  rows.forEach((entry, idx) => {
+    const rankNumber = idx + 1;
+    if (entry.isLive) {
+      const liveRowClass = liveRankingState.running ? "live-ranking-row live-running" : "live-ranking-row";
+      const liveTimeClass = liveRankingState.running ? "live-time-value running" : "live-time-value";
+      out.push(`<tr class="${liveRowClass}" data-rank-key="${LIVE_RANKING_ROW_KEY}">`);
+      out.push(`<td class="num row-col">${rankNumber}</td>`);
+      out.push(`<td class="date-cell">${formatShortDateCell(new Date(entry.recordedAt))}</td>`);
+      out.push(`<td class="num weight-cell time-cell live-time-cell"><span class="${liveTimeClass}" data-live-time>${formatLiveDuration(entry.elapsedMs)}</span></td>`);
+      out.push('<td class="actions"></td>');
+      out.push("</tr>");
+      return;
+    }
+
+    const timeClass = entry.isLatest ? "num weight-cell last-result" : "num weight-cell";
+    out.push(entry.isLatest ? `<tr class="last-result-row" data-rank-key="${entry.rankKey}">` : `<tr data-rank-key="${entry.rankKey}">`);
+    out.push(`<td class="num row-col">${rankNumber}</td>`);
     out.push(`<td class="date-cell">${formatShortDateCell(new Date(entry.recordedAt))}</td>`);
     out.push(`<td class="${timeClass} time-cell">${formatDuration(entry.seconds)}</td>`);
     out.push(`<td class="actions"><button class="delete-btn" type="button" data-training-entry-id="${entry.id}" aria-label="Usun wpis">X</button></td>`);
@@ -660,6 +788,188 @@ function buildTrainingRankingTableHTML(rows) {
 
   out.push("</tbody></table>");
   return out.join("");
+}
+
+function renderLiveRankingControls() {
+  if (!rankingLiveToggleBtn || !rankingLiveStatus) return;
+  const hasDraft = liveRankingState.elapsedMs > 0;
+  rankingLiveToggleBtn.textContent = liveRankingState.running ? "STOP" : (hasDraft ? "Zapisz rekord" : "START!");
+  rankingLiveToggleBtn.classList.toggle("running", liveRankingState.running);
+  rankingLiveToggleBtn.classList.toggle("save-mode", !liveRankingState.running && hasDraft);
+
+  if (liveRankingState.running) {
+    rankingLiveStatus.textContent = `LIVE: ${formatLiveDuration(liveRankingState.elapsedMs)}`;
+    return;
+  }
+  if (hasDraft) {
+    rankingLiveStatus.textContent = `Zatrzymano: ${formatLiveDuration(liveRankingState.elapsedMs)}. Mozesz zapisac rekord.`;
+    return;
+  }
+  rankingLiveStatus.textContent = "";
+}
+
+function startLiveRankingRun() {
+  clearLiveRankingInterval();
+  liveRankingState.running = true;
+  liveRankingState.elapsedMs = 0;
+  liveRankingState.startedPerfMs = performance.now();
+  liveRankingState.recordedAtIso = getNow().toISOString();
+  liveRankingState.lastRankIndex = null;
+  renderTrainingRanking();
+  liveRankingState.intervalId = window.setInterval(tickLiveRankingRun, LIVE_RANKING_TICK_MS);
+}
+
+function stopLiveRankingRun() {
+  if (!liveRankingState.running) return;
+  liveRankingState.elapsedMs = Math.max(0, performance.now() - liveRankingState.startedPerfMs);
+  liveRankingState.running = false;
+  clearLiveRankingInterval();
+  renderLiveRankingControls();
+  syncLiveRankingRowPosition();
+}
+
+function clearLiveRankingInterval() {
+  if (liveRankingState.intervalId !== null) {
+    clearInterval(liveRankingState.intervalId);
+    liveRankingState.intervalId = null;
+  }
+}
+
+function tickLiveRankingRun() {
+  if (!liveRankingState.running) return;
+  liveRankingState.elapsedMs = Math.max(0, performance.now() - liveRankingState.startedPerfMs);
+  renderLiveRankingControls();
+  syncLiveRankingRowPosition();
+}
+
+function syncLiveRankingRowPosition() {
+  const wrap = document.getElementById("training-ranking-wrap");
+  const tbody = wrap ? wrap.querySelector("tbody") : null;
+  if (!tbody) return;
+
+  const liveRow = tbody.querySelector(`tr[data-rank-key="${LIVE_RANKING_ROW_KEY}"]`);
+  if (!liveRow) {
+    renderTrainingRanking();
+    return;
+  }
+
+  const liveTimeEl = liveRow.querySelector("[data-live-time]");
+  if (liveTimeEl) liveTimeEl.textContent = formatLiveDuration(liveRankingState.elapsedMs);
+  liveRow.classList.toggle("live-running", liveRankingState.running);
+  const desiredKeys = getTrainingRankingViewRows(liveRankingState.elapsedMs / 1000).map(row => row.rankKey);
+  const currentKeys = Array.from(tbody.querySelectorAll("tr[data-rank-key]")).map(row => row.dataset.rankKey);
+
+  if (!areArraysEqual(currentKeys, desiredKeys)) {
+    reorderRankingRowsWithAnimation(tbody, desiredKeys);
+  }
+  updateRankingOrdinalNumbers(tbody);
+
+  const nextRank = desiredKeys.indexOf(LIVE_RANKING_ROW_KEY);
+  liveRankingState.lastRankIndex = nextRank >= 0 ? nextRank : liveRankingState.lastRankIndex;
+}
+
+function reorderRankingRowsWithAnimation(tbody, orderedKeys) {
+  const rows = Array.from(tbody.querySelectorAll("tr[data-rank-key]"));
+  const rowByKey = new Map(rows.map(row => [row.dataset.rankKey, row]));
+  const oldTop = new Map(rows.map(row => [row.dataset.rankKey, row.getBoundingClientRect().top]));
+
+  orderedKeys.forEach(key => {
+    const row = rowByKey.get(key);
+    if (row) tbody.appendChild(row);
+  });
+
+  const movedRows = Array.from(tbody.querySelectorAll("tr[data-rank-key]"));
+  movedRows.forEach(row => {
+    const previousTop = oldTop.get(row.dataset.rankKey);
+    if (previousTop === undefined) return;
+    const newTop = row.getBoundingClientRect().top;
+    const diff = previousTop - newTop;
+    if (Math.abs(diff) < 0.5) return;
+    row.style.transition = "none";
+    row.style.transform = `translateY(${diff}px)`;
+  });
+
+  void tbody.offsetHeight;
+
+  movedRows.forEach(row => {
+    if (!row.style.transform) return;
+    row.style.transition = "transform 340ms ease";
+    row.style.transform = "";
+  });
+}
+
+function updateRankingOrdinalNumbers(tbody) {
+  const rows = Array.from(tbody.querySelectorAll("tr[data-rank-key]"));
+  rows.forEach((row, idx) => {
+    const rankCell = row.querySelector("td.row-col");
+    if (!rankCell) return;
+    rankCell.textContent = String(idx + 1);
+  });
+}
+
+function areArraysEqual(a, b) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+function saveLiveRankingRun() {
+  if (liveRankingState.running) stopLiveRankingRun();
+  if (liveRankingState.elapsedMs <= 0) return;
+
+  const finalSeconds = Math.max(0, Math.round(liveRankingState.elapsedMs / 1000));
+  const recordedAtIso = liveRankingState.recordedAtIso || getNow().toISOString();
+  resetLiveRankingRun(true);
+  saveTrainingTime(finalSeconds, { forceNew: true, recordedAtIso });
+}
+
+function resetLiveRankingRun(skipRender = false) {
+  clearLiveRankingInterval();
+  liveRankingState.running = false;
+  liveRankingState.elapsedMs = 0;
+  liveRankingState.startedPerfMs = 0;
+  liveRankingState.recordedAtIso = "";
+  liveRankingState.lastRankIndex = null;
+  renderLiveRankingControls();
+  if (!skipRender) renderTrainingRanking();
+}
+
+function toggleRankingManualForm(show) {
+  if (!rankingManualForm || !rankingManualDateInput || !rankingManualTimeInput || !rankingManualDistanceInput || !rankingManualError) return;
+  rankingManualForm.style.display = show ? "block" : "none";
+  rankingManualError.textContent = "";
+  if (!show) {
+    return;
+  }
+
+  if (!rankingManualDateInput.value) rankingManualDateInput.value = formatDateInput(getDayAnchor());
+  rankingManualTimeInput.focus();
+}
+
+function saveManualRankingEntry() {
+  if (!rankingManualDateInput || !rankingManualTimeInput || !rankingManualDistanceInput || !rankingManualError) return;
+  const date = parseRankingManualDateInput(rankingManualDateInput.value);
+  const seconds = parseDurationInput(rankingManualTimeInput.value);
+  const distanceKm = parseDistanceInput(rankingManualDistanceInput.value);
+
+  if (!date || seconds === null || distanceKm === null) {
+    rankingManualError.textContent = "Podaj poprawnie: date, czas (MM:SS) i dystans.";
+    return;
+  }
+
+  addTrainingEntry({
+    seconds,
+    distanceKm,
+    distanceRequired: true,
+    recordedAtIso: date.toISOString()
+  });
+
+  rankingManualError.textContent = "";
+  rankingManualTimeInput.value = "";
+  rankingManualDistanceInput.value = "";
+  toggleRankingManualForm(false);
 }
 
 function attachDeleteHandlers(container) {
@@ -858,6 +1168,26 @@ function getTrainingEntryByTrainingIndex(trainingIndex) {
   return trainingEntries[trainingIndex - 1] || null;
 }
 
+function getTrainingDayAnchorSet() {
+  const anchors = new Set();
+  trainingEntries.forEach(entry => {
+    const recorded = new Date(entry.recordedAt);
+    if (Number.isNaN(recorded.getTime())) return;
+    anchors.add(getDayAnchor(recorded).getTime());
+  });
+  return anchors;
+}
+
+function getKcalTargetByDayAnchor(dayAnchor, trainingDayAnchors = getTrainingDayAnchorSet()) {
+  return trainingDayAnchors.has(dayAnchor) ? KCAL_TARGET_TRAINING_DAY : KCAL_TARGET_REST_DAY;
+}
+
+function getKcalDeltaForDay(dayAnchor, kcal, trainingDayAnchors = getTrainingDayAnchorSet()) {
+  if (!Number.isFinite(kcal)) return null;
+  const target = getKcalTargetByDayAnchor(dayAnchor, trainingDayAnchors);
+  return Math.round(Number(kcal)) - target;
+}
+
 function getDailyDiff(latest) {
   if (!latest) return null;
   if (!Number.isFinite(latest.weight)) return null;
@@ -949,7 +1279,14 @@ function getTrainingTone(value) {
 
 function getWeeklyTone(value) {
   if (value === null) return "neutral";
-  if (value <= -0.6) return "gold";
+  if (value <= -0.7) return "good";
+  if (value < 0) return "gold";
+  if (value > 0) return "bad";
+  return "neutral";
+}
+
+function getKcalTone(value) {
+  if (value === null) return "neutral";
   if (value < 0) return "good";
   if (value > 0) return "bad";
   return "neutral";
@@ -1031,23 +1368,35 @@ function upsertEntryForDay(patch) {
   }
 }
 
-function saveTrainingTime(seconds) {
+function saveTrainingTime(seconds, options = {}) {
+  const forceNew = options.forceNew === true;
+  const recordedAtIso = typeof options.recordedAtIso === "string" && options.recordedAtIso ? options.recordedAtIso : getNow().toISOString();
+  const distanceRequired = options.distanceRequired === false ? false : true;
   const pending = getPendingTrainingEntry();
-  if (pending) {
+  if (pending && !forceNew) {
     pending.seconds = Number(seconds);
     persistTrainingEntries();
     if (firebaseEnabled && trainingEntriesRef) trainingEntriesRef.child(pending.id).set(pending);
     return;
   }
 
-  const now = getNow();
+  addTrainingEntry({
+    seconds: Number(seconds),
+    distanceKm: null,
+    distanceRequired,
+    recordedAtIso
+  });
+}
+
+function addTrainingEntry({ seconds, distanceKm = null, distanceRequired = true, recordedAtIso = "" }) {
   const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+  const recordedAt = recordedAtIso || getNow().toISOString();
   const entry = {
     id,
     seconds: Number(seconds),
-    distanceKm: null,
-    distanceRequired: true,
-    recordedAt: now.toISOString()
+    distanceKm: Number.isFinite(distanceKm) ? Number(distanceKm) : null,
+    distanceRequired: distanceRequired === true,
+    recordedAt
   };
 
   trainingEntries.push(entry);
@@ -1164,6 +1513,14 @@ function parseDistanceInput(value) {
   return km;
 }
 
+function parseRankingManualDateInput(value) {
+  const text = String(value || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
+  const date = new Date(`${text}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+}
+
 function parseDistanceValue(value) {
   if (value === null || value === undefined || value === "") return null;
   const numeric = Number(String(value).replace(",", "."));
@@ -1235,6 +1592,14 @@ function toInt(value, fallback) {
   return n < 0 ? Math.ceil(n) : Math.floor(n);
 }
 
+function formatDateInput(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function formatWeight(value) { return `${value.toFixed(2)} kg`; }
 function formatDeltaKg(value) { const sign = value > 0 ? "+" : ""; return `${sign}${value.toFixed(2)} kg`; }
 function formatDateCell(date) { return date.toLocaleDateString("pl-PL", { day: "numeric", month: "long" }); }
@@ -1263,8 +1628,34 @@ function formatDuration(seconds) {
   return `${minutes}:${String(rest).padStart(2, "0")}`;
 }
 
+function formatLiveDuration(ms) {
+  const totalHundredths = Math.max(0, Math.floor((Number(ms) || 0) / 10));
+  const minutes = Math.floor(totalHundredths / 6000);
+  const seconds = Math.floor((totalHundredths % 6000) / 100);
+  const hundredths = totalHundredths % 100;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}:${String(hundredths).padStart(2, "0")}`;
+}
+
 function formatKcal(value) {
   return Math.round(Number(value) || 0).toLocaleString("pl-PL");
+}
+
+function formatSignedKcalDelta(value) {
+  const rounded = Math.round(Number(value) || 0);
+  if (rounded > 0) {
+    const extraMinutes = getExtraTrainingMinutesForKcalSurplus(rounded);
+    return `(+${extraMinutes} min)  +${rounded.toLocaleString("pl-PL")}`;
+  }
+  const sign = rounded > 0 ? "+" : "";
+  return `${sign}${rounded.toLocaleString("pl-PL")}`;
+}
+
+function getExtraTrainingMinutesForKcalSurplus(kcalSurplus) {
+  const kcal = Math.max(0, Math.round(Number(kcalSurplus) || 0));
+  if (kcal <= 0) return 0;
+  const exactMinutes = (kcal / 80) * 10;
+  const roundedToTenMinutes = Math.round(exactMinutes / 10) * 10;
+  return Math.max(10, roundedToTenMinutes);
 }
 
 function formatDistanceKm(value) {
