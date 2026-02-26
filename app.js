@@ -14,6 +14,7 @@ const TRAINING_STORAGE_KEY = "waga-training-entries-v1";
 const TEST_TIME_KEY = "waga-test-time-v3";
 const LIVE_RANKING_ROW_KEY = "__live-ranking-row__";
 const LIVE_RANKING_TICK_MS = 50;
+const LEGACY_135_MARK_SECONDS = (3 * 60) + 43;
 
 const firebaseConfig = {
   apiKey: "AIzaSyA7JqE7bNPU6FHqJSad5lKwjm-c8ozY9rg",
@@ -80,6 +81,7 @@ setupInputs();
 setupTrainingInputs();
 setupTrainingRankingControls();
 setupTestControls();
+setupChartTooltipDismiss();
 setupStorage();
 loadData();
 
@@ -269,6 +271,29 @@ function setupTestControls() {
   });
 }
 
+function setupChartTooltipDismiss() {
+  document.addEventListener("pointerdown", event => {
+    const targetEl = event.target instanceof Element ? event.target : null;
+    if (targetEl && targetEl.closest(".chart-wrap")) return;
+    dismissChartTooltips();
+  }, { passive: true });
+}
+
+function dismissChartTooltips() {
+  dismissChartTooltip(chartInstance);
+  dismissChartTooltip(trainingChartInstance);
+}
+
+function dismissChartTooltip(chart) {
+  if (!chart || !chart.tooltip) return;
+  const hasActiveTooltip = chart.tooltip.getActiveElements().length > 0;
+  const hasActiveElements = chart.getActiveElements().length > 0;
+  if (!hasActiveTooltip && !hasActiveElements) return;
+  chart.setActiveElements([]);
+  chart.tooltip.setActiveElements([], { x: 0, y: 0 });
+  chart.update("none");
+}
+
 function setupStorage() {
   try {
     if (firebaseConfig.apiKey) {
@@ -430,9 +455,9 @@ function renderTrainingMetrics() {
     return;
   }
 
-  lastEl.textContent = formatDuration(latest.seconds);
+  lastEl.innerHTML = formatTrainingDurationWithLegacyMark(latest.seconds);
   lastEl.classList.add("good");
-  recordEl.textContent = formatDuration(recordSeconds);
+  recordEl.innerHTML = formatTrainingDurationWithLegacyMark(recordSeconds);
   recordEl.classList.add("gold");
   recordEl.classList.add("gold-glow");
 }
@@ -521,7 +546,7 @@ function renderTrainingChart() {
     data: {
       datasets: [
         {
-          label: "Czas do 135 bpm",
+          label: "Czas do 150 bpm",
           data: points,
           borderColor: "#64d3ff",
           backgroundColor: "#64d3ff",
@@ -653,7 +678,7 @@ function buildTableHTML(rows) {
     const kcalDayDot = isTrainingDay ? "&#9679;" : "&#9675;";
     const kcalDisplay = kcalDelta === null
       ? ""
-      : `${formatSignedKcalDelta(kcalDelta)} <span class="kcal-day-dot" aria-hidden="true">${kcalDayDot}</span>`;
+      : `<span class="kcal-display-wrap">${formatSignedKcalDelta(kcalDelta)}<span class="kcal-day-dot" aria-hidden="true">${kcalDayDot}</span></span>`;
     out.push(`<td class="num kcal-cell${kcalToneClass}" data-edit-field="kcal" data-day-anchor="${entry.dayAnchor}" title="Kliknij, aby edytowac kcal">${kcalDisplay}</td>`);
     out.push(`<td class="num weight-cell" data-edit-field="weight" data-day-anchor="${entry.dayAnchor}" title="Kliknij, aby edytowac wage">${weightCell}</td>`);
     out.push(`<td class="num delta-cell${dailyClass}">${daily === null ? "" : formatSignedTableDeltaOne(daily)}</td>`);
@@ -686,7 +711,7 @@ function buildTrainingTableHTML(rows) {
   const averageDiffClass = averageDiff === null ? "" : ` week-diff ${averageTone}`;
   const out = [];
   out.push('<table class="sheet-table training-sheet-table">');
-  out.push('<thead><tr><th class="row-col">#</th><th class="date-col">Data</th><th class="time-col">Czas 135</th><th class="distance-col">Dyst. [km]</th><th class="delta-col">Roz.</th><th class="avg-col">Sr. 5</th><th class="avg-diff-col">Roz. sr.</th><th class="actions">X</th></tr></thead><tbody>');
+  out.push('<thead><tr><th class="row-col">#</th><th class="date-col">Data</th><th class="time-col">Czas 150</th><th class="distance-col">Dyst. [km]</th><th class="delta-col">Roz.</th><th class="avg-col">Sr. 5</th><th class="avg-diff-col">Roz. sr.</th><th class="actions">X</th></tr></thead><tbody>');
 
   rows.forEach((entry, idx) => {
     const daily = getTrainingDailyDiffByTrainingIndex(entry.trainingIndex);
@@ -698,7 +723,7 @@ function buildTrainingTableHTML(rows) {
     out.push(isLatest ? '<tr class="last-result-row">' : "<tr>");
     out.push(`<td class="num row-col">${entry.trainingIndex}</td>`);
     out.push(`<td class="date-cell">${formatShortDateCell(new Date(entry.recordedAt))}</td>`);
-    out.push(`<td class="${timeClass} time-cell">${formatDuration(entry.seconds)}</td>`);
+    out.push(`<td class="${timeClass} time-cell">${formatTrainingDurationWithLegacyMark(entry.seconds)}</td>`);
     out.push(`<td class="num distance-cell">${Number.isFinite(entry.distanceKm) ? formatDistanceKm(entry.distanceKm) : ""}</td>`);
     out.push(`<td class="num delta-cell${dailyClass}">${daily === null ? "" : formatSignedDurationDelta(daily)}</td>`);
     if (idx === 0) {
@@ -761,7 +786,7 @@ function compareTrainingRankingRows(a, b) {
 function buildTrainingRankingTableHTML(rows) {
   const out = [];
   out.push('<table class="sheet-table training-sheet-table training-ranking-table">');
-  out.push('<thead><tr><th class="row-col">#</th><th class="date-col">Data</th><th class="time-col">Czas 135</th><th class="actions">X</th></tr></thead><tbody>');
+  out.push('<thead><tr><th class="row-col">#</th><th class="date-col">Data</th><th class="time-col">Czas 150</th><th class="actions">X</th></tr></thead><tbody>');
 
   rows.forEach((entry, idx) => {
     const rankNumber = idx + 1;
@@ -781,7 +806,7 @@ function buildTrainingRankingTableHTML(rows) {
     out.push(entry.isLatest ? `<tr class="last-result-row" data-rank-key="${entry.rankKey}">` : `<tr data-rank-key="${entry.rankKey}">`);
     out.push(`<td class="num row-col">${rankNumber}</td>`);
     out.push(`<td class="date-cell">${formatShortDateCell(new Date(entry.recordedAt))}</td>`);
-    out.push(`<td class="${timeClass} time-cell">${formatDuration(entry.seconds)}</td>`);
+    out.push(`<td class="${timeClass} time-cell">${formatTrainingDurationWithLegacyMark(entry.seconds)}</td>`);
     out.push(`<td class="actions"><button class="delete-btn" type="button" data-training-entry-id="${entry.id}" aria-label="Usun wpis">X</button></td>`);
     out.push("</tr>");
   });
@@ -1279,7 +1304,7 @@ function getTrainingTone(value) {
 
 function getWeeklyTone(value) {
   if (value === null) return "neutral";
-  if (value <= -0.7) return "good";
+  if (value <= WEEKLY_TARGET_DELTA) return "good";
   if (value < 0) return "gold";
   if (value > 0) return "bad";
   return "neutral";
@@ -1628,6 +1653,17 @@ function formatDuration(seconds) {
   return `${minutes}:${String(rest).padStart(2, "0")}`;
 }
 
+function hasLegacy135Mark(seconds) {
+  const total = Math.max(0, Math.round(Number(seconds) || 0));
+  return total < LEGACY_135_MARK_SECONDS;
+}
+
+function formatTrainingDurationWithLegacyMark(seconds) {
+  const duration = formatDuration(seconds);
+  if (!hasLegacy135Mark(seconds)) return `<span class="training-time-value">${duration}</span>`;
+  return `<span class="training-time-value">${duration}<span class="training-time-legacy-mark">(135)</span></span>`;
+}
+
 function formatLiveDuration(ms) {
   const totalHundredths = Math.max(0, Math.floor((Number(ms) || 0) / 10));
   const minutes = Math.floor(totalHundredths / 6000);
@@ -1644,10 +1680,10 @@ function formatSignedKcalDelta(value) {
   const rounded = Math.round(Number(value) || 0);
   if (rounded > 0) {
     const extraMinutes = getExtraTrainingMinutesForKcalSurplus(rounded);
-    return `(+${extraMinutes} min)  +${rounded.toLocaleString("pl-PL")}`;
+    return `<span class="kcal-extra-minutes">(+${extraMinutes} min)</span><span class="kcal-main-value">+${rounded.toLocaleString("pl-PL")}</span>`;
   }
   const sign = rounded > 0 ? "+" : "";
-  return `${sign}${rounded.toLocaleString("pl-PL")}`;
+  return `<span class="kcal-main-value">${sign}${rounded.toLocaleString("pl-PL")}</span>`;
 }
 
 function getExtraTrainingMinutesForKcalSurplus(kcalSurplus) {
