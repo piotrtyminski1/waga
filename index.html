@@ -107,7 +107,10 @@
     .weight-sheet-table th.delta-col,.weight-sheet-table td.delta-cell{width:1%}
     .weight-sheet-table th.week-col,.weight-sheet-table td.week{width:1%}
     .weight-sheet-table td.kcal-cell{color:rgba(234,243,255,.78);font-size:12px;font-weight:600;line-height:1.1;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;padding-left:3px;padding-right:3px}
-    .weight-sheet-table td.kcal-cell .kcal-day-dot{margin-left:4px}
+    .weight-sheet-table td.kcal-cell .kcal-display-wrap{display:inline-flex;align-items:center;justify-content:flex-end;gap:4px;line-height:1;vertical-align:middle}
+    .weight-sheet-table td.kcal-cell .kcal-extra-minutes{display:inline-flex;align-items:center;font-size:.72em;line-height:1;font-weight:500;opacity:.84}
+    .weight-sheet-table td.kcal-cell .kcal-main-value{display:inline-flex;align-items:center;line-height:1}
+    .weight-sheet-table td.kcal-cell .kcal-day-dot{display:inline-flex;align-items:center;line-height:1}
     .weight-sheet-table td.kcal-cell.good{color:var(--good)}
     .weight-sheet-table td.kcal-cell.bad{color:var(--bad)}
     .weight-sheet-table td.weight-cell,.weight-sheet-table td.delta-cell{font-size:inherit;font-weight:500;color:var(--text)}
@@ -123,6 +126,8 @@
     .training-sheet-table th.avg-diff-col,.training-sheet-table td.avg-diff-cell{width:1%}
     .training-sheet-table th.actions,.training-sheet-table td.actions{width:1%;padding-left:3px;padding-right:3px}
     .training-sheet-table td.time-cell{font-size:inherit;font-weight:500;color:var(--text)}
+    .training-time-value{display:inline-flex;flex-direction:column;align-items:center;line-height:1.02}
+    .training-time-legacy-mark{display:block;margin-top:2px;font-size:.62em;font-weight:600;opacity:.82}
     .training-sheet-table td.distance-cell{color:var(--muted)}
     .training-sheet-table td.week{font-size:18px;font-weight:800}
     .training-ranking-table td.time-cell{font-size:18px;font-weight:800;color:var(--text)}
@@ -318,7 +323,7 @@
             <section class="card training-entry-card">
               <div class="input-column">
                 <h4>Czas</h4>
-                <input id="training-time-input" type="text" inputmode="text" placeholder="MM:SS, np. 12:34" aria-label="Czas do 135 bpm" />
+                <input id="training-time-input" type="text" inputmode="text" placeholder="MM:SS, np. 12:34" aria-label="Czas do 150 bpm" />
                 <button id="training-save-time-btn" disabled>Zapisz czas</button>
                 <p id="training-time-saved" class="saved-state">Czas zapisany</p>
               </div>
@@ -375,3 +380,5 @@
     <script src="app.js"></script>
 </body>
 </html>
+
+
