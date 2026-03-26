@@ -73,6 +73,11 @@
     .training-entry-card h4{margin:0 0 10px;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
     .saved-state{display:none;font-weight:700;color:var(--good);padding:10px 12px;border-radius:12px;border:1px solid rgba(106,245,168,.28);background:rgba(106,245,168,.08)}
     .training-hint{margin:2px 0 0;font-size:13px;color:var(--muted);min-height:18px}
+    .weight-chart-controls{display:flex;justify-content:flex-end;margin:0 0 10px}
+    .weight-mode-toggle-btn{padding:8px 12px;font-size:12px;letter-spacing:.02em;text-transform:uppercase}
+    .weight-mode-toggle-btn.moving{border-color:rgba(255,213,106,.55);background:rgba(255,213,106,.12);color:var(--gold)}
+    .fade-swap-target,.trend-fade-target{opacity:1;transition:opacity 220ms ease}
+    .fade-swap-target.is-fading,.trend-fade-target.is-fading{opacity:0}
     .chart-wrap{position:relative;width:100%;height:300px;border-radius:16px;overflow:hidden;background:radial-gradient(120% 120% at 50% 0%, rgba(93,208,255,.18), rgba(8,16,36,.94))}
     .chart-wrap canvas{display:block;width:100%!important;height:100%!important}
 
@@ -205,6 +210,7 @@
       .time-grid{grid-template-columns:1fr}
       .time-actions{justify-content:flex-start}
       .app{padding:12px}
+      .weight-chart-controls{margin-bottom:8px}
       .sheet-table{font-size:11px}
       .sheet-table th,.sheet-table td{padding:6px 3px}
       .sheet-table td.week{font-size:16px}
@@ -294,7 +300,10 @@
             </section>
           </div>
 
-          <section class="card"><div class="chart-wrap"><canvas id="weightChart"></canvas></div></section>
+          <div class="weight-chart-controls">
+            <button id="weight-trend-toggle-btn" class="ghost-btn weight-mode-toggle-btn" type="button" aria-pressed="false">Tryb: Sr. tyg.</button>
+          </div>
+          <section id="weight-chart-card" class="card fade-swap-target"><div class="chart-wrap"><canvas id="weightChart"></canvas></div></section>
 
           <section id="week-table-card" class="table-panel" style="display:none;">
             <h3 style="margin-top:0; margin-bottom:12px;">Tabela do dzisiaj</h3>
@@ -303,7 +312,7 @@
         </section>
 
         <section id="weight-table" class="tab-panel weight-panel">
-          <section class="table-panel">
+          <section id="weight-full-table-card" class="table-panel">
             <h3 style="margin-top:0; margin-bottom:12px;">Tabela</h3>
             <div class="sheet-wrap" id="table-wrap"></div>
           </section>
