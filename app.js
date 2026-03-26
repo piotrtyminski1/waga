@@ -12,9 +12,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const STORAGE_KEY = "waga-single-entries-v1";
 const TRAINING_STORAGE_KEY = "waga-training-entries-v1";
 const TEST_TIME_KEY = "waga-test-time-v3";
+const WEIGHT_TREND_MODE_KEY = "waga-weight-trend-mode-v1";
 const LIVE_RANKING_ROW_KEY = "__live-ranking-row__";
 const LIVE_RANKING_TICK_MS = 50;
 const LEGACY_135_MARK_SECONDS = (3 * 60) + 43;
+const ROLLING_AVERAGE_WINDOW_DAYS = 7;
+const WEIGHT_TREND_FADE_MS = 220;
 
 const firebaseConfig = {
   apiKey: "AIzaSyA7JqE7bNPU6FHqJSad5lKwjm-c8ozY9rg",
@@ -34,6 +37,8 @@ let trainingEntries = [];
 let chartInstance = null;
 let trainingChartInstance = null;
 let testTime = loadTestTimeState();
+let weightTrendMode = loadWeightTrendMode();
+let weightTrendTransitioning = false;
 testTime.enabled = 0;
 testTime.offsetDays = 0;
 const liveRankingState = {
@@ -57,6 +62,7 @@ const testOffset = document.getElementById("test-offset");
 const testMinus = document.getElementById("test-minus");
 const testPlus = document.getElementById("test-plus");
 const testToday = document.getElementById("test-today");
+const weightTrendToggleBtn = document.getElementById("weight-trend-toggle-btn");
 const trainingTimeInput = document.getElementById("training-time-input");
 const trainingDistanceInput = document.getElementById("training-distance-input");
 const trainingSaveTimeBtn = document.getElementById("training-save-time-btn");
@@ -78,6 +84,7 @@ setupModeTabs();
 setupWeightTabs();
 setupTrainingTabs();
 setupInputs();
+setupWeightTrendToggle();
 setupTrainingInputs();
 setupTrainingRankingControls();
 setupTestControls();
@@ -158,6 +165,57 @@ function setupInputs() {
     kcalInput.value = "";
     kcalSaveBtn.disabled = true;
   });
+}
+
+function setupWeightTrendToggle() {
+  if (!weightTrendToggleBtn) return;
+  weightTrendToggleBtn.addEventListener("click", () => {
+    toggleWeightTrendModeWithFade();
+  });
+  renderWeightTrendToggle();
+}
+
+function renderWeightTrendToggle() {
+  if (!weightTrendToggleBtn) return;
+  const rollingMode = isRollingWeightMode();
+  weightTrendToggleBtn.textContent = rollingMode ? "Tryb: Sr. kroczaca 7d" : "Tryb: Sr. tyg.";
+  weightTrendToggleBtn.title = rollingMode
+    ? "Kliknij, aby wrocic do sredniej tygodniowej"
+    : "Kliknij, aby wlaczyc srednia kroczaca 7d";
+  weightTrendToggleBtn.classList.toggle("moving", rollingMode);
+  weightTrendToggleBtn.setAttribute("aria-pressed", rollingMode ? "true" : "false");
+  weightTrendToggleBtn.disabled = weightTrendTransitioning;
+}
+
+function toggleWeightTrendModeWithFade() {
+  if (weightTrendTransitioning) return;
+  weightTrendTransitioning = true;
+  renderWeightTrendToggle();
+  const fadeTargets = getWeightTrendFadeTargets();
+  fadeTargets.forEach(el => el.classList.add("is-fading"));
+
+  window.setTimeout(() => {
+    weightTrendMode = isRollingWeightMode() ? "weekly" : "rolling7";
+    saveWeightTrendMode();
+    renderAll();
+    window.requestAnimationFrame(() => {
+      getWeightTrendFadeTargets().forEach(el => el.classList.remove("is-fading"));
+      window.setTimeout(() => {
+        weightTrendTransitioning = false;
+        renderWeightTrendToggle();
+      }, WEIGHT_TREND_FADE_MS);
+    });
+  }, WEIGHT_TREND_FADE_MS);
+}
+
+function isRollingWeightMode() {
+  return weightTrendMode === "rolling7";
+}
+
+function getWeightTrendFadeTargets() {
+  const chartCard = document.getElementById("weight-chart-card");
+  const trendColumns = Array.from(document.querySelectorAll(".trend-fade-target"));
+  return [chartCard, ...trendColumns].filter(Boolean);
 }
 
 function setupTrainingInputs() {
@@ -361,6 +419,7 @@ function sanitizeTrainingEntries() {
 }
 
 function renderAll() {
+  renderWeightTrendToggle();
   renderSummary();
   renderMetrics();
   renderCurrentWeekTable();
@@ -510,9 +569,26 @@ function renderEntryState() {
 
 function renderChart() {
   const canvas = document.getElementById("weightChart");
-  const data = buildChartData();
+  const rollingMode = isRollingWeightMode();
+  const data = rollingMode ? buildRollingChartData() : buildChartData();
   const maxDay = getDisplayDayNumber(getDisplayAnchor().getTime());
   if (chartInstance) chartInstance.destroy();
+
+  const scales = rollingMode
+    ? {
+      x: { type: "linear", min: 1, max: maxDay, title: { display: true, text: "Dzien", color: "#c7d0dc" }, ticks: { color: "#c7d0dc", stepSize: 1 }, grid: { color: "rgba(255,255,255,0.04)" } },
+      y: { title: { display: true, text: "Srednia 7d [kg]", color: "#c7d0dc" }, ticks: { color: "#c7d0dc", callback: value => `${Number(value).toFixed(1)}` }, grid: { color: "rgba(255,255,255,0.04)" } },
+      y1: {
+        position: "right",
+        title: { display: true, text: "Roznica d/d [kg]", color: "rgba(199, 208, 220, 0.8)" },
+        ticks: { color: "rgba(199, 208, 220, 0.8)", callback: value => formatSignedTableTwo(Number(value)) },
+        grid: { drawOnChartArea: false }
+      }
+    }
+    : {
+      x: { type: "linear", min: 1, max: maxDay, title: { display: true, text: "Dzien", color: "#c7d0dc" }, ticks: { color: "#c7d0dc", stepSize: 1 }, grid: { color: "rgba(255,255,255,0.04)" } },
+      y: { title: { display: true, text: "Waga [kg]", color: "#c7d0dc" }, ticks: { color: "#c7d0dc", callback: value => `${Number(value).toFixed(1)}` }, grid: { color: "rgba(255,255,255,0.04)" } }
+    };
 
   chartInstance = new Chart(canvas, {
     type: "line",
@@ -524,13 +600,28 @@ function renderChart() {
       interaction: { mode: "nearest", intersect: false },
       elements: { line: { borderWidth: 3, tension: 0.35 }, point: { radius: 5, hoverRadius: 7, borderWidth: 2 } },
       plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { title: ctx => `Dzien ${ctx[0].parsed.x}`, label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)} kg` } }
+        legend: rollingMode
+          ? {
+            display: true,
+            labels: {
+              filter: (item, legendData) => legendData.datasets[item.datasetIndex]?.id !== "zero-line"
+            }
+          }
+          : { display: false },
+        tooltip: {
+          filter: ctx => ctx.dataset?.id !== "zero-line",
+          callbacks: {
+            title: ctx => `Dzien ${ctx[0].parsed.x}`,
+            label: ctx => {
+              const value = Number(ctx.parsed.y);
+              if (!Number.isFinite(value)) return `${ctx.dataset.label}: brak`;
+              if (rollingMode && ctx.dataset.yAxisID === "y1") return `${ctx.dataset.label}: ${formatSignedTableTwo(value)} kg`;
+              return `${ctx.dataset.label}: ${value.toFixed(2)} kg`;
+            }
+          }
+        }
       },
-      scales: {
-        x: { type: "linear", min: 1, max: maxDay, title: { display: true, text: "Dzien", color: "#c7d0dc" }, ticks: { color: "#c7d0dc", stepSize: 1 }, grid: { color: "rgba(255,255,255,0.04)" } },
-        y: { title: { display: true, text: "Waga [kg]", color: "#c7d0dc" }, ticks: { color: "#c7d0dc", callback: value => `${Number(value).toFixed(1)}` }, grid: { color: "rgba(255,255,255,0.04)" } }
-      }
+      scales
     }
   });
 }
@@ -646,13 +737,18 @@ function getChallengeTableRowsUpToDisplayDay() {
 }
 
 function buildTableHTML(rows) {
+  if (isRollingWeightMode()) return buildRollingAverageTableHTML(rows);
+  return buildWeeklyTableHTML(rows);
+}
+
+function buildWeeklyTableHTML(rows) {
   const weekMeta = buildWeekMeta(rows);
   const trainingDayAnchors = getTrainingDayAnchorSet();
   const baseline = getBaselineWeight();
   const dailyDelta = WEEKLY_TARGET_DELTA / 7;
   const out = [];
   out.push('<table class="sheet-table weight-sheet-table">');
-  out.push('<thead><tr><th class="row-col">#</th><th class="date-col">Data</th><th class="weight-col kcal-col">Kcal</th><th class="weight-col">Waga</th><th class="delta-col">Roznica</th><th class="week-col">Sr. tyg.</th><th class="week-col">Roz. tyg.</th><th class="actions">X</th></tr></thead><tbody>');
+  out.push('<thead><tr><th class="row-col">#</th><th class="date-col">Data</th><th class="weight-col kcal-col">Kcal</th><th class="weight-col">Waga</th><th class="delta-col">Roznica</th><th class="week-col trend-fade-target">Sr. tyg.</th><th class="week-col trend-fade-target">Roz. tyg.</th><th class="actions">X</th></tr></thead><tbody>');
 
   rows.forEach((entry, idx) => {
     const dayNum = getDayNumber(new Date(entry.dayAnchor));
@@ -689,9 +785,62 @@ function buildTableHTML(rows) {
       const diff = getWeeklyDiffForWeek(weekIdx);
       const diffTone = getWeeklyTone(diff);
       const diffGlowClass = diffTone === "good" ? " good-glow" : "";
-      out.push(`<td class="week week-avg" rowspan="${wm.rowCount}">${avg === null ? "" : formatTableTwo(avg)}</td>`);
-      out.push(`<td class="week week-diff ${diffTone}${diffGlowClass}" rowspan="${wm.rowCount}">${diff === null ? "" : formatSignedTableTwo(diff)}</td>`);
+      out.push(`<td class="week week-avg trend-fade-target" rowspan="${wm.rowCount}">${avg === null ? "" : formatTableTwo(avg)}</td>`);
+      out.push(`<td class="week week-diff trend-fade-target ${diffTone}${diffGlowClass}" rowspan="${wm.rowCount}">${diff === null ? "" : formatSignedTableTwo(diff)}</td>`);
     }
+
+    if (entry.id) out.push(`<td class="actions"><button class="delete-btn" type="button" data-entry-id="${entry.id}" aria-label="Usun wpis">X</button></td>`);
+    else out.push('<td class="actions"></td>');
+    out.push("</tr>");
+  });
+
+  out.push("</tbody></table>");
+  return out.join("");
+}
+
+function buildRollingAverageTableHTML(rows) {
+  const rollingRows = buildRollingAverageRows(rows);
+  const trainingDayAnchors = getTrainingDayAnchorSet();
+  const baseline = getBaselineWeight();
+  const dailyDelta = WEEKLY_TARGET_DELTA / 7;
+  const out = [];
+  out.push('<table class="sheet-table weight-sheet-table">');
+  out.push('<thead><tr><th class="row-col">#</th><th class="date-col">Data</th><th class="weight-col kcal-col">Kcal</th><th class="weight-col">Waga</th><th class="delta-col">Roznica</th><th class="week-col trend-fade-target">Sr. 7d</th><th class="week-col trend-fade-target">Roz. 7d d/d</th><th class="actions">X</th></tr></thead><tbody>');
+
+  rows.forEach((entry, idx) => {
+    const dayNum = getDayNumber(new Date(entry.dayAnchor));
+    const daily = getDailyDiffByAnchor(entry.dayAnchor);
+    const dailyTone = getDailyTone(daily);
+    const dailyClass = daily === null ? "" : ` day-diff ${dailyTone}`;
+
+    out.push("<tr>");
+    out.push(`<td class="num row-col">${dayNum}</td>`);
+    out.push(`<td class="date-cell">${formatWeightDateCell(new Date(entry.dayAnchor))}</td>`);
+    let weightCell = "";
+    if (Number.isFinite(entry.weight)) {
+      weightCell = formatTableWeight(entry.weight);
+    } else if (baseline !== null) {
+      const forecast = baseline + ((dayNum - 1) * dailyDelta);
+      weightCell = `<span class="forecast-hint">${formatTableWeight(forecast)}</span>`;
+    }
+    const kcalDelta = getKcalDeltaForDay(entry.dayAnchor, entry.kcal, trainingDayAnchors);
+    const kcalTone = getKcalTone(kcalDelta);
+    const kcalToneClass = kcalTone === "neutral" ? "" : ` ${kcalTone}`;
+    const isTrainingDay = trainingDayAnchors.has(entry.dayAnchor);
+    const kcalDayDot = isTrainingDay ? "&#9679;" : "&#9675;";
+    const kcalDisplay = kcalDelta === null
+      ? ""
+      : `<span class="kcal-display-wrap">${formatSignedKcalDelta(kcalDelta)}<span class="kcal-day-dot" aria-hidden="true">${kcalDayDot}</span></span>`;
+    out.push(`<td class="num kcal-cell${kcalToneClass}" data-edit-field="kcal" data-day-anchor="${entry.dayAnchor}" title="Kliknij, aby edytowac kcal">${kcalDisplay}</td>`);
+    out.push(`<td class="num weight-cell" data-edit-field="weight" data-day-anchor="${entry.dayAnchor}" title="Kliknij, aby edytowac wage">${weightCell}</td>`);
+    out.push(`<td class="num delta-cell${dailyClass}">${daily === null ? "" : formatSignedTableDeltaOne(daily)}</td>`);
+
+    const rollingAverage = rollingRows[idx].average;
+    const rollingDiff = rollingRows[idx].diff;
+    const rollingTone = getDailyTone(rollingDiff);
+    const rollingGlowClass = rollingTone === "good" ? " good-glow" : "";
+    out.push(`<td class="week week-avg trend-fade-target">${rollingAverage === null ? "" : formatTableTwo(rollingAverage)}</td>`);
+    out.push(`<td class="week week-diff trend-fade-target ${rollingTone}${rollingGlowClass}">${rollingDiff === null ? "" : formatSignedTableTwo(rollingDiff)}</td>`);
 
     if (entry.id) out.push(`<td class="actions"><button class="delete-btn" type="button" data-entry-id="${entry.id}" aria-label="Usun wpis">X</button></td>`);
     else out.push('<td class="actions"></td>');
@@ -1288,6 +1437,33 @@ function buildWeekMeta(rowsAsc) {
   return meta;
 }
 
+function buildRollingAverageRows(rows, windowSize = ROLLING_AVERAGE_WINDOW_DAYS) {
+  const rolling = [];
+  rows.forEach((_, idx) => {
+    const average = getRollingAverageForIndex(rows, idx, windowSize);
+    const prevAverage = idx > 0 ? rolling[idx - 1].average : null;
+    const diff = average !== null && prevAverage !== null ? average - prevAverage : null;
+    rolling.push({ average, diff });
+  });
+  return rolling;
+}
+
+function getRollingAverageForIndex(rows, endIndex, windowSize = ROLLING_AVERAGE_WINDOW_DAYS) {
+  const currentWeight = rows[endIndex]?.weight;
+  if (!Number.isFinite(currentWeight)) return null;
+  const startIndex = Math.max(0, endIndex - windowSize + 1);
+  let sum = 0;
+  let count = 0;
+  for (let idx = startIndex; idx <= endIndex; idx += 1) {
+    const weight = rows[idx]?.weight;
+    if (!Number.isFinite(weight)) continue;
+    sum += weight;
+    count += 1;
+  }
+  if (!count) return null;
+  return sum / count;
+}
+
 function getDailyTone(value) {
   if (value === null) return "neutral";
   if (value < 0) return "good";
@@ -1502,6 +1678,71 @@ function buildChartData() {
       }
     ]
   };
+}
+
+function buildRollingChartData() {
+  const rows = getChallengeTableRowsUpToDisplayDay();
+  const rollingRows = buildRollingAverageRows(rows);
+  const avgPoints = [];
+  const diffPoints = [];
+  const zeroLinePoints = [];
+
+  rollingRows.forEach((row, idx) => {
+    const dayNum = getDayNumber(new Date(rows[idx].dayAnchor));
+    zeroLinePoints.push({ x: dayNum, y: 0 });
+    if (row.average !== null) avgPoints.push({ x: dayNum, y: row.average });
+    if (row.diff !== null) diffPoints.push({ x: dayNum, y: row.diff });
+  });
+
+  return {
+    datasets: [
+      {
+        label: "Srednia kroczaca 7d",
+        data: avgPoints,
+        borderColor: "#ffd56a",
+        backgroundColor: "#ffd56a",
+        pointBorderColor: "#ffd56a",
+        pointBackgroundColor: "#ffd56a",
+        fill: false
+      },
+      {
+        id: "zero-line",
+        label: "Poziom 0",
+        data: zeroLinePoints,
+        yAxisID: "y1",
+        borderColor: "rgba(199, 208, 220, 0.7)",
+        backgroundColor: "rgba(199, 208, 220, 0.7)",
+        pointRadius: 0,
+        pointHoverRadius: 0,
+        borderWidth: 1.4,
+        fill: false
+      },
+      {
+        label: "Roznica sredniej d/d",
+        data: diffPoints,
+        yAxisID: "y1",
+        borderColor: "rgba(199, 208, 220, 0.7)",
+        backgroundColor: "rgba(199, 208, 220, 0.7)",
+        pointBorderColor: "rgba(199, 208, 220, 0.7)",
+        pointBackgroundColor: "rgba(199, 208, 220, 0.7)",
+        borderDash: [6, 4],
+        fill: false
+      }
+    ]
+  };
+}
+
+function loadWeightTrendMode() {
+  try {
+    const raw = localStorage.getItem(WEIGHT_TREND_MODE_KEY);
+    return raw === "rolling7" ? "rolling7" : "weekly";
+  } catch (_) {
+    return "weekly";
+  }
+}
+
+function saveWeightTrendMode() {
+  localStorage.setItem(WEIGHT_TREND_MODE_KEY, weightTrendMode);
 }
 
 function loadTestTimeState() {
