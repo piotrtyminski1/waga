@@ -124,6 +124,7 @@
     .training-sheet-table th,.training-sheet-table td{white-space:nowrap;overflow-wrap:normal;word-break:normal}
     .training-sheet-table th.row-col,.training-sheet-table td.row-col{width:1%;padding-left:4px;padding-right:4px}
     .training-sheet-table th.date-col,.training-sheet-table td.date-cell{width:1%}
+    .training-sheet-table th.training-minutes-col,.training-sheet-table td.training-minutes-cell{width:1%}
     .training-sheet-table th.time-col,.training-sheet-table td.time-cell{width:1%}
     .training-sheet-table th.distance-col,.training-sheet-table td.distance-cell{width:1%}
     .training-sheet-table th.delta-col,.training-sheet-table td.delta-cell{width:1%}
@@ -131,6 +132,8 @@
     .training-sheet-table th.avg-diff-col,.training-sheet-table td.avg-diff-cell{width:1%}
     .training-sheet-table th.actions,.training-sheet-table td.actions{width:1%;padding-left:3px;padding-right:3px}
     .training-sheet-table td.time-cell{font-size:inherit;font-weight:500;color:var(--text)}
+    .training-sheet-table td[data-training-edit-field]{cursor:text}
+    .training-sheet-table td[data-training-edit-field]:hover{background:rgba(100,211,255,.1)}
     .training-time-value{display:inline-flex;flex-direction:column;align-items:center;line-height:1.02}
     .training-time-legacy-mark{display:block;margin-top:2px;font-size:.62em;font-weight:600;opacity:.82}
     .training-sheet-table td.distance-cell{color:var(--muted)}
