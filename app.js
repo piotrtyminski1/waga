@@ -7,7 +7,8 @@ const CHALLENGE_DAYS = 70;
 const TRAINING_TARGET_COUNT = 70;
 const WEEKLY_TARGET_DELTA = -0.6;
 const KCAL_TARGET_REST_DAY = 1700;
-const KCAL_TARGET_TRAINING_DAY = 2200;
+const DEFAULT_TRAINING_MINUTES = 60;
+const KCAL_PER_TRAINING_MINUTE = 8;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const STORAGE_KEY = "waga-single-entries-v1";
 const TRAINING_STORAGE_KEY = "waga-training-entries-v1";
@@ -394,13 +395,16 @@ function loadData() {
 
 function sanitizeEntries() {
   entries = entries
-    .map(e => ({
-      id: String(e.id || ""),
-      dayAnchor: Number(e.dayAnchor),
-      weight: parseWeightValue(e.weight),
-      kcal: parseKcalValue(e.kcal),
-      recordedAt: String(e.recordedAt || new Date().toISOString())
-    }))
+    .map(e => {
+      const rawAnchor = Number(e.dayAnchor);
+      return {
+        id: String(e.id || ""),
+        dayAnchor: Number.isFinite(rawAnchor) ? getCanonicalDayAnchorMs(rawAnchor) : NaN,
+        weight: parseWeightValue(e.weight),
+        kcal: parseKcalValue(e.kcal),
+        recordedAt: String(e.recordedAt || new Date().toISOString())
+      };
+    })
     .filter(e => Number.isFinite(e.dayAnchor) && e.id && (Number.isFinite(e.weight) || Number.isFinite(e.kcal)))
     .sort((a, b) => a.dayAnchor - b.dayAnchor || new Date(a.recordedAt) - new Date(b.recordedAt));
 }
@@ -411,6 +415,7 @@ function sanitizeTrainingEntries() {
       id: String(e.id || ""),
       seconds: Number(e.seconds),
       distanceKm: parseDistanceValue(e.distanceKm),
+      trainingMinutes: parseTrainingMinutesValue(e.trainingMinutes),
       distanceRequired: inferDistanceRequired(e),
       recordedAt: String(e.recordedAt || new Date().toISOString())
     }))
@@ -719,9 +724,8 @@ function getChallengeTableRows() {
   const rowsByDay = new Map(getEntriesByDayAsc().map(entry => [entry.dayAnchor, entry]));
   const rows = [];
   const startAnchor = START_DATE.getTime();
-  const endAnchor = startAnchor + ((CHALLENGE_DAYS - 1) * DAY_MS);
-
-  for (let anchor = startAnchor; anchor <= endAnchor; anchor += DAY_MS) {
+  for (let dayOffset = 0; dayOffset < CHALLENGE_DAYS; dayOffset += 1) {
+    const anchor = shiftDayAnchorByDays(startAnchor, dayOffset);
     const existing = rowsByDay.get(anchor);
     if (existing) rows.push(existing);
     else rows.push({ id: "", dayAnchor: anchor, weight: null, recordedAt: "" });
@@ -743,7 +747,8 @@ function buildTableHTML(rows) {
 
 function buildWeeklyTableHTML(rows) {
   const weekMeta = buildWeekMeta(rows);
-  const trainingDayAnchors = getTrainingDayAnchorSet();
+  const trainingMinutesByDay = getTrainingMinutesByDayMap();
+  const trainingDayAnchors = getTrainingDayAnchorSet(trainingMinutesByDay);
   const baseline = getBaselineWeight();
   const dailyDelta = WEEKLY_TARGET_DELTA / 7;
   const out = [];
@@ -767,7 +772,7 @@ function buildWeeklyTableHTML(rows) {
       const forecast = baseline + ((dayNum - 1) * dailyDelta);
       weightCell = `<span class="forecast-hint">${formatTableWeight(forecast)}</span>`;
     }
-    const kcalDelta = getKcalDeltaForDay(entry.dayAnchor, entry.kcal, trainingDayAnchors);
+    const kcalDelta = getKcalDeltaForDay(entry.dayAnchor, entry.kcal, trainingMinutesByDay);
     const kcalTone = getKcalTone(kcalDelta);
     const kcalToneClass = kcalTone === "neutral" ? "" : ` ${kcalTone}`;
     const isTrainingDay = trainingDayAnchors.has(entry.dayAnchor);
@@ -794,13 +799,16 @@ function buildWeeklyTableHTML(rows) {
     out.push("</tr>");
   });
 
+  const totalKcalDelta = getTotalKcalDelta(rows, trainingMinutesByDay);
+  out.push(buildKcalBalanceSummaryRowHTML(totalKcalDelta));
   out.push("</tbody></table>");
   return out.join("");
 }
 
 function buildRollingAverageTableHTML(rows) {
   const rollingRows = buildRollingAverageRows(rows);
-  const trainingDayAnchors = getTrainingDayAnchorSet();
+  const trainingMinutesByDay = getTrainingMinutesByDayMap();
+  const trainingDayAnchors = getTrainingDayAnchorSet(trainingMinutesByDay);
   const baseline = getBaselineWeight();
   const dailyDelta = WEEKLY_TARGET_DELTA / 7;
   const out = [];
@@ -823,7 +831,7 @@ function buildRollingAverageTableHTML(rows) {
       const forecast = baseline + ((dayNum - 1) * dailyDelta);
       weightCell = `<span class="forecast-hint">${formatTableWeight(forecast)}</span>`;
     }
-    const kcalDelta = getKcalDeltaForDay(entry.dayAnchor, entry.kcal, trainingDayAnchors);
+    const kcalDelta = getKcalDeltaForDay(entry.dayAnchor, entry.kcal, trainingMinutesByDay);
     const kcalTone = getKcalTone(kcalDelta);
     const kcalToneClass = kcalTone === "neutral" ? "" : ` ${kcalTone}`;
     const isTrainingDay = trainingDayAnchors.has(entry.dayAnchor);
@@ -847,8 +855,33 @@ function buildRollingAverageTableHTML(rows) {
     out.push("</tr>");
   });
 
+  const totalKcalDelta = getTotalKcalDelta(rows, trainingMinutesByDay);
+  out.push(buildKcalBalanceSummaryRowHTML(totalKcalDelta));
   out.push("</tbody></table>");
   return out.join("");
+}
+
+function getTotalKcalDelta(rows, trainingMinutesByDay = getTrainingMinutesByDayMap()) {
+  let total = 0;
+  let hasData = false;
+  rows.forEach(entry => {
+    const kcalDelta = getKcalDeltaForDay(entry.dayAnchor, entry.kcal, trainingMinutesByDay);
+    if (!Number.isFinite(kcalDelta)) return;
+    total += kcalDelta;
+    hasData = true;
+  });
+  if (!hasData) return null;
+  return Math.round(total);
+}
+
+function buildKcalBalanceSummaryRowHTML(totalKcalDelta) {
+  const kcalTone = getKcalTone(totalKcalDelta);
+  const kcalToneClass = kcalTone === "neutral" ? "" : ` ${kcalTone}`;
+  const kcalDisplay = totalKcalDelta === null
+    ? ""
+    : `<span class="kcal-display-wrap">${formatSignedKcalBalanceWithMinutes(totalKcalDelta)}</span>`;
+
+  return `<tr class="kcal-balance-row"><td class="num row-col"></td><td class="date-cell"><strong>Bilans</strong></td><td class="num kcal-cell${kcalToneClass}">${kcalDisplay}</td><td class="num weight-cell"></td><td class="num delta-cell"></td><td class="week week-avg trend-fade-target"></td><td class="week week-diff trend-fade-target"></td><td class="actions"></td></tr>`;
 }
 
 function buildTrainingTableHTML(rows) {
@@ -860,7 +893,7 @@ function buildTrainingTableHTML(rows) {
   const averageDiffClass = averageDiff === null ? "" : ` week-diff ${averageTone}`;
   const out = [];
   out.push('<table class="sheet-table training-sheet-table">');
-  out.push('<thead><tr><th class="row-col">#</th><th class="date-col">Data</th><th class="time-col">Czas 150</th><th class="distance-col">Dyst. [km]</th><th class="delta-col">Roz.</th><th class="avg-col">Sr. 5</th><th class="avg-diff-col">Roz. sr.</th><th class="actions">X</th></tr></thead><tbody>');
+  out.push('<thead><tr><th class="row-col">#</th><th class="date-col">Data</th><th class="training-minutes-col">Czas treningu</th><th class="time-col">Czas 150</th><th class="distance-col">Dyst. [km]</th><th class="delta-col">Roz.</th><th class="avg-col">Sr. 5</th><th class="avg-diff-col">Roz. sr.</th><th class="actions">X</th></tr></thead><tbody>');
 
   rows.forEach((entry, idx) => {
     const daily = getTrainingDailyDiffByTrainingIndex(entry.trainingIndex);
@@ -872,6 +905,7 @@ function buildTrainingTableHTML(rows) {
     out.push(isLatest ? '<tr class="last-result-row">' : "<tr>");
     out.push(`<td class="num row-col">${entry.trainingIndex}</td>`);
     out.push(`<td class="date-cell">${formatShortDateCell(new Date(entry.recordedAt))}</td>`);
+    out.push(`<td class="num training-minutes-cell" data-training-edit-field="training-minutes" data-training-id="${entry.id}" title="Kliknij, aby edytowac czas treningu">${formatTrainingMinutes(getTrainingMinutesForEntry(entry))}</td>`);
     out.push(`<td class="${timeClass} time-cell">${formatTrainingDurationWithLegacyMark(entry.seconds)}</td>`);
     out.push(`<td class="num distance-cell">${Number.isFinite(entry.distanceKm) ? formatDistanceKm(entry.distanceKm) : ""}</td>`);
     out.push(`<td class="num delta-cell${dailyClass}">${daily === null ? "" : formatSignedDurationDelta(daily)}</td>`);
@@ -1147,13 +1181,14 @@ function saveManualRankingEntry() {
 }
 
 function attachDeleteHandlers(container) {
-  container.querySelectorAll("[data-entry-id]").forEach(btn => {
+  container.querySelectorAll("button[data-entry-id]").forEach(btn => {
     btn.addEventListener("click", () => deleteEntry(btn.dataset.entryId));
   });
-  container.querySelectorAll("[data-training-entry-id]").forEach(btn => {
+  container.querySelectorAll("button[data-training-entry-id]").forEach(btn => {
     btn.addEventListener("click", () => deleteTrainingEntry(btn.dataset.trainingEntryId));
   });
   attachEditableWeightHandlers(container);
+  attachEditableTrainingHandlers(container);
 }
 
 function attachEditableWeightHandlers(container) {
@@ -1162,6 +1197,16 @@ function attachEditableWeightHandlers(container) {
       if (cell.dataset.editing === "1") return;
       if (event.target instanceof HTMLElement && event.target.closest("input")) return;
       startInlineWeightEdit(cell);
+    });
+  });
+}
+
+function attachEditableTrainingHandlers(container) {
+  container.querySelectorAll("[data-training-edit-field][data-training-id]").forEach(cell => {
+    cell.addEventListener("click", event => {
+      if (cell.dataset.editing === "1") return;
+      if (event.target instanceof HTMLElement && event.target.closest("input")) return;
+      startInlineTrainingEdit(cell);
     });
   });
 }
@@ -1228,6 +1273,68 @@ function startInlineWeightEdit(cell) {
     commit();
   });
 }
+
+function startInlineTrainingEdit(cell) {
+  const field = cell.dataset.trainingEditField;
+  const trainingId = String(cell.dataset.trainingId || "");
+  if (field !== "training-minutes" || !trainingId) return;
+
+  const row = trainingEntries.find(entry => entry.id === trainingId);
+  if (!row) return;
+  const inputValue = String(getTrainingMinutesForEntry(row));
+
+  const initialHtml = cell.innerHTML;
+  const input = document.createElement("input");
+  input.type = "text";
+  input.inputMode = "numeric";
+  input.className = "table-inline-input";
+  input.value = inputValue;
+
+  cell.dataset.editing = "1";
+  cell.classList.add("editing");
+  cell.innerHTML = "";
+  cell.appendChild(input);
+  input.focus();
+  input.select();
+
+  const restore = () => {
+    cell.dataset.editing = "0";
+    cell.classList.remove("editing");
+    cell.innerHTML = initialHtml;
+  };
+
+  const commit = () => {
+    const raw = input.value.trim();
+    if (!raw) {
+      setTrainingEntryMinutesById(trainingId, DEFAULT_TRAINING_MINUTES);
+      return;
+    }
+
+    const parsed = parseInlineTrainingMinutesInput(raw);
+    if (parsed === null) {
+      restore();
+      return;
+    }
+
+    setTrainingEntryMinutesById(trainingId, parsed);
+  };
+
+  input.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commit();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      restore();
+    }
+  });
+
+  input.addEventListener("blur", () => {
+    if (cell.dataset.editing !== "1") return;
+    commit();
+  });
+}
+
 function getNow() {
   const now = new Date();
   if (testTime.enabled !== 1) return now;
@@ -1241,10 +1348,31 @@ function getDayAnchor(date = getNow()) {
   return fourAM;
 }
 
+function getCalendarDayStamp(date) {
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return NaN;
+  return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function getCanonicalDayAnchorMs(date) {
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return NaN;
+  return getDayAnchor(d).getTime();
+}
+
+function shiftDayAnchorByDays(anchorMs, offsetDays) {
+  const d = new Date(anchorMs);
+  if (Number.isNaN(d.getTime())) return NaN;
+  d.setDate(d.getDate() + Number(offsetDays || 0));
+  return getDayAnchor(d).getTime();
+}
+
 function getDayNumber(anchorDate) {
-  const anchor = new Date(anchorDate);
-  if (anchor < START_DATE) return 1;
-  return Math.floor((anchor - START_DATE) / DAY_MS) + 1;
+  const anchorStamp = getCalendarDayStamp(anchorDate);
+  const startStamp = getCalendarDayStamp(START_DATE);
+  if (!Number.isFinite(anchorStamp) || !Number.isFinite(startStamp)) return 1;
+  if (anchorStamp < startStamp) return 1;
+  return Math.floor((anchorStamp - startStamp) / DAY_MS) + 1;
 }
 
 function getDisplayDayNumber(anchorMs) {
@@ -1333,8 +1461,10 @@ function getTrainingRecordSeconds() {
 }
 
 function getEntryForDay(anchorMs) {
+  const normalizedAnchor = getCanonicalDayAnchorMs(anchorMs);
+  if (!Number.isFinite(normalizedAnchor)) return null;
   const rows = getEntriesByDayAsc();
-  for (let i = 0; i < rows.length; i += 1) if (rows[i].dayAnchor === anchorMs) return rows[i];
+  for (let i = 0; i < rows.length; i += 1) if (rows[i].dayAnchor === normalizedAnchor) return rows[i];
   return null;
 }
 
@@ -1342,30 +1472,44 @@ function getTrainingEntryByTrainingIndex(trainingIndex) {
   return trainingEntries[trainingIndex - 1] || null;
 }
 
-function getTrainingDayAnchorSet() {
-  const anchors = new Set();
+function getTrainingMinutesForEntry(entry) {
+  const value = Number(entry?.trainingMinutes);
+  if (Number.isFinite(value) && value >= 0) return Math.round(value);
+  return DEFAULT_TRAINING_MINUTES;
+}
+
+function getTrainingMinutesByDayMap() {
+  const minutesByDay = new Map();
   trainingEntries.forEach(entry => {
     const recorded = new Date(entry.recordedAt);
     if (Number.isNaN(recorded.getTime())) return;
-    anchors.add(getDayAnchor(recorded).getTime());
+    const dayAnchor = getDayAnchor(recorded).getTime();
+    const entryMinutes = getTrainingMinutesForEntry(entry);
+    if (entryMinutes <= 0) return;
+    minutesByDay.set(dayAnchor, (minutesByDay.get(dayAnchor) || 0) + entryMinutes);
   });
-  return anchors;
+  return minutesByDay;
 }
 
-function getKcalTargetByDayAnchor(dayAnchor, trainingDayAnchors = getTrainingDayAnchorSet()) {
-  return trainingDayAnchors.has(dayAnchor) ? KCAL_TARGET_TRAINING_DAY : KCAL_TARGET_REST_DAY;
+function getTrainingDayAnchorSet(trainingMinutesByDay = getTrainingMinutesByDayMap()) {
+  return new Set(trainingMinutesByDay.keys());
 }
 
-function getKcalDeltaForDay(dayAnchor, kcal, trainingDayAnchors = getTrainingDayAnchorSet()) {
+function getKcalTargetByDayAnchor(dayAnchor, trainingMinutesByDay = getTrainingMinutesByDayMap()) {
+  const minutes = Math.max(0, Math.round(Number(trainingMinutesByDay.get(dayAnchor)) || 0));
+  return KCAL_TARGET_REST_DAY + (minutes * KCAL_PER_TRAINING_MINUTE);
+}
+
+function getKcalDeltaForDay(dayAnchor, kcal, trainingMinutesByDay = getTrainingMinutesByDayMap()) {
   if (!Number.isFinite(kcal)) return null;
-  const target = getKcalTargetByDayAnchor(dayAnchor, trainingDayAnchors);
+  const target = getKcalTargetByDayAnchor(dayAnchor, trainingMinutesByDay);
   return Math.round(Number(kcal)) - target;
 }
 
 function getDailyDiff(latest) {
   if (!latest) return null;
   if (!Number.isFinite(latest.weight)) return null;
-  const yesterday = getEntryForDay(latest.dayAnchor - DAY_MS);
+  const yesterday = getEntryForDay(shiftDayAnchorByDays(latest.dayAnchor, -1));
   if (!yesterday || !Number.isFinite(yesterday.weight)) return null;
   return latest.weight - yesterday.weight;
 }
@@ -1379,7 +1523,7 @@ function getTrainingDailyDiffByTrainingIndex(trainingIndex) {
 
 function getDailyDiffByAnchor(anchorMs) {
   const current = getEntryForDay(anchorMs);
-  const yesterday = getEntryForDay(anchorMs - DAY_MS);
+  const yesterday = getEntryForDay(shiftDayAnchorByDays(anchorMs, -1));
   if (!current || !yesterday) return null;
   if (!Number.isFinite(current.weight) || !Number.isFinite(yesterday.weight)) return null;
   return current.weight - yesterday.weight;
@@ -1397,10 +1541,14 @@ function getWeekIndexFromAnchor(anchorMs) {
 }
 
 function getWeekAverage(weekIndex) {
-  const weekStart = START_DATE.getTime() + weekIndex * 7 * DAY_MS;
-  const weekEnd = weekStart + (7 * DAY_MS) - 1;
+  const weekStartDay = (weekIndex * 7) + 1;
+  const weekEndDay = weekStartDay + 6;
   const values = getEntriesByDayAsc()
-    .filter(e => e.dayAnchor >= weekStart && e.dayAnchor <= weekEnd && Number.isFinite(e.weight))
+    .filter(e => {
+      if (!Number.isFinite(e.weight)) return false;
+      const dayNum = getDayNumber(e.dayAnchor);
+      return dayNum >= weekStartDay && dayNum <= weekEndDay;
+    })
     .map(e => e.weight);
   if (!values.length) return null;
   return values.reduce((sum, v) => sum + v, 0) / values.length;
@@ -1596,11 +1744,21 @@ function addTrainingEntry({ seconds, distanceKm = null, distanceRequired = true,
     id,
     seconds: Number(seconds),
     distanceKm: Number.isFinite(distanceKm) ? Number(distanceKm) : null,
+    trainingMinutes: DEFAULT_TRAINING_MINUTES,
     distanceRequired: distanceRequired === true,
     recordedAt
   };
 
   trainingEntries.push(entry);
+  persistTrainingEntries();
+  if (firebaseEnabled && trainingEntriesRef) trainingEntriesRef.child(id).set(entry);
+}
+
+function setTrainingEntryMinutesById(id, minutes) {
+  const nextMinutes = Math.max(0, Math.round(Number(minutes) || 0));
+  const entry = trainingEntries.find(e => e.id === id);
+  if (!entry) return;
+  entry.trainingMinutes = nextMinutes;
   persistTrainingEntries();
   if (firebaseEnabled && trainingEntriesRef) trainingEntriesRef.child(id).set(entry);
 }
@@ -1794,6 +1952,13 @@ function parseDistanceValue(value) {
   return numeric;
 }
 
+function parseTrainingMinutesValue(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const numeric = Number(String(value).replace(",", "."));
+  if (!Number.isFinite(numeric) || numeric < 0) return null;
+  return Math.round(numeric);
+}
+
 function parseWeightValue(value) {
   if (value === null || value === undefined || value === "") return null;
   const numeric = Number(String(value).replace(",", "."));
@@ -1831,6 +1996,14 @@ function parseInlineKcalInput(value) {
   const kcal = Number(normalized);
   if (!Number.isFinite(kcal) || kcal < 0) return null;
   return Math.round(kcal);
+}
+
+function parseInlineTrainingMinutesInput(value) {
+  const normalized = normalizeNumericInput(value);
+  if (!normalized || !/^\d+(\.\d+)?$/.test(normalized)) return null;
+  const minutes = Number(normalized);
+  if (!Number.isFinite(minutes) || minutes < 0) return null;
+  return Math.round(minutes);
 }
 
 function normalizeNumericInput(value) {
@@ -1894,6 +2067,11 @@ function formatDuration(seconds) {
   return `${minutes}:${String(rest).padStart(2, "0")}`;
 }
 
+function formatTrainingMinutes(minutes) {
+  const rounded = Math.max(0, Math.round(Number(minutes) || 0));
+  return `${rounded} min`;
+}
+
 function hasLegacy135Mark(seconds) {
   const total = Math.max(0, Math.round(Number(seconds) || 0));
   return total < LEGACY_135_MARK_SECONDS;
@@ -1927,12 +2105,25 @@ function formatSignedKcalDelta(value) {
   return `<span class="kcal-main-value">${sign}${rounded.toLocaleString("pl-PL")}</span>`;
 }
 
+function formatSignedKcalBalanceWithMinutes(value) {
+  const rounded = Math.round(Number(value) || 0);
+  if (rounded === 0) return '<span class="kcal-main-value">0</span>';
+  const sign = rounded > 0 ? "+" : "-";
+  const extraMinutes = getExtraTrainingMinutesForKcalDelta(rounded);
+  const signedKcal = `${rounded > 0 ? "+" : ""}${rounded.toLocaleString("pl-PL")}`;
+  return `<span class="kcal-extra-minutes">(${sign}${extraMinutes} min)</span><span class="kcal-main-value">${signedKcal}</span>`;
+}
+
 function getExtraTrainingMinutesForKcalSurplus(kcalSurplus) {
   const kcal = Math.max(0, Math.round(Number(kcalSurplus) || 0));
+  return getExtraTrainingMinutesForKcalDelta(kcal);
+}
+
+function getExtraTrainingMinutesForKcalDelta(kcalDelta) {
+  const kcal = Math.abs(Math.round(Number(kcalDelta) || 0));
   if (kcal <= 0) return 0;
-  const exactMinutes = (kcal / 80) * 10;
-  const roundedToTenMinutes = Math.round(exactMinutes / 10) * 10;
-  return Math.max(10, roundedToTenMinutes);
+  const exactMinutes = kcal / 8;
+  return Math.max(1, Math.round(exactMinutes));
 }
 
 function formatDistanceKm(value) {
