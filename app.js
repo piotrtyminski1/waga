@@ -14,6 +14,7 @@ const STORAGE_KEY = "waga-single-entries-v1";
 const TRAINING_STORAGE_KEY = "waga-training-entries-v1";
 const TEST_TIME_KEY = "waga-test-time-v3";
 const WEIGHT_TREND_MODE_KEY = "waga-weight-trend-mode-v1";
+const WEEK_TABLE_COLLAPSED_KEY = "waga-week-table-collapsed-v1";
 const LIVE_RANKING_ROW_KEY = "__live-ranking-row__";
 const LIVE_RANKING_TICK_MS = 50;
 const LEGACY_135_MARK_SECONDS = (3 * 60) + 43;
@@ -39,6 +40,7 @@ let chartInstance = null;
 let trainingChartInstance = null;
 let testTime = loadTestTimeState();
 let weightTrendMode = loadWeightTrendMode();
+let weekTableCollapsed = loadWeekTableCollapsed();
 let weightTrendTransitioning = false;
 testTime.enabled = 0;
 testTime.offsetDays = 0;
@@ -64,6 +66,7 @@ const testMinus = document.getElementById("test-minus");
 const testPlus = document.getElementById("test-plus");
 const testToday = document.getElementById("test-today");
 const weightTrendToggleBtn = document.getElementById("weight-trend-toggle-btn");
+const weekTableCollapseBtn = document.getElementById("week-table-collapse-btn");
 const trainingTimeInput = document.getElementById("training-time-input");
 const trainingDistanceInput = document.getElementById("training-distance-input");
 const trainingSaveTimeBtn = document.getElementById("training-save-time-btn");
@@ -86,6 +89,7 @@ setupWeightTabs();
 setupTrainingTabs();
 setupInputs();
 setupWeightTrendToggle();
+setupWeekTableCollapseToggle();
 setupTrainingInputs();
 setupTrainingRankingControls();
 setupTestControls();
@@ -174,6 +178,25 @@ function setupWeightTrendToggle() {
     toggleWeightTrendModeWithFade();
   });
   renderWeightTrendToggle();
+}
+
+function setupWeekTableCollapseToggle() {
+  if (!weekTableCollapseBtn) return;
+  weekTableCollapseBtn.addEventListener("click", () => {
+    weekTableCollapsed = !weekTableCollapsed;
+    saveWeekTableCollapsed();
+    renderCurrentWeekTable();
+  });
+  renderWeekTableCollapseToggle();
+}
+
+function renderWeekTableCollapseToggle() {
+  if (!weekTableCollapseBtn) return;
+  weekTableCollapseBtn.textContent = weekTableCollapsed ? "Rozwin" : "Zwin";
+  weekTableCollapseBtn.title = weekTableCollapsed
+    ? "Pokaz pelna tabele do dzisiaj"
+    : "Zwin zakonczone tygodnie do rekordow tygodniowych";
+  weekTableCollapseBtn.setAttribute("aria-pressed", weekTableCollapsed ? "true" : "false");
 }
 
 function renderWeightTrendToggle() {
@@ -708,6 +731,7 @@ function renderCurrentWeekTable() {
   const card = document.getElementById("week-table-card");
   const wrap = document.getElementById("week-table-wrap");
   const rowsToDate = getChallengeTableRowsUpToDisplayDay();
+  renderWeekTableCollapseToggle();
 
   if (!rowsToDate.length) {
     card.style.display = "none";
@@ -716,7 +740,9 @@ function renderCurrentWeekTable() {
   }
 
   card.style.display = "block";
-  wrap.innerHTML = buildTableHTML(rowsToDate);
+  wrap.innerHTML = weekTableCollapsed
+    ? buildCollapsedWeekTableHTML(rowsToDate)
+    : buildTableHTML(rowsToDate);
   attachDeleteHandlers(wrap);
 }
 
@@ -743,6 +769,75 @@ function getChallengeTableRowsUpToDisplayDay() {
 function buildTableHTML(rows) {
   if (isRollingWeightMode()) return buildRollingAverageTableHTML(rows);
   return buildWeeklyTableHTML(rows);
+}
+
+function buildCollapsedWeekTableHTML(rows) {
+  const currentWeekIndex = getWeekIndexFromAnchor(getDisplayAnchor().getTime());
+  const previousWeekRows = rows.filter(entry => getWeekIndexFromAnchor(entry.dayAnchor) < currentWeekIndex);
+  const currentWeekRows = rows.filter(entry => getWeekIndexFromAnchor(entry.dayAnchor) === currentWeekIndex);
+  const out = [];
+
+  if (previousWeekRows.length) {
+    out.push(buildWeeklySummaryTableHTML(previousWeekRows));
+  }
+
+  if (currentWeekRows.length) {
+    out.push(buildWeeklyTableHTML(currentWeekRows));
+  }
+
+  return out.join("") || '<div class="sheet-empty">Brak danych do tabeli.</div>';
+}
+
+function buildWeeklySummaryTableHTML(rows) {
+  const trainingMinutesByDay = getTrainingMinutesByDayMap();
+  const weeks = buildWeeklySummaryRows(rows, trainingMinutesByDay);
+  const out = [];
+  out.push('<table class="sheet-table weekly-summary-table">');
+  out.push('<thead><tr><th>#Tydzien</th><th>Srednia Kcal</th><th>Sr tygodniowa</th><th>Roznica tygodniowa</th></tr></thead><tbody>');
+
+  weeks.forEach(week => {
+    const kcalTone = getKcalTone(week.averageKcalDelta);
+    const kcalToneClass = kcalTone === "neutral" ? "" : ` ${kcalTone}`;
+    const diffTone = getWeeklyTone(week.weeklyDiff);
+    const diffGlowClass = diffTone === "good" ? " good-glow" : "";
+    out.push("<tr>");
+    out.push(`<td class="week">${week.weekNumber}</td>`);
+    out.push(`<td class="num kcal-cell${kcalToneClass}">${week.averageKcalDelta === null ? "" : formatSignedKcalPlain(week.averageKcalDelta)}</td>`);
+    out.push(`<td class="week week-avg">${week.weekAverage === null ? "" : formatTableTwo(week.weekAverage)}</td>`);
+    out.push(`<td class="week week-diff ${diffTone}${diffGlowClass}">${week.weeklyDiff === null ? "" : formatSignedTableTwo(week.weeklyDiff)}</td>`);
+    out.push("</tr>");
+  });
+
+  out.push("</tbody></table>");
+  return out.join("");
+}
+
+function buildWeeklySummaryRows(rows, trainingMinutesByDay) {
+  const rowsByWeek = new Map();
+  rows.forEach(entry => {
+    const weekIndex = getWeekIndexFromAnchor(entry.dayAnchor);
+    if (!rowsByWeek.has(weekIndex)) rowsByWeek.set(weekIndex, []);
+    rowsByWeek.get(weekIndex).push(entry);
+  });
+
+  return Array.from(rowsByWeek.keys())
+    .sort((a, b) => a - b)
+    .map(weekIndex => {
+      const weekRows = rowsByWeek.get(weekIndex) || [];
+      const kcalDeltas = weekRows
+        .map(entry => getKcalDeltaForDay(entry.dayAnchor, entry.kcal, trainingMinutesByDay))
+        .filter(Number.isFinite);
+      const averageKcalDelta = kcalDeltas.length
+        ? Math.round(kcalDeltas.reduce((sum, value) => sum + value, 0) / kcalDeltas.length)
+        : null;
+
+      return {
+        weekNumber: weekIndex + 1,
+        averageKcalDelta,
+        weekAverage: getWeekAverage(weekIndex),
+        weeklyDiff: getWeeklyDiffForWeek(weekIndex)
+      };
+    });
 }
 
 function buildWeeklyTableHTML(rows) {
@@ -1903,6 +1998,18 @@ function saveWeightTrendMode() {
   localStorage.setItem(WEIGHT_TREND_MODE_KEY, weightTrendMode);
 }
 
+function loadWeekTableCollapsed() {
+  try {
+    return localStorage.getItem(WEEK_TABLE_COLLAPSED_KEY) === "1";
+  } catch (_) {
+    return false;
+  }
+}
+
+function saveWeekTableCollapsed() {
+  localStorage.setItem(WEEK_TABLE_COLLAPSED_KEY, weekTableCollapsed ? "1" : "0");
+}
+
 function loadTestTimeState() {
   try {
     const raw = localStorage.getItem(TEST_TIME_KEY);
@@ -2093,6 +2200,12 @@ function formatLiveDuration(ms) {
 
 function formatKcal(value) {
   return Math.round(Number(value) || 0).toLocaleString("pl-PL");
+}
+
+function formatSignedKcalPlain(value) {
+  const rounded = Math.round(Number(value) || 0);
+  const sign = rounded > 0 ? "+" : "";
+  return `${sign}${rounded.toLocaleString("pl-PL")} kcal`;
 }
 
 function formatSignedKcalDelta(value) {
