@@ -12,10 +12,12 @@ const KCAL_PER_TRAINING_MINUTE = 8;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const STORAGE_KEY = "waga-single-entries-v1";
 const TRAINING_STORAGE_KEY = "waga-training-entries-v1";
+const INTERVAL_RANKING_STORAGE_KEY = "waga-interval-ranking-records-v1";
 const TEST_TIME_KEY = "waga-test-time-v3";
 const WEIGHT_TREND_MODE_KEY = "waga-weight-trend-mode-v1";
 const WEEK_TABLE_COLLAPSED_KEY = "waga-week-table-collapsed-v1";
 const LIVE_RANKING_ROW_KEY = "__live-ranking-row__";
+const LIVE_INTERVAL_ROW_KEY = "__live-interval-row__";
 const LIVE_RANKING_TICK_MS = 50;
 const LEGACY_135_MARK_SECONDS = (3 * 60) + 43;
 const ROLLING_AVERAGE_WINDOW_DAYS = 7;
@@ -34,8 +36,10 @@ const firebaseConfig = {
 let firebaseEnabled = false;
 let entriesRef = null;
 let trainingEntriesRef = null;
+let intervalRankingRecordsRef = null;
 let entries = [];
 let trainingEntries = [];
+let intervalRankingRecords = [];
 let chartInstance = null;
 let trainingChartInstance = null;
 let testTime = loadTestTimeState();
@@ -51,6 +55,15 @@ const liveRankingState = {
   recordedAtIso: "",
   intervalId: null,
   lastRankIndex: null
+};
+const intervalTrainingState = {
+  activePhase: null,
+  startedPerfMs: 0,
+  elapsedMs: 0,
+  intervalId: null,
+  startedAtIso: "",
+  runSegments: [],
+  cooldownSegments: []
 };
 
 const weightInput = document.getElementById("weight-input");
@@ -83,6 +96,9 @@ const rankingManualDistanceInput = document.getElementById("ranking-manual-dista
 const rankingManualSaveBtn = document.getElementById("ranking-manual-save-btn");
 const rankingManualCancelBtn = document.getElementById("ranking-manual-cancel-btn");
 const rankingManualError = document.getElementById("ranking-manual-error");
+const intervalToggleBtn = document.getElementById("interval-toggle-btn");
+const intervalFinishBtn = document.getElementById("interval-finish-btn");
+const intervalStatus = document.getElementById("interval-status");
 
 setupModeTabs();
 setupWeightTabs();
@@ -91,7 +107,9 @@ setupInputs();
 setupWeightTrendToggle();
 setupWeekTableCollapseToggle();
 setupTrainingInputs();
+setupTrainingRankingViewTabs();
 setupTrainingRankingControls();
+setupIntervalRankingControls();
 setupTestControls();
 setupChartTooltipDismiss();
 setupStorage();
@@ -314,6 +332,46 @@ function setupTrainingRankingControls() {
   renderLiveRankingControls();
 }
 
+function setupTrainingRankingViewTabs() {
+  const buttons = Array.from(document.querySelectorAll(".ranking-mode-tab"));
+  if (!buttons.length) return;
+  buttons.forEach(btn => {
+    btn.addEventListener("click", () => activateTrainingRankingView(btn.dataset.rankingView));
+  });
+}
+
+function activateTrainingRankingView(viewName) {
+  const nextView = viewName === "intervals" ? "intervals" : "classic";
+  document.querySelectorAll(".ranking-mode-tab").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.rankingView === nextView);
+  });
+  document.querySelectorAll(".ranking-view-panel").forEach(panel => {
+    panel.classList.toggle("active", panel.id === `ranking-view-${nextView}`);
+  });
+}
+
+function setupIntervalRankingControls() {
+  if (!intervalToggleBtn || !intervalFinishBtn || !intervalStatus) return;
+
+  intervalToggleBtn.addEventListener("click", () => {
+    if (intervalTrainingState.activePhase === "run") {
+      switchIntervalPhase("cooldown");
+      return;
+    }
+    if (intervalTrainingState.activePhase === "cooldown") {
+      switchIntervalPhase("run");
+      return;
+    }
+    startIntervalPhase("run");
+  });
+
+  intervalFinishBtn.addEventListener("click", () => {
+    finishIntervalTraining();
+  });
+
+  renderIntervalRankingControls();
+}
+
 function setupTestControls() {
   testEnabled.value = String(testTime.enabled);
   testOffset.value = String(testTime.offsetDays);
@@ -382,6 +440,7 @@ function setupStorage() {
       firebase.initializeApp(firebaseConfig);
       entriesRef = firebase.database().ref("waga-entries");
       trainingEntriesRef = firebase.database().ref("waga-training-entries");
+      intervalRankingRecordsRef = firebase.database().ref("waga-interval-ranking-records");
       firebaseEnabled = true;
     }
   } catch (err) {
@@ -391,7 +450,7 @@ function setupStorage() {
 }
 
 function loadData() {
-  if (firebaseEnabled && entriesRef && trainingEntriesRef) {
+  if (firebaseEnabled && entriesRef && trainingEntriesRef && intervalRankingRecordsRef) {
     entriesRef.on("value", snap => {
       entries = Object.values(snap.val() || {});
       sanitizeEntries();
@@ -403,6 +462,12 @@ function loadData() {
       sanitizeTrainingEntries();
       renderAll();
     });
+
+    intervalRankingRecordsRef.on("value", snap => {
+      intervalRankingRecords = Object.values(snap.val() || {});
+      sanitizeIntervalRankingRecords();
+      renderAll();
+    });
   } else {
     const localWeight = localStorage.getItem(STORAGE_KEY);
     entries = localWeight ? JSON.parse(localWeight) : [];
@@ -411,6 +476,10 @@ function loadData() {
     const localTraining = localStorage.getItem(TRAINING_STORAGE_KEY);
     trainingEntries = localTraining ? JSON.parse(localTraining) : [];
     sanitizeTrainingEntries();
+
+    const localIntervalRanking = localStorage.getItem(INTERVAL_RANKING_STORAGE_KEY);
+    intervalRankingRecords = localIntervalRanking ? JSON.parse(localIntervalRanking) : [];
+    sanitizeIntervalRankingRecords();
 
     renderAll();
   }
@@ -446,6 +515,19 @@ function sanitizeTrainingEntries() {
     .sort((a, b) => new Date(a.recordedAt) - new Date(b.recordedAt));
 }
 
+function sanitizeIntervalRankingRecords() {
+  intervalRankingRecords = intervalRankingRecords
+    .map(e => ({
+      id: String(e.id || ""),
+      type: e.type === "cooldown" ? "cooldown" : "run",
+      seconds: Number(e.seconds),
+      segmentCount: Math.max(1, Math.round(Number(e.segmentCount) || 1)),
+      recordedAt: String(e.recordedAt || new Date().toISOString())
+    }))
+    .filter(e => e.id && Number.isFinite(e.seconds) && e.seconds >= 0)
+    .sort((a, b) => new Date(a.recordedAt) - new Date(b.recordedAt));
+}
+
 function renderAll() {
   renderWeightTrendToggle();
   renderSummary();
@@ -462,6 +544,7 @@ function renderAll() {
   renderTrainingChart();
   renderTrainingTable();
   renderTrainingRanking();
+  renderIntervalRankings();
 }
 
 function renderSummary() {
@@ -725,6 +808,23 @@ function renderTrainingRanking() {
   if (tbody) updateRankingOrdinalNumbers(tbody);
   const liveRankIndex = rows.findIndex(row => row.rankKey === LIVE_RANKING_ROW_KEY);
   liveRankingState.lastRankIndex = liveRankIndex >= 0 ? liveRankIndex : null;
+}
+
+function renderIntervalRankings() {
+  renderIntervalRankingControls();
+  renderIntervalRankingTable("run", document.getElementById("interval-run-ranking-wrap"));
+  renderIntervalRankingTable("cooldown", document.getElementById("interval-cooldown-ranking-wrap"));
+}
+
+function renderIntervalRankingTable(type, wrap) {
+  if (!wrap) return;
+  const rows = getIntervalRankingRows(type);
+  if (!rows.length) {
+    wrap.innerHTML = '<div class="sheet-empty">Brak danych do rankingu.</div>';
+    return;
+  }
+  wrap.innerHTML = buildIntervalRankingTableHTML(rows, type);
+  attachDeleteHandlers(wrap);
 }
 
 function renderCurrentWeekTable() {
@@ -1093,6 +1193,95 @@ function buildTrainingRankingTableHTML(rows) {
   return out.join("");
 }
 
+function getIntervalRankingRows(type) {
+  const rows = intervalRankingRecords
+    .filter(entry => entry.type === type)
+    .map(entry => ({
+      ...entry,
+      isCurrent: false,
+      isLive: false,
+      rankKey: entry.id,
+      sortSeconds: Number(entry.seconds)
+    }));
+
+  getCurrentIntervalSegments(type).forEach((segment, idx) => {
+    rows.push({
+      id: segment.id,
+      type,
+      seconds: Number(segment.seconds),
+      elapsedMs: Number(segment.elapsedMs || 0),
+      segmentCount: 1,
+      recordedAt: segment.recordedAt,
+      isCurrent: true,
+      isLive: false,
+      rankKey: segment.id,
+      sortSeconds: Number(segment.seconds)
+    });
+  });
+
+  if (intervalTrainingState.activePhase === type) {
+    rows.push({
+      id: `${LIVE_INTERVAL_ROW_KEY}-${type}`,
+      type,
+      seconds: intervalTrainingState.elapsedMs / 1000,
+      elapsedMs: intervalTrainingState.elapsedMs,
+      segmentCount: 1,
+      recordedAt: intervalTrainingState.startedAtIso || getNow().toISOString(),
+      isCurrent: true,
+      isLive: true,
+      rankKey: `${LIVE_INTERVAL_ROW_KEY}-${type}`,
+      sortSeconds: intervalTrainingState.elapsedMs / 1000
+    });
+  }
+
+  rows.sort(compareIntervalRankingRows);
+  return rows;
+}
+
+function getCurrentIntervalSegments(type) {
+  const source = type === "cooldown" ? intervalTrainingState.cooldownSegments : intervalTrainingState.runSegments;
+  return source.map((segment, idx) => ({
+    ...segment,
+    id: segment.id || `${type}-current-${idx}`,
+    seconds: Number(segment.seconds),
+    recordedAt: segment.recordedAt || getNow().toISOString()
+  }));
+}
+
+function compareIntervalRankingRows(a, b) {
+  if (b.sortSeconds !== a.sortSeconds) return b.sortSeconds - a.sortSeconds;
+  if (a.isCurrent && !b.isCurrent) return 1;
+  if (!a.isCurrent && b.isCurrent) return -1;
+  return new Date(a.recordedAt) - new Date(b.recordedAt);
+}
+
+function buildIntervalRankingTableHTML(rows, type) {
+  const label = type === "cooldown" ? "Cooldown" : "Bieg";
+  const out = [];
+  out.push('<table class="sheet-table training-sheet-table training-ranking-table">');
+  out.push(`<thead><tr><th class="row-col">#</th><th class="date-col">Data</th><th class="time-col">${label}</th><th class="distance-col">Interwaly</th><th class="actions">X</th></tr></thead><tbody>`);
+
+  rows.forEach((entry, idx) => {
+    const rowClass = entry.isCurrent ? "current-interval-row" : "";
+    const rankKey = escapeAttribute(entry.rankKey);
+    out.push(`<tr class="${rowClass}" data-rank-key="${rankKey}">`);
+    out.push(`<td class="num row-col">${idx + 1}</td>`);
+    out.push(`<td class="date-cell">${formatShortDateCell(new Date(entry.recordedAt))}</td>`);
+    if (entry.isLive) {
+      out.push(`<td class="num weight-cell time-cell live-time-cell"><span class="live-time-value running" data-interval-live-time="${type}">${formatLiveDuration(entry.elapsedMs)}</span></td>`);
+    } else {
+      out.push(`<td class="num weight-cell time-cell">${formatDuration(Math.round(entry.seconds))}</td>`);
+    }
+    out.push(`<td class="num distance-cell">${entry.isCurrent ? "Teraz" : String(entry.segmentCount || 1)}</td>`);
+    if (entry.isCurrent) out.push('<td class="actions"></td>');
+    else out.push(`<td class="actions"><button class="delete-btn" type="button" data-interval-ranking-id="${entry.id}" aria-label="Usun wpis">X</button></td>`);
+    out.push("</tr>");
+  });
+
+  out.push("</tbody></table>");
+  return out.join("");
+}
+
 function renderLiveRankingControls() {
   if (!rankingLiveToggleBtn || !rankingLiveStatus) return;
   const hasDraft = liveRankingState.elapsedMs > 0;
@@ -1109,6 +1298,137 @@ function renderLiveRankingControls() {
     return;
   }
   rankingLiveStatus.textContent = "";
+}
+
+function renderIntervalRankingControls() {
+  if (!intervalToggleBtn || !intervalFinishBtn || !intervalStatus) return;
+  const activePhase = intervalTrainingState.activePhase;
+  const hasSegments = intervalTrainingState.runSegments.length > 0 || intervalTrainingState.cooldownSegments.length > 0 || Boolean(activePhase);
+
+  intervalToggleBtn.textContent = activePhase === "run" ? "STOP" : "START";
+  intervalToggleBtn.classList.toggle("running", activePhase === "run");
+  intervalToggleBtn.classList.toggle("save-mode", activePhase === "cooldown");
+  intervalFinishBtn.disabled = !hasSegments;
+
+  if (activePhase === "run") {
+    intervalStatus.textContent = `BIEG: ${formatLiveDuration(intervalTrainingState.elapsedMs)}`;
+    return;
+  }
+  if (activePhase === "cooldown") {
+    intervalStatus.textContent = `COOLDOWN: ${formatLiveDuration(intervalTrainingState.elapsedMs)}`;
+    return;
+  }
+  if (hasSegments) {
+    intervalStatus.textContent = `Biezacy trening: ${intervalTrainingState.runSegments.length} bieg / ${intervalTrainingState.cooldownSegments.length} cooldown.`;
+    return;
+  }
+  intervalStatus.textContent = "";
+}
+
+function startIntervalPhase(type) {
+  clearIntervalRankingTimer();
+  intervalTrainingState.activePhase = type;
+  intervalTrainingState.startedPerfMs = performance.now();
+  intervalTrainingState.elapsedMs = 0;
+  intervalTrainingState.startedAtIso = getNow().toISOString();
+  renderIntervalRankings();
+  intervalTrainingState.intervalId = window.setInterval(tickIntervalPhase, LIVE_RANKING_TICK_MS);
+}
+
+function switchIntervalPhase(nextType) {
+  commitActiveIntervalSegment();
+  startIntervalPhase(nextType);
+}
+
+function commitActiveIntervalSegment() {
+  const type = intervalTrainingState.activePhase;
+  if (type !== "run" && type !== "cooldown") return;
+  const elapsedMs = Math.max(0, performance.now() - intervalTrainingState.startedPerfMs);
+  const seconds = Math.max(0, Math.round(elapsedMs / 1000));
+  if (seconds > 0) {
+    const segment = {
+      id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+      seconds,
+      elapsedMs,
+      recordedAt: intervalTrainingState.startedAtIso || getNow().toISOString()
+    };
+    if (type === "cooldown") intervalTrainingState.cooldownSegments.push(segment);
+    else intervalTrainingState.runSegments.push(segment);
+  }
+  clearIntervalRankingTimer();
+  intervalTrainingState.activePhase = null;
+  intervalTrainingState.startedPerfMs = 0;
+  intervalTrainingState.elapsedMs = 0;
+  intervalTrainingState.startedAtIso = "";
+}
+
+function tickIntervalPhase() {
+  if (!intervalTrainingState.activePhase) return;
+  intervalTrainingState.elapsedMs = Math.max(0, performance.now() - intervalTrainingState.startedPerfMs);
+  renderIntervalRankingControls();
+  updateLiveIntervalCell();
+}
+
+function updateLiveIntervalCell() {
+  const type = intervalTrainingState.activePhase;
+  if (!type) return;
+  const wrapId = type === "cooldown" ? "interval-cooldown-ranking-wrap" : "interval-run-ranking-wrap";
+  const wrap = document.getElementById(wrapId);
+  const liveTimeEl = wrap ? wrap.querySelector(`[data-interval-live-time="${type}"]`) : null;
+  if (liveTimeEl) liveTimeEl.textContent = formatLiveDuration(intervalTrainingState.elapsedMs);
+  const desiredRows = getIntervalRankingRows(type).map(row => row.rankKey);
+  const tbody = wrap ? wrap.querySelector("tbody") : null;
+  if (!tbody) return;
+  const currentRows = Array.from(tbody.querySelectorAll("tr[data-rank-key]")).map(row => row.dataset.rankKey);
+  if (!areArraysEqual(currentRows, desiredRows)) {
+    renderIntervalRankingTable(type, wrap);
+  }
+}
+
+function clearIntervalRankingTimer() {
+  if (intervalTrainingState.intervalId !== null) {
+    clearInterval(intervalTrainingState.intervalId);
+    intervalTrainingState.intervalId = null;
+  }
+}
+
+function finishIntervalTraining() {
+  clearIntervalRankingTimer();
+  intervalTrainingState.activePhase = null;
+  intervalTrainingState.startedPerfMs = 0;
+  intervalTrainingState.elapsedMs = 0;
+  intervalTrainingState.startedAtIso = "";
+
+  const recordedAtIso = getNow().toISOString();
+  const runAverage = getAverageSegmentSeconds(intervalTrainingState.runSegments);
+  const cooldownAverage = getAverageSegmentSeconds(intervalTrainingState.cooldownSegments);
+
+  if (runAverage !== null) {
+    addIntervalRankingRecord({
+      type: "run",
+      seconds: runAverage,
+      segmentCount: intervalTrainingState.runSegments.length,
+      recordedAtIso
+    });
+  }
+  if (cooldownAverage !== null) {
+    addIntervalRankingRecord({
+      type: "cooldown",
+      seconds: cooldownAverage,
+      segmentCount: intervalTrainingState.cooldownSegments.length,
+      recordedAtIso
+    });
+  }
+
+  intervalTrainingState.runSegments = [];
+  intervalTrainingState.cooldownSegments = [];
+  renderIntervalRankings();
+}
+
+function getAverageSegmentSeconds(segments) {
+  if (!segments.length) return null;
+  const sum = segments.reduce((total, segment) => total + Number(segment.seconds || 0), 0);
+  return Math.round(sum / segments.length);
 }
 
 function startLiveRankingRun() {
@@ -1281,6 +1601,9 @@ function attachDeleteHandlers(container) {
   });
   container.querySelectorAll("button[data-training-entry-id]").forEach(btn => {
     btn.addEventListener("click", () => deleteTrainingEntry(btn.dataset.trainingEntryId));
+  });
+  container.querySelectorAll("button[data-interval-ranking-id]").forEach(btn => {
+    btn.addEventListener("click", () => deleteIntervalRankingRecord(btn.dataset.intervalRankingId));
   });
   attachEditableWeightHandlers(container);
   attachEditableTrainingHandlers(container);
@@ -1849,6 +2172,21 @@ function addTrainingEntry({ seconds, distanceKm = null, distanceRequired = true,
   if (firebaseEnabled && trainingEntriesRef) trainingEntriesRef.child(id).set(entry);
 }
 
+function addIntervalRankingRecord({ type, seconds, segmentCount, recordedAtIso = "" }) {
+  const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+  const entry = {
+    id,
+    type: type === "cooldown" ? "cooldown" : "run",
+    seconds: Number(seconds),
+    segmentCount: Math.max(1, Math.round(Number(segmentCount) || 1)),
+    recordedAt: recordedAtIso || getNow().toISOString()
+  };
+
+  intervalRankingRecords.push(entry);
+  persistIntervalRankingRecords();
+  if (firebaseEnabled && intervalRankingRecordsRef) intervalRankingRecordsRef.child(id).set(entry);
+}
+
 function setTrainingEntryMinutesById(id, minutes) {
   const nextMinutes = Math.max(0, Math.round(Number(minutes) || 0));
   const entry = trainingEntries.find(e => e.id === id);
@@ -1874,6 +2212,12 @@ function persistTrainingEntries() {
   renderAll();
 }
 
+function persistIntervalRankingRecords() {
+  sanitizeIntervalRankingRecords();
+  if (!firebaseEnabled) localStorage.setItem(INTERVAL_RANKING_STORAGE_KEY, JSON.stringify(intervalRankingRecords));
+  renderAll();
+}
+
 function deleteEntry(id) {
   entries = entries.filter(e => e.id !== id);
   persistEntries();
@@ -1890,6 +2234,12 @@ function deleteTrainingEntry(id) {
   trainingEntries = trainingEntries.filter(e => e.id !== id);
   persistTrainingEntries();
   if (firebaseEnabled && trainingEntriesRef) trainingEntriesRef.child(id).remove();
+}
+
+function deleteIntervalRankingRecord(id) {
+  intervalRankingRecords = intervalRankingRecords.filter(e => e.id !== id);
+  persistIntervalRankingRecords();
+  if (firebaseEnabled && intervalRankingRecordsRef) intervalRankingRecordsRef.child(id).remove();
 }
 
 function buildChartData() {
@@ -2196,6 +2546,14 @@ function formatLiveDuration(ms) {
   const seconds = Math.floor((totalHundredths % 6000) / 100);
   const hundredths = totalHundredths % 100;
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}:${String(hundredths).padStart(2, "0")}`;
+}
+
+function escapeAttribute(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 function formatKcal(value) {
