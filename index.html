@@ -153,12 +153,24 @@
     .training-ranking-table td.live-time-cell{color:var(--bg-1)}
     .live-time-value{color:var(--bg-1);text-shadow:none}
     .live-time-value.running{animation:liveTextGlowPulse 1.35s ease-in-out infinite}
+    .ranking-mode-tabs{display:flex;gap:8px;margin:0 0 14px}
+    .ranking-mode-tab{flex:1;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.05);color:var(--muted);padding:10px 12px;font-weight:800;cursor:pointer}
+    .ranking-mode-tab.active{background:linear-gradient(135deg,rgba(100,211,255,.26),rgba(100,211,255,.08));color:var(--text);border-color:rgba(100,211,255,.52)}
+    .ranking-view-panel{display:none}
+    .ranking-view-panel.active{display:block}
     .ranking-live-controls{display:flex;gap:10px;align-items:stretch;margin:0 0 8px}
     .ranking-live-toggle-btn{border:none;border-radius:14px;font-weight:800;cursor:pointer}
     .ranking-live-toggle-btn{width:100%;padding:15px 18px;font-size:24px;letter-spacing:.03em;background:linear-gradient(135deg,#ffd56a,#ffe8a8);color:#2e2308;box-shadow:0 10px 26px rgba(255,213,106,.28)}
     .ranking-live-toggle-btn.running{background:linear-gradient(135deg,#ff8da8,#ffd0db);color:#3b0e1a;box-shadow:0 10px 26px rgba(255,151,170,.3)}
     .ranking-live-toggle-btn.save-mode{background:linear-gradient(135deg,#7ae2ff,#b2f1ff);color:#041017;box-shadow:0 10px 26px rgba(122,226,255,.3)}
     .ranking-live-status{margin:0 0 10px;font-size:13px;color:var(--muted);min-height:18px}
+    .interval-finish-btn{width:100%;border:1px solid rgba(255,141,168,.48);border-radius:12px;background:rgba(255,141,168,.12);color:#ffd0db;padding:11px 14px;font-weight:800;cursor:pointer;margin:0 0 14px}
+    .interval-finish-btn:disabled{opacity:.45;cursor:not-allowed}
+    .interval-ranking-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .interval-ranking-card{min-width:0}
+    .interval-ranking-title{margin:0 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+    .training-ranking-table tr.current-interval-row td{background:rgba(255,213,106,1);color:var(--bg-1)}
+    .training-ranking-table tr.current-interval-row td.time-cell{color:var(--bg-1)}
     .ranking-manual-add-wrap{display:flex;justify-content:center;margin-top:12px}
     .ranking-manual-add-btn{width:48px;height:48px;border-radius:50%;border:1px solid rgba(100,211,255,.42);background:linear-gradient(135deg,rgba(100,211,255,.28),rgba(100,211,255,.08));color:var(--text);font-size:30px;line-height:1;font-weight:700;cursor:pointer;box-shadow:0 8px 18px rgba(0,0,0,.24)}
     .ranking-manual-form{display:none;margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:12px;background:rgba(5,12,28,.55)}
@@ -233,6 +245,9 @@
       .training-ranking-table td.time-cell{font-size:16px}
       .training-ranking-table tr.last-result-row td{background:rgba(106,245,168,.12)}
       .ranking-live-toggle-btn{font-size:22px}
+      .ranking-mode-tabs,.interval-ranking-grid{grid-template-columns:1fr}
+      .ranking-mode-tabs{display:grid}
+      .interval-ranking-grid{display:grid}
       .ranking-manual-grid{grid-template-columns:1fr}
       .table-inline-input{padding:3px 4px}
     }
@@ -372,25 +387,48 @@
         <section id="training-ranking" class="tab-panel training-panel">
           <section class="table-panel">
             <h3 style="margin-top:0; margin-bottom:12px;">Ranking</h3>
-            <div class="ranking-live-controls">
-              <button id="ranking-live-toggle-btn" class="ranking-live-toggle-btn" type="button">START!</button>
+            <div class="ranking-mode-tabs" role="tablist" aria-label="Rodzaj rankingu">
+              <button class="ranking-mode-tab active" data-ranking-view="classic" type="button">Czas 150</button>
+              <button class="ranking-mode-tab" data-ranking-view="intervals" type="button">Interwaly</button>
             </div>
-            <p id="ranking-live-status" class="ranking-live-status"></p>
-            <div class="sheet-wrap" id="training-ranking-wrap"></div>
-            <div class="ranking-manual-add-wrap">
-              <button id="ranking-manual-add-btn" class="ranking-manual-add-btn" type="button" aria-label="Dodaj wpis recznie">+</button>
+            <div id="ranking-view-classic" class="ranking-view-panel active">
+              <div class="ranking-live-controls">
+                <button id="ranking-live-toggle-btn" class="ranking-live-toggle-btn" type="button">START!</button>
+              </div>
+              <p id="ranking-live-status" class="ranking-live-status"></p>
+              <div class="sheet-wrap" id="training-ranking-wrap"></div>
+              <div class="ranking-manual-add-wrap">
+                <button id="ranking-manual-add-btn" class="ranking-manual-add-btn" type="button" aria-label="Dodaj wpis recznie">+</button>
+              </div>
+              <div id="ranking-manual-form" class="ranking-manual-form">
+                <div class="ranking-manual-grid">
+                  <input id="ranking-manual-date" type="date" aria-label="Data treningu" />
+                  <input id="ranking-manual-time" type="text" inputmode="text" placeholder="MM:SS" aria-label="Czas treningu" />
+                  <input id="ranking-manual-distance" type="text" inputmode="decimal" placeholder="Dystans km" aria-label="Dystans treningu" />
+                </div>
+                <div class="ranking-manual-actions">
+                  <button id="ranking-manual-save-btn" class="ranking-manual-save" type="button">Dodaj</button>
+                  <button id="ranking-manual-cancel-btn" class="ranking-manual-cancel" type="button">Anuluj</button>
+                </div>
+                <p id="ranking-manual-error" class="ranking-manual-error"></p>
+              </div>
             </div>
-            <div id="ranking-manual-form" class="ranking-manual-form">
-              <div class="ranking-manual-grid">
-                <input id="ranking-manual-date" type="date" aria-label="Data treningu" />
-                <input id="ranking-manual-time" type="text" inputmode="text" placeholder="MM:SS" aria-label="Czas treningu" />
-                <input id="ranking-manual-distance" type="text" inputmode="decimal" placeholder="Dystans km" aria-label="Dystans treningu" />
+            <div id="ranking-view-intervals" class="ranking-view-panel">
+              <div class="ranking-live-controls">
+                <button id="interval-toggle-btn" class="ranking-live-toggle-btn" type="button">START</button>
               </div>
-              <div class="ranking-manual-actions">
-                <button id="ranking-manual-save-btn" class="ranking-manual-save" type="button">Dodaj</button>
-                <button id="ranking-manual-cancel-btn" class="ranking-manual-cancel" type="button">Anuluj</button>
+              <p id="interval-status" class="ranking-live-status"></p>
+              <button id="interval-finish-btn" class="interval-finish-btn" type="button" disabled>Skoncz trening</button>
+              <div class="interval-ranking-grid">
+                <section class="interval-ranking-card">
+                  <h4 class="interval-ranking-title">BIEG</h4>
+                  <div class="sheet-wrap" id="interval-run-ranking-wrap"></div>
+                </section>
+                <section class="interval-ranking-card">
+                  <h4 class="interval-ranking-title">COOLDOWN</h4>
+                  <div class="sheet-wrap" id="interval-cooldown-ranking-wrap"></div>
+                </section>
               </div>
-              <p id="ranking-manual-error" class="ranking-manual-error"></p>
             </div>
           </section>
         </section>
