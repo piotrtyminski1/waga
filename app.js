@@ -3,7 +3,6 @@ Chart.defaults.font.family = "Space Grotesk, system-ui, -apple-system, sans-seri
 Chart.defaults.font.size = 13;
 
 const START_DATE = new Date("2026-02-19T04:00:00");
-const CHALLENGE_DAYS = 70;
 const TRAINING_TARGET_COUNT = 70;
 const WEEKLY_TARGET_DELTA = -0.6;
 const KCAL_TARGET_REST_DAY = 1700;
@@ -551,11 +550,11 @@ function renderSummary() {
   const displayAnchor = getDisplayAnchor();
   const dayNum = getDisplayDayNumber(displayAnchor.getTime());
   const week = Math.floor((dayNum - 1) / 7) + 1;
-  const remain = Math.max(0, CHALLENGE_DAYS - (dayNum - 1));
-  const progress = Math.round(Math.min(1, (dayNum - 1) / CHALLENGE_DAYS) * 100);
+  const dayInWeek = ((dayNum - 1) % 7) + 1;
+  const progress = Math.round((dayInWeek / 7) * 100);
   document.getElementById("summary-card").innerHTML = `
     <div class="hero-title">DZIEN ${dayNum}</div>
-    <div class="hero-sub">TYDZIEN ${week} | POZOSTALO ${remain} DNI</div>
+    <div class="hero-sub">TYDZIEN ${week} | DZIEN W TYGODNIU ${dayInWeek}/7</div>
     <div class="progress-line"><div class="fill" style="width:${progress}%;"></div></div>
   `;
 }
@@ -846,11 +845,12 @@ function renderCurrentWeekTable() {
   attachDeleteHandlers(wrap);
 }
 
-function getChallengeTableRows() {
+function getChallengeTableRows(totalDays = getDisplayDayNumber(getDisplayAnchor().getTime())) {
   const rowsByDay = new Map(getEntriesByDayAsc().map(entry => [entry.dayAnchor, entry]));
   const rows = [];
   const startAnchor = START_DATE.getTime();
-  for (let dayOffset = 0; dayOffset < CHALLENGE_DAYS; dayOffset += 1) {
+  const safeTotalDays = Math.max(0, Math.round(Number(totalDays) || 0));
+  for (let dayOffset = 0; dayOffset < safeTotalDays; dayOffset += 1) {
     const anchor = shiftDayAnchorByDays(startAnchor, dayOffset);
     const existing = rowsByDay.get(anchor);
     if (existing) rows.push(existing);
@@ -861,9 +861,9 @@ function getChallengeTableRows() {
 }
 
 function getChallengeTableRowsUpToDisplayDay() {
-  const maxDay = Math.min(CHALLENGE_DAYS, getDisplayDayNumber(getDisplayAnchor().getTime()));
+  const maxDay = getDisplayDayNumber(getDisplayAnchor().getTime());
   if (maxDay <= 0) return [];
-  return getChallengeTableRows().slice(0, maxDay);
+  return getChallengeTableRows(maxDay);
 }
 
 function buildTableHTML(rows) {
