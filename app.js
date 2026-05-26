@@ -2,7 +2,20 @@ Chart.defaults.color = "#c8ddff";
 Chart.defaults.font.family = "Space Grotesk, system-ui, -apple-system, sans-serif";
 Chart.defaults.font.size = 13;
 
-const START_DATE = new Date("2026-02-19T04:00:00");
+const WEIGHT_STAGE_OLD = "old";
+const WEIGHT_STAGE_NEW = "new";
+const WEIGHT_STAGES = {
+  [WEIGHT_STAGE_OLD]: {
+    label: "Stare",
+    startDate: new Date("2026-02-19T04:00:00"),
+    themeClass: "theme-old"
+  },
+  [WEIGHT_STAGE_NEW]: {
+    label: "Nowe",
+    startDate: new Date("2026-05-26T04:00:00"),
+    themeClass: "theme-new"
+  }
+};
 const TRAINING_TARGET_COUNT = 70;
 const WEEKLY_TARGET_DELTA = -0.6;
 const KCAL_TARGET_REST_DAY = 1700;
@@ -13,6 +26,7 @@ const STORAGE_KEY = "waga-single-entries-v1";
 const TRAINING_STORAGE_KEY = "waga-training-entries-v1";
 const INTERVAL_RANKING_STORAGE_KEY = "waga-interval-ranking-records-v1";
 const TEST_TIME_KEY = "waga-test-time-v3";
+const WEIGHT_STAGE_KEY = "waga-weight-stage-v1";
 const WEIGHT_TREND_MODE_KEY = "waga-weight-trend-mode-v1";
 const WEEK_TABLE_COLLAPSED_KEY = "waga-week-table-collapsed-v1";
 const LIVE_RANKING_ROW_KEY = "__live-ranking-row__";
@@ -42,6 +56,7 @@ let intervalRankingRecords = [];
 let chartInstance = null;
 let trainingChartInstance = null;
 let testTime = loadTestTimeState();
+let activeWeightStage = loadWeightStage();
 let weightTrendMode = loadWeightTrendMode();
 let weekTableCollapsed = loadWeekTableCollapsed();
 let weightTrendTransitioning = false;
@@ -99,6 +114,7 @@ const intervalToggleBtn = document.getElementById("interval-toggle-btn");
 const intervalFinishBtn = document.getElementById("interval-finish-btn");
 const intervalStatus = document.getElementById("interval-status");
 
+setupWeightStageTabs();
 setupModeTabs();
 setupWeightTabs();
 setupTrainingTabs();
@@ -119,6 +135,44 @@ function setupModeTabs() {
   buttons.forEach(btn => {
     btn.addEventListener("click", () => activateMode(btn.dataset.mode));
   });
+}
+
+function setupWeightStageTabs() {
+  const buttons = Array.from(document.querySelectorAll(".weight-stage-tab"));
+  buttons.forEach(btn => {
+    btn.addEventListener("click", () => activateWeightStage(btn.dataset.weightStage));
+  });
+  renderWeightStageTabs();
+  applyWeightStageTheme();
+}
+
+function activateWeightStage(stage) {
+  const nextStage = normalizeWeightStage(stage, WEIGHT_STAGE_NEW);
+  if (nextStage === activeWeightStage) return;
+  activeWeightStage = nextStage;
+  saveWeightStage();
+  renderWeightStageTabs();
+  applyWeightStageTheme();
+  renderAll();
+}
+
+function renderWeightStageTabs() {
+  document.querySelectorAll(".weight-stage-tab").forEach(btn => {
+    const isActive = normalizeWeightStage(btn.dataset.weightStage, WEIGHT_STAGE_NEW) === activeWeightStage;
+    btn.classList.toggle("active", isActive);
+    btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+  });
+}
+
+function applyWeightStageTheme() {
+  const config = WEIGHT_STAGES[activeWeightStage] || WEIGHT_STAGES[WEIGHT_STAGE_NEW];
+  document.documentElement.classList.remove("theme-old", "theme-new");
+  document.documentElement.classList.add(config.themeClass);
+  document.body.classList.remove("theme-old", "theme-new");
+  document.body.classList.add(config.themeClass);
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  if (themeMeta) themeMeta.setAttribute("content", getThemeColor("--bg-1", "#03110c"));
+  if (window.Chart) Chart.defaults.color = getThemeColor("--chart-text", "#cde8d7");
 }
 
 function activateMode(mode) {
@@ -490,6 +544,7 @@ function sanitizeEntries() {
       const rawAnchor = Number(e.dayAnchor);
       return {
         id: String(e.id || ""),
+        stage: normalizeWeightStage(e.stage, WEIGHT_STAGE_OLD),
         dayAnchor: Number.isFinite(rawAnchor) ? getCanonicalDayAnchorMs(rawAnchor) : NaN,
         weight: parseWeightValue(e.weight),
         kcal: parseKcalValue(e.kcal),
@@ -740,6 +795,7 @@ function renderTrainingChart() {
   const rows = getTrainingRowsWithIndex();
   const points = rows.map(row => ({ x: row.trainingIndex, y: row.seconds }));
   const canvas = document.getElementById("trainingChart");
+  const accent = getThemeColor("--accent", "#43d184");
   if (trainingChartInstance) trainingChartInstance.destroy();
 
   trainingChartInstance = new Chart(canvas, {
@@ -749,10 +805,10 @@ function renderTrainingChart() {
         {
           label: "Czas do 150 bpm",
           data: points,
-          borderColor: "#64d3ff",
-          backgroundColor: "#64d3ff",
-          pointBorderColor: "#64d3ff",
-          pointBackgroundColor: "#64d3ff",
+          borderColor: accent,
+          backgroundColor: accent,
+          pointBorderColor: accent,
+          pointBackgroundColor: accent,
           fill: false
         }
       ]
@@ -848,7 +904,7 @@ function renderCurrentWeekTable() {
 function getChallengeTableRows(totalDays = getDisplayDayNumber(getDisplayAnchor().getTime())) {
   const rowsByDay = new Map(getEntriesByDayAsc().map(entry => [entry.dayAnchor, entry]));
   const rows = [];
-  const startAnchor = START_DATE.getTime();
+  const startAnchor = getActiveWeightStartDate().getTime();
   const safeTotalDays = Math.max(0, Math.round(Number(totalDays) || 0));
   for (let dayOffset = 0; dayOffset < safeTotalDays; dayOffset += 1) {
     const anchor = shiftDayAnchorByDays(startAnchor, dayOffset);
@@ -1787,7 +1843,7 @@ function shiftDayAnchorByDays(anchorMs, offsetDays) {
 
 function getDayNumber(anchorDate) {
   const anchorStamp = getCalendarDayStamp(anchorDate);
-  const startStamp = getCalendarDayStamp(START_DATE);
+  const startStamp = getCalendarDayStamp(getActiveWeightStartDate());
   if (!Number.isFinite(anchorStamp) || !Number.isFinite(startStamp)) return 1;
   if (anchorStamp < startStamp) return 1;
   return Math.floor((anchorStamp - startStamp) / DAY_MS) + 1;
@@ -1804,9 +1860,18 @@ function getDisplayAnchor() {
   return new Date(Math.max(today.getTime(), latest.dayAnchor));
 }
 
-function getEntriesByDayAsc() {
+function getActiveWeightStartDate() {
+  return WEIGHT_STAGES[activeWeightStage]?.startDate || WEIGHT_STAGES[WEIGHT_STAGE_NEW].startDate;
+}
+
+function getActiveWeightEntries(stage = activeWeightStage) {
+  const normalizedStage = normalizeWeightStage(stage, WEIGHT_STAGE_NEW);
+  return entries.filter(entry => normalizeWeightStage(entry.stage, WEIGHT_STAGE_OLD) === normalizedStage);
+}
+
+function getEntriesByDayAsc(stage = activeWeightStage) {
   const map = new Map();
-  entries.forEach(e => {
+  getActiveWeightEntries(stage).forEach(e => {
     const prev = map.get(e.dayAnchor);
     if (!prev) {
       map.set(e.dayAnchor, { ...e });
@@ -1878,10 +1943,10 @@ function getTrainingRecordSeconds() {
   return trainingEntries.reduce((max, entry) => (entry.seconds > max ? entry.seconds : max), trainingEntries[0].seconds);
 }
 
-function getEntryForDay(anchorMs) {
+function getEntryForDay(anchorMs, stage = activeWeightStage) {
   const normalizedAnchor = getCanonicalDayAnchorMs(anchorMs);
   if (!Number.isFinite(normalizedAnchor)) return null;
-  const rows = getEntriesByDayAsc();
+  const rows = getEntriesByDayAsc(stage);
   for (let i = 0; i < rows.length; i += 1) if (rows[i].dayAnchor === normalizedAnchor) return rows[i];
   return null;
 }
@@ -2069,7 +2134,8 @@ function saveKcalEntry(kcal) {
 
 function setWeightEntryFieldByDay(dayAnchor, field, value) {
   if (field !== "weight" && field !== "kcal") return;
-  const existing = getEntryForDay(dayAnchor);
+  const stage = activeWeightStage;
+  const existing = getEntryForDay(dayAnchor, stage);
   const id = existing?.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
   const nowIso = getNow().toISOString();
   let nextWeight = Number.isFinite(existing?.weight) ? existing.weight : null;
@@ -2080,16 +2146,18 @@ function setWeightEntryFieldByDay(dayAnchor, field, value) {
 
   const hasWeight = Number.isFinite(nextWeight);
   const hasKcal = Number.isFinite(nextKcal);
-  entries = entries.filter(e => e.dayAnchor !== dayAnchor);
+  entries = entries.filter(e => !(e.dayAnchor === dayAnchor && normalizeWeightStage(e.stage, WEIGHT_STAGE_OLD) === stage));
 
   if (hasWeight || hasKcal) {
-    const entry = { id, dayAnchor, weight: hasWeight ? nextWeight : null, kcal: hasKcal ? nextKcal : null, recordedAt: nowIso };
+    const entry = { id, stage, dayAnchor, weight: hasWeight ? nextWeight : null, kcal: hasKcal ? nextKcal : null, recordedAt: nowIso };
     entries.push(entry);
     persistEntries();
     if (firebaseEnabled && entriesRef) {
       entriesRef.orderByChild("dayAnchor").equalTo(dayAnchor).once("value", snap => {
         const data = snap.val() || {};
-        Object.keys(data).forEach(key => { if (key !== id) entriesRef.child(key).remove(); });
+        Object.keys(data).forEach(key => {
+          if (key !== id && normalizeWeightStage(data[key]?.stage, WEIGHT_STAGE_OLD) === stage) entriesRef.child(key).remove();
+        });
         entriesRef.child(id).set(entry);
       });
     }
@@ -2100,7 +2168,9 @@ function setWeightEntryFieldByDay(dayAnchor, field, value) {
   if (firebaseEnabled && entriesRef) {
     entriesRef.orderByChild("dayAnchor").equalTo(dayAnchor).once("value", snap => {
       const data = snap.val() || {};
-      Object.keys(data).forEach(key => entriesRef.child(key).remove());
+      Object.keys(data).forEach(key => {
+        if (normalizeWeightStage(data[key]?.stage, WEIGHT_STAGE_OLD) === stage) entriesRef.child(key).remove();
+      });
     });
   }
 }
@@ -2108,10 +2178,12 @@ function setWeightEntryFieldByDay(dayAnchor, field, value) {
 function upsertEntryForDay(patch) {
   const now = getNow();
   const dayAnchor = getDayAnchor(now).getTime();
-  const existing = getEntryForDay(dayAnchor);
+  const stage = activeWeightStage;
+  const existing = getEntryForDay(dayAnchor, stage);
   const id = existing?.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
   const entry = {
     id,
+    stage,
     dayAnchor,
     weight: Number.isFinite(existing?.weight) ? existing.weight : null,
     kcal: Number.isFinite(existing?.kcal) ? existing.kcal : null,
@@ -2122,14 +2194,16 @@ function upsertEntryForDay(patch) {
   if (Number.isFinite(patch.kcal)) entry.kcal = Math.round(Number(patch.kcal));
   if (!Number.isFinite(entry.weight) && !Number.isFinite(entry.kcal)) return;
 
-  entries = entries.filter(e => e.dayAnchor !== dayAnchor);
+  entries = entries.filter(e => !(e.dayAnchor === dayAnchor && normalizeWeightStage(e.stage, WEIGHT_STAGE_OLD) === stage));
   entries.push(entry);
   persistEntries();
 
   if (firebaseEnabled && entriesRef) {
     entriesRef.orderByChild("dayAnchor").equalTo(dayAnchor).once("value", snap => {
       const data = snap.val() || {};
-      Object.keys(data).forEach(key => { if (key !== id) entriesRef.child(key).remove(); });
+      Object.keys(data).forEach(key => {
+        if (key !== id && normalizeWeightStage(data[key]?.stage, WEIGHT_STAGE_OLD) === stage) entriesRef.child(key).remove();
+      });
       entriesRef.child(id).set(entry);
     });
   }
@@ -2243,6 +2317,7 @@ function deleteIntervalRankingRecord(id) {
 }
 
 function buildChartData() {
+  const accent = getThemeColor("--accent", "#43d184");
   const points = getEntriesByDayAsc()
     .filter(e => Number.isFinite(e.weight))
     .map(e => ({ x: getDisplayDayNumber(e.dayAnchor), y: e.weight }));
@@ -2262,10 +2337,10 @@ function buildChartData() {
       {
         label: "Waga",
         data: points,
-        borderColor: "#64d3ff",
-        backgroundColor: "#64d3ff",
-        pointBorderColor: "#64d3ff",
-        pointBackgroundColor: "#64d3ff",
+        borderColor: accent,
+        backgroundColor: accent,
+        pointBorderColor: accent,
+        pointBackgroundColor: accent,
         fill: false
       },
       {
@@ -2333,6 +2408,24 @@ function buildRollingChartData() {
       }
     ]
   };
+}
+
+function loadWeightStage() {
+  try {
+    return normalizeWeightStage(localStorage.getItem(WEIGHT_STAGE_KEY), WEIGHT_STAGE_NEW);
+  } catch (_) {
+    return WEIGHT_STAGE_NEW;
+  }
+}
+
+function saveWeightStage() {
+  localStorage.setItem(WEIGHT_STAGE_KEY, activeWeightStage);
+}
+
+function normalizeWeightStage(stage, fallback = WEIGHT_STAGE_NEW) {
+  if (stage === WEIGHT_STAGE_OLD) return WEIGHT_STAGE_OLD;
+  if (stage === WEIGHT_STAGE_NEW) return WEIGHT_STAGE_NEW;
+  return fallback === WEIGHT_STAGE_OLD ? WEIGHT_STAGE_OLD : WEIGHT_STAGE_NEW;
 }
 
 function loadWeightTrendMode() {
@@ -2554,6 +2647,12 @@ function escapeAttribute(value) {
     .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function getThemeColor(name, fallback) {
+  const source = document.body || document.documentElement;
+  const value = getComputedStyle(source).getPropertyValue(name).trim();
+  return value || fallback;
 }
 
 function formatKcal(value) {
