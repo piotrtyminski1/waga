@@ -69,7 +69,11 @@
     }
 
     * { box-sizing: border-box; }
-    html, body { min-height: 100%; }
+    html, body {
+      min-height: 100%;
+      touch-action: pan-x pan-y;
+      -webkit-text-size-adjust: 100%;
+    }
 
     body {
       margin: 0;
@@ -813,7 +817,7 @@
       outline: 0;
       background: var(--panel-3);
       color: var(--text);
-      font-size: 11px;
+      font-size: 16px;
     }
 
     .entry-form input:focus { border-color: var(--accent); }
@@ -931,7 +935,7 @@
       background: transparent;
       color: var(--text);
       font: inherit;
-      font-size: 8px;
+      font-size: 16px;
       font-variant-numeric: tabular-nums;
       text-align: center;
     }
@@ -2537,6 +2541,24 @@
           closeCardUpdatePresentation();
         }
       });
+
+      const preventZoomGesture = event => event.preventDefault();
+      ["gesturestart", "gesturechange", "gestureend"].forEach(eventName => {
+        document.addEventListener(eventName, preventZoomGesture, { passive: false });
+      });
+      document.addEventListener("touchstart", event => {
+        if (event.touches.length > 1) event.preventDefault();
+      }, { passive: false });
+      document.addEventListener("touchmove", event => {
+        if (event.touches.length > 1) event.preventDefault();
+      }, { passive: false });
+      let lastTouchEndAt = 0;
+      document.addEventListener("touchend", event => {
+        const now = Date.now();
+        if (now - lastTouchEndAt < 300) event.preventDefault();
+        lastTouchEndAt = now;
+      }, { passive: false });
+      document.addEventListener("dblclick", preventZoomGesture, { passive: false });
 
       initializeStorage();
     })();
