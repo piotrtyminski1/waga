@@ -1,454 +1,2545 @@
-<!DOCTYPE html>
-<html lang="pl" class="theme-new">
+<!doctype html>
+<html lang="pl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
-  <title>Waga</title>
-  <meta name="theme-color" content="#03110c" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#00141e">
+  <title>Champion Stamina — Piotrek</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
+    @import url("https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap");
+
+    @font-face {
+      font-display: fallback;
+      font-family: FS Numbers;
+      font-style: normal;
+      font-weight: 800;
+      src: local("FS Numbers"), local("FSNumbers"), local("Arial Black");
+    }
+
+    @font-face {
+      font-display: swap;
+      font-family: "Roboto Mono";
+      font-style: normal;
+      font-weight: 700;
+      src: url("https://fonts.gstatic.com/s/robotomono/v31/L0xuDF4xlVMF-BfR8bXMIhJHg45mwgGEFl0_Of2PQw.ttf") format("truetype");
+    }
+
+    @font-face {
+      font-display: fallback;
+      font-family: LivesportFinderLatin;
+      font-style: normal;
+      font-weight: 400;
+      src: url("https://static.flashscore.com/res/font/LivesportFinderLatin-Regular_Static.woff2") format("woff2");
+    }
+
+    @font-face {
+      font-display: fallback;
+      font-family: LivesportFinderLatin;
+      font-style: normal;
+      font-weight: 700;
+      src: url("https://static.flashscore.com/res/font/LivesportFinderLatin-Bold_Static.woff2") format("woff2");
+    }
+
+    @font-face {
+      font-display: fallback;
+      font-family: LivesportFinderLatin;
+      font-style: normal;
+      font-weight: 800;
+      src: url("https://static.flashscore.com/res/font/LivesportFinderLatin-Extrabold.woff2") format("woff2");
+    }
+
     :root {
-      --bg-1:#03110c; --bg-2:#061b13; --bg-rgb:3,17,12; --surface-rgb:8,27,19;
-      --accent:#43d184; --accent-2:#a2f2c4; --accent-rgb:67,209,132; --chart-text:#cde8d7; --button-text:#03110c;
-      --good:#6af5a8; --gold:#ffd56a; --bad:#ff97aa;
-      --text:#eaf3ff; --muted:rgba(234,243,255,.72); --border:rgba(255,255,255,.12);
-      --radius:20px;
-    }
-    .theme-old{
-      --bg-1:#030814; --bg-2:#050c1e; --bg-rgb:3,8,20; --surface-rgb:12,22,46;
-      --accent:#64d3ff; --accent-2:#b2f1ff; --accent-rgb:100,211,255; --chart-text:#c8ddff; --button-text:#041017;
-    }
-    *{box-sizing:border-box}
-    html{min-height:100%;overflow-x:hidden;background:
-      radial-gradient(circle at 50% 120%, rgba(var(--accent-rgb),.20), transparent 42%),
-      radial-gradient(circle at 20% 10%, rgba(var(--accent-rgb),.14), transparent 28%),
-      linear-gradient(145deg,var(--bg-1),var(--bg-2));background-attachment:fixed}
-    body{margin:0;font-family:"Space Grotesk",system-ui,-apple-system,sans-serif;color:var(--text);min-height:100vh;padding:env(safe-area-inset-top) 0 28px}
-    .app{max-width:760px;margin:0 auto;padding:16px 16px 32px}
-
-    .tabs-wrap{display:flex;justify-content:center;margin-bottom:14px}
-    .top-switches{display:flex;justify-content:center;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}
-    .top-switches .tabs-wrap{margin-bottom:0;flex:0 0 auto}
-    .sub-tabs-wrap{display:none}
-    .sub-tabs-wrap.active{display:flex}
-    .mode-panel{display:none}
-    .mode-panel.active{display:block}
-    .tabs{display:inline-flex;gap:6px;padding:6px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.04)}
-    .tab{border:none;background:transparent;color:var(--muted);padding:10px 16px;border-radius:999px;font-weight:700;cursor:pointer}
-    .tab.active{background:linear-gradient(135deg,rgba(var(--accent-rgb),.34),rgba(var(--accent-rgb),.16));color:var(--text)}
-    .tab-panel{display:none}
-    .tab-panel.active{display:block}
-
-    .card{position:relative;border-radius:var(--radius);padding:16px;margin-bottom:16px;
-      background:radial-gradient(140% 140% at 50% 10%, rgba(var(--accent-rgb),.13), rgba(var(--surface-rgb),.72)),linear-gradient(180deg, rgba(var(--surface-rgb),.9), rgba(var(--bg-rgb),.92));
-      border:1px solid rgba(255,255,255,.08);box-shadow:0 18px 50px rgba(0,0,0,.35);overflow:hidden}
-    .hero-card{text-align:center}
-    .hero-title{margin:0;font-size:30px;font-weight:800}
-    .hero-sub{margin-top:8px;color:var(--muted);font-size:14px}
-    .progress-line{margin-top:14px;height:12px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden}
-    .fill{height:100%;width:0;background:linear-gradient(90deg,#ffd23f,#ff5c8a)}
-
-    .metrics-grid{display:grid;gap:12px;grid-template-columns:repeat(3,minmax(0,1fr))}
-    .metrics-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .metric-card{text-align:center}
-    .metric-label{font-size:12px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
-    .metric-value{margin-top:8px;font-size:24px;font-weight:800;min-height:32px}
-    .good{color:var(--good)} .bad{color:var(--bad)} .gold{color:var(--gold)} .neutral{color:var(--muted)}
-
-    .time-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
-    .time-grid label{display:block;font-size:12px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
-    .time-grid select,.time-grid input,.input-column input{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text)}
-    .time-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-    .ghost-btn,.input-column button,.delete-btn{border:none;border-radius:10px;padding:9px 10px;font-weight:700;cursor:pointer}
-    .ghost-btn{border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text)}
-    .test-note{margin:10px 0 0;font-size:13px;color:var(--gold);font-weight:700}
-
-    .input-column{display:flex;flex-direction:column;gap:10px}
-    .input-column button{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--button-text);padding:12px 14px}
-    .weight-entry-cards{display:grid;grid-template-columns:1fr;gap:12px}
-    .weight-entry-card{margin-bottom:0}
-    .weight-entry-card h4{margin:0 0 10px;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
-    .training-entry-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-    .training-entry-card{margin-bottom:0}
-    .training-entry-card h4{margin:0 0 10px;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
-    .saved-state{display:none;font-weight:700;color:var(--good);padding:10px 12px;border-radius:12px;border:1px solid rgba(106,245,168,.28);background:rgba(106,245,168,.08)}
-    .training-hint{margin:2px 0 0;font-size:13px;color:var(--muted);min-height:18px}
-    .weight-chart-controls{display:flex;justify-content:flex-end;margin:0 0 10px}
-    .weight-mode-toggle-btn{padding:8px 12px;font-size:12px;letter-spacing:.02em;text-transform:uppercase}
-    .weight-mode-toggle-btn.moving{border-color:rgba(255,213,106,.55);background:rgba(255,213,106,.12);color:var(--gold)}
-    .fade-swap-target,.trend-fade-target{opacity:1;transition:opacity 220ms ease}
-    .fade-swap-target.is-fading,.trend-fade-target.is-fading{opacity:0}
-    .chart-wrap{position:relative;width:100%;height:300px;border-radius:16px;overflow:hidden;background:radial-gradient(120% 120% at 50% 0%, rgba(var(--accent-rgb),.18), rgba(var(--bg-rgb),.94))}
-    .chart-wrap canvas{display:block;width:100%!important;height:100%!important}
-
-    .table-panel{margin-bottom:16px}
-    .table-panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-    .table-panel-header h3{margin:0}
-    .table-collapse-toggle{border:1px solid rgba(var(--accent-rgb),.38);border-radius:10px;background:rgba(var(--accent-rgb),.12);color:var(--text);font-size:13px;font-weight:700;padding:8px 12px;cursor:pointer;white-space:nowrap}
-    .table-collapse-toggle:hover{background:rgba(var(--accent-rgb),.2)}
-    .sheet-wrap{overflow:auto;border-radius:14px;border:1px solid var(--border);background:rgba(var(--bg-rgb),.72);-webkit-overflow-scrolling:touch}
-    .sheet-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px}
-    .sheet-table th,.sheet-table td{border:1px solid rgba(255,255,255,.14);padding:7px 5px;background:rgba(255,255,255,.04);overflow-wrap:break-word}
-    .sheet-table thead th{position:sticky;top:0;background:rgba(var(--accent-rgb),.16);text-align:left}
-    .sheet-table.weekly-summary-table th,.sheet-table.weekly-summary-table td{text-align:right}
-    .sheet-table.weekly-summary-table th:first-child,.sheet-table.weekly-summary-table td:first-child{text-align:center}
-    .sheet-table td.num{text-align:right;font-variant-numeric:tabular-nums}
-    .sheet-table th.weight-col{text-align:center}
-    .sheet-table td.weight-cell{text-align:center;font-size:17px;font-weight:700}
-    .sheet-table td.week{vertical-align:middle;text-align:center;font-size:21px;font-weight:700;background:rgba(255,255,255,.06)}
-    .sheet-table td.week-diff.good{color:var(--good)}
-    .sheet-table td.week-diff.bad{color:var(--bad)}
-    .sheet-table td.week-diff.gold{color:var(--gold)}
-    .sheet-table td.day-diff.good{color:var(--good)}
-    .sheet-table td.day-diff.bad{color:var(--bad)}
-    .sheet-table td.last-result{color:var(--good)}
-    .sheet-table tr.last-result-row td{background:rgba(106,245,168,.1)}
-    .sheet-table .forecast-hint{display:block;font-size:11px;color:rgba(199,208,220,.66);font-weight:500}
-    .sheet-table td.week-diff.gold.gold-glow{animation:goldGlow 2.1s ease-in-out infinite}
-    .sheet-table td.week-diff.good.good-glow{animation:goodGlow 2.1s ease-in-out infinite}
-    .sheet-table th.actions,.sheet-table td.actions{text-align:center;width:40px}
-    .delete-btn{padding:0 6px;background:transparent;color:var(--bad);line-height:1;font-size:16px;font-weight:800}
-    .weight-sheet-table{width:100%;min-width:0;table-layout:auto}
-    .weight-sheet-table th,.weight-sheet-table td{white-space:nowrap;overflow-wrap:normal;word-break:normal}
-    .weight-sheet-table th.row-col,.weight-sheet-table td.row-col{width:1%;padding-left:4px;padding-right:4px}
-    .weight-sheet-table th.date-col,.weight-sheet-table td.date-cell{width:1%}
-    .weight-sheet-table th.actions,.weight-sheet-table td.actions{width:1%;padding-left:3px;padding-right:3px}
-    .weight-sheet-table th.kcal-col,.weight-sheet-table td.kcal-cell{width:132px;min-width:132px}
-    .weight-sheet-table th.weight-col,.weight-sheet-table td.weight-cell{width:1%}
-    .weight-sheet-table th.delta-col,.weight-sheet-table td.delta-cell{width:1%}
-    .weight-sheet-table th.week-col,.weight-sheet-table td.week{width:1%}
-    .weight-sheet-table td.kcal-cell{color:rgba(234,243,255,.78);font-size:12px;font-weight:600;line-height:1.1;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;padding-left:3px;padding-right:3px}
-    .weight-sheet-table td.kcal-cell .kcal-display-wrap{display:inline-flex;align-items:center;justify-content:flex-end;gap:4px;line-height:1;vertical-align:middle}
-    .weight-sheet-table td.kcal-cell .kcal-extra-minutes{display:inline-flex;align-items:center;font-size:.72em;line-height:1;font-weight:500;opacity:.84}
-    .weight-sheet-table td.kcal-cell .kcal-main-value{display:inline-flex;align-items:center;line-height:1}
-    .weight-sheet-table td.kcal-cell .kcal-day-dot{display:inline-flex;align-items:center;line-height:1}
-    .weight-sheet-table td.kcal-cell.good{color:var(--good)}
-    .weight-sheet-table td.kcal-cell.bad{color:var(--bad)}
-    .weight-sheet-table td.weight-cell,.weight-sheet-table td.delta-cell{font-size:inherit;font-weight:500;color:var(--text)}
-    .weight-sheet-table td.week{font-size:18px;font-weight:800}
-    .training-sheet-table{width:100%;min-width:0;table-layout:auto}
-    .training-sheet-table th,.training-sheet-table td{white-space:nowrap;overflow-wrap:normal;word-break:normal}
-    .training-sheet-table th.row-col,.training-sheet-table td.row-col{width:1%;padding-left:4px;padding-right:4px}
-    .training-sheet-table th.date-col,.training-sheet-table td.date-cell{width:1%}
-    .training-sheet-table th.training-minutes-col,.training-sheet-table td.training-minutes-cell{width:1%}
-    .training-sheet-table th.time-col,.training-sheet-table td.time-cell{width:1%}
-    .training-sheet-table th.distance-col,.training-sheet-table td.distance-cell{width:1%}
-    .training-sheet-table th.delta-col,.training-sheet-table td.delta-cell{width:1%}
-    .training-sheet-table th.avg-col,.training-sheet-table td.avg-cell{width:1%}
-    .training-sheet-table th.avg-diff-col,.training-sheet-table td.avg-diff-cell{width:1%}
-    .training-sheet-table th.actions,.training-sheet-table td.actions{width:1%;padding-left:3px;padding-right:3px}
-    .training-sheet-table td.time-cell{font-size:inherit;font-weight:500;color:var(--text)}
-    .training-sheet-table td[data-training-edit-field]{cursor:text}
-    .training-sheet-table td[data-training-edit-field]:hover{background:rgba(var(--accent-rgb),.1)}
-    .training-time-value{display:inline-flex;flex-direction:column;align-items:center;line-height:1.02}
-    .training-time-legacy-mark{display:block;margin-top:2px;font-size:.62em;font-weight:600;opacity:.82}
-    .training-sheet-table td.distance-cell{color:var(--muted)}
-    .training-sheet-table td.week{font-size:18px;font-weight:800}
-    .training-ranking-table td.time-cell{font-size:18px;font-weight:800;color:var(--text)}
-    .training-ranking-table tr.last-result-row td{background:rgba(106,245,168,.14)}
-    .training-ranking-table tbody tr[data-rank-key]{will-change:transform}
-    .training-ranking-table tr.live-ranking-row td{background:rgba(255,213,106,1);color:var(--bg-1)}
-    .training-ranking-table tr.live-running td{position:relative;z-index:1;animation:liveCellPulse 1.35s ease-in-out infinite}
-    .training-ranking-table tr.live-running td::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.28;animation:liveGlowOverlay 1.35s ease-in-out infinite;box-shadow:inset 0 0 0 2px rgba(255,213,106,.8),inset 0 0 24px rgba(255,213,106,.42)}
-    .training-ranking-table td.live-time-cell{color:var(--bg-1)}
-    .live-time-value{color:var(--bg-1);text-shadow:none}
-    .live-time-value.running{animation:liveTextGlowPulse 1.35s ease-in-out infinite}
-    .ranking-mode-tabs{display:flex;gap:8px;margin:0 0 14px}
-    .ranking-mode-tab{flex:1;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.05);color:var(--muted);padding:10px 12px;font-weight:800;cursor:pointer}
-    .ranking-mode-tab.active{background:linear-gradient(135deg,rgba(var(--accent-rgb),.26),rgba(var(--accent-rgb),.08));color:var(--text);border-color:rgba(var(--accent-rgb),.52)}
-    .ranking-view-panel{display:none}
-    .ranking-view-panel.active{display:block}
-    .ranking-live-controls{display:flex;gap:10px;align-items:stretch;margin:0 0 8px}
-    .ranking-live-toggle-btn{border:none;border-radius:14px;font-weight:800;cursor:pointer}
-    .ranking-live-toggle-btn{width:100%;padding:15px 18px;font-size:24px;letter-spacing:.03em;background:linear-gradient(135deg,#ffd56a,#ffe8a8);color:#2e2308;box-shadow:0 10px 26px rgba(255,213,106,.28)}
-    .ranking-live-toggle-btn.running{background:linear-gradient(135deg,#ff8da8,#ffd0db);color:#3b0e1a;box-shadow:0 10px 26px rgba(255,151,170,.3)}
-    .ranking-live-toggle-btn.save-mode{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--button-text);box-shadow:0 10px 26px rgba(var(--accent-rgb),.3)}
-    .ranking-live-status{margin:0 0 10px;font-size:13px;color:var(--muted);min-height:18px}
-    .interval-finish-btn{width:100%;border:1px solid rgba(255,141,168,.48);border-radius:12px;background:rgba(255,141,168,.12);color:#ffd0db;padding:11px 14px;font-weight:800;cursor:pointer;margin:0 0 14px}
-    .interval-finish-btn:disabled{opacity:.45;cursor:not-allowed}
-    .interval-ranking-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-    .interval-ranking-card{min-width:0}
-    .interval-ranking-title{margin:0 0 8px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-    .training-ranking-table tr.current-interval-row td{background:rgba(255,213,106,1);color:var(--bg-1)}
-    .training-ranking-table tr.current-interval-row td.time-cell{color:var(--bg-1)}
-    .ranking-manual-add-wrap{display:flex;justify-content:center;margin-top:12px}
-    .ranking-manual-add-btn{width:48px;height:48px;border-radius:50%;border:1px solid rgba(var(--accent-rgb),.42);background:linear-gradient(135deg,rgba(var(--accent-rgb),.28),rgba(var(--accent-rgb),.08));color:var(--text);font-size:30px;line-height:1;font-weight:700;cursor:pointer;box-shadow:0 8px 18px rgba(0,0,0,.24)}
-    .ranking-manual-form{display:none;margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:12px;background:rgba(var(--bg-rgb),.55)}
-    .ranking-manual-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-    .ranking-manual-grid input{width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--text)}
-    .ranking-manual-actions{display:flex;gap:8px;align-items:center;margin-top:10px}
-    .ranking-manual-save,.ranking-manual-cancel{border:none;border-radius:10px;padding:9px 12px;font-weight:700;cursor:pointer}
-    .ranking-manual-save{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:var(--button-text)}
-    .ranking-manual-cancel{background:rgba(255,255,255,.08);color:var(--text)}
-    .ranking-manual-error{margin:0;font-size:12px;color:var(--bad);min-height:16px}
-    .weight-sheet-table td[data-edit-field]{cursor:text}
-    .weight-sheet-table td[data-edit-field]:hover{background:rgba(var(--accent-rgb),.1)}
-    .weight-sheet-table td.editing{padding:3px}
-    .table-inline-input{width:100%;border:1px solid rgba(var(--accent-rgb),.7);border-radius:6px;background:rgba(var(--bg-rgb),.96);color:var(--text);font:inherit;font-variant-numeric:tabular-nums;line-height:1.2;padding:4px 6px;outline:none}
-    .table-inline-input:focus{border-color:var(--accent);box-shadow:0 0 0 1px rgba(var(--accent-rgb),.25)}
-    .weight-sheet-table td.weight-cell .table-inline-input{text-align:center}
-    .weight-sheet-table td.kcal-cell .table-inline-input{text-align:right}
-    .delete-btn:hover{background:transparent;opacity:.85}
-    .sheet-empty{padding:14px;color:var(--muted);font-size:14px}
-
-    .metric-value.gold.gold-glow{animation:goldGlow 2.1s ease-in-out infinite}
-    .metric-value.good.good-glow{animation:goodGlow 2.1s ease-in-out infinite}
-
-    @keyframes goldGlow{
-      0%{opacity:.68;text-shadow:0 0 6px rgba(255,213,106,.45),0 0 16px rgba(255,213,106,.24)}
-      50%{opacity:1;text-shadow:0 0 10px rgba(255,213,106,.95),0 0 24px rgba(255,213,106,.6)}
-      100%{opacity:.68;text-shadow:0 0 6px rgba(255,213,106,.45),0 0 16px rgba(255,213,106,.24)}
-    }
-    @keyframes goodGlow{
-      0%{opacity:.68;text-shadow:0 0 6px rgba(106,245,168,.45),0 0 16px rgba(106,245,168,.24)}
-      50%{opacity:1;text-shadow:0 0 10px rgba(106,245,168,.95),0 0 24px rgba(106,245,168,.6)}
-      100%{opacity:.68;text-shadow:0 0 6px rgba(106,245,168,.45),0 0 16px rgba(106,245,168,.24)}
-    }
-    @keyframes liveCellPulse{
-      0%{filter:brightness(1) saturate(1)}
-      50%{filter:brightness(1.22) saturate(1.16)}
-      100%{filter:brightness(1) saturate(1)}
-    }
-    @keyframes liveGlowOverlay{
-      0%{opacity:.2;box-shadow:inset 0 0 0 1px rgba(255,213,106,.5),inset 0 0 14px rgba(255,213,106,.24)}
-      50%{opacity:.7;box-shadow:inset 0 0 0 2px rgba(255,213,106,1),inset 0 0 28px rgba(255,213,106,.68),inset 0 0 46px rgba(255,213,106,.38)}
-      100%{opacity:.2;box-shadow:inset 0 0 0 1px rgba(255,213,106,.5),inset 0 0 14px rgba(255,213,106,.24)}
-    }
-    @keyframes liveTextGlowPulse{
-      0%{text-shadow:0 0 1px rgba(3,8,20,.2),0 0 0 rgba(3,8,20,0)}
-      50%{text-shadow:0 0 1px rgba(3,8,20,.45),0 0 10px rgba(255,255,255,.5)}
-      100%{text-shadow:0 0 1px rgba(3,8,20,.2),0 0 0 rgba(3,8,20,0)}
+      color-scheme: dark;
+      --bg: #00141e;
+      --panel: #00141e;
+      --panel-2: #0f2d37;
+      --panel-3: #010a0f;
+      --line: #0f2d37;
+      --text: #eeeeee;
+      --muted: #c8cdcd;
+      --muted-2: #808e93;
+      --accent: #ff0046;
+      --accent-dark: #c80037;
+      --green: #00c968;
+      --gold: #e1b84a;
+      --bad: #ff7699;
+      --radius: 8px;
     }
 
-    @media (max-width:720px){
-      .top-switches{flex-wrap:wrap;overflow:visible;gap:8px}
-      .top-switches .tabs-wrap{width:100%}
-      .top-switches .tabs{display:flex;width:100%}
-      .top-switches .tab{flex:1 1 auto;padding:10px 8px;font-size:13px;text-align:center}
-      .metrics-grid{grid-template-columns:1fr}
-      .metrics-grid.two{grid-template-columns:1fr}
-      .metric-value{font-size:22px}
-      .time-grid{grid-template-columns:1fr}
-      .time-actions{justify-content:flex-start}
-      .app{padding:12px}
-      .weight-chart-controls{margin-bottom:8px}
-      .sheet-table{font-size:11px}
-      .sheet-table th,.sheet-table td{padding:6px 3px}
-      .sheet-table td.week{font-size:16px}
-      .weight-sheet-table th.row-col,.weight-sheet-table td.row-col{padding-left:3px;padding-right:3px}
-      .weight-sheet-table th.actions,.weight-sheet-table td.actions{padding-left:2px;padding-right:2px}
-      .weight-sheet-table td.week{font-size:16px}
-      .weight-sheet-table td.kcal-cell{font-size:11px}
-      .training-sheet-table th.row-col,.training-sheet-table td.row-col{padding-left:3px;padding-right:3px}
-      .training-sheet-table th.actions,.training-sheet-table td.actions{padding-left:2px;padding-right:2px}
-      .training-sheet-table td.week{font-size:16px}
-      .training-ranking-table td.time-cell{font-size:16px}
-      .training-ranking-table tr.last-result-row td{background:rgba(106,245,168,.12)}
-      .ranking-live-toggle-btn{font-size:22px}
-      .ranking-mode-tabs,.interval-ranking-grid{grid-template-columns:1fr}
-      .ranking-mode-tabs{display:grid}
-      .interval-ranking-grid{display:grid}
-      .ranking-manual-grid{grid-template-columns:1fr}
-      .table-inline-input{padding:3px 4px}
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(180deg, #00141e 0, #010a0f 170px),
+        var(--bg);
+      color: var(--text);
+      font-family: LivesportFinderLatin, Arial, sans-serif;
+    }
+
+    button, input { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+
+    .app {
+      width: 100%;
+      max-width: 430px;
+      min-height: 100dvh;
+      margin: 0 auto;
+      padding: 0 8px max(20px, env(safe-area-inset-bottom));
+      background: var(--panel-3);
+    }
+
+    .topbar {
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: max(8px, env(safe-area-inset-top)) 4px 8px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-3);
+    }
+
+    .topbar span {
+      color: var(--accent);
+      font-size: 8px;
+      line-height: 11px;
+      font-weight: 800;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+
+    .topbar h1 {
+      margin: 2px 0 0;
+      font-size: 15px;
+      line-height: 19px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .sync-state {
+      max-width: 118px;
+      color: var(--muted-2);
+      font-size: 8px;
+      line-height: 11px;
+      font-weight: 700;
+      text-align: right;
+      text-transform: uppercase;
+    }
+
+    main { padding: 0 4px; }
+
+    .fifa-card-stage {
+      position: relative;
+      width: min(238.12px, 76vw);
+      aspect-ratio: 238.12 / 344;
+      height: auto;
+      margin: 18px auto 6px;
+      overflow: visible;
+      isolation: isolate;
+      transform-style: preserve-3d;
+      transform-origin: center center;
+      animation:
+        fifa-card-y-entry 1s cubic-bezier(.0001, 0, 0, 1) both,
+        fifa-card-opacity-entry .1s linear both;
+    }
+
+    @keyframes fifa-card-y-entry {
+      from { transform: perspective(900px) rotateY(-29deg); }
+      to { transform: perspective(900px) rotateY(0); }
+    }
+
+    @keyframes fifa-card-opacity-entry {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .fifa-card-stage.no-entry-animation {
+      opacity: 1;
+      transform: perspective(900px) rotateY(0);
+      animation: none;
+    }
+
+    .fifa-card-glow {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .fifa-card-stage.is-gold > .fifa-card-glow {
+      display: block;
+      transform-origin: center;
+      animation: gold-card-glow-pulse 4.2s ease-in-out infinite;
+    }
+
+    @keyframes gold-card-glow-pulse {
+      0%, 100% { opacity: .72; transform: scale(.995); }
+      50% { opacity: 1; transform: scale(1.012); }
+    }
+
+    .fifa-card-glow-wide {
+      fill: #eabf3f;
+      fill-opacity: .25;
+      filter: url(#gold-card-glow-wide);
+    }
+
+    .fifa-card-glow-near {
+      fill: #ffe884;
+      fill-opacity: .25;
+      filter: url(#gold-card-glow-near);
+    }
+
+    .fifa-attribute-card {
+      --card-text: #2c220e;
+      --card-glow: rgba(255, 245, 166, .88);
+      --card-streak-dark: rgba(141, 92, 13, .32);
+      --card-streak-light: rgba(255, 239, 146, .46);
+      --card-start: #d9ae43;
+      --card-light: #f5dc79;
+      --card-middle: #c7932d;
+      --card-highlight: #f4d66d;
+      --card-end: #a8731f;
+      --card-dot: rgba(117, 76, 12, .24);
+      --card-dot-soft: rgba(117, 76, 12, .2);
+      --card-line: rgba(81, 52, 6, .48);
+      --card-silhouette: rgba(91, 59, 10, .32);
+      --card-silhouette-body: rgba(91, 59, 10, .3);
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      -webkit-clip-path: url(#player-card-shape);
+      clip-path: url(#player-card-shape);
+      background:
+        radial-gradient(circle at 48% 38%, var(--card-glow) 0 17%, transparent 44%),
+        linear-gradient(132deg, transparent 0 36%, var(--card-streak-dark) 36.5% 38%, var(--card-streak-light) 38.5% 41%, transparent 41.5% 100%),
+        linear-gradient(145deg, var(--card-start) 0%, var(--card-light) 24%, var(--card-middle) 49%, var(--card-highlight) 72%, var(--card-end) 100%);
+      color: var(--card-text);
+      font-family: Oswald, "Arial Narrow", Arial, sans-serif;
+      font-weight: 350;
+      filter: drop-shadow(0 13px 16px rgba(0, 0, 0, .32));
+      isolation: isolate;
+    }
+
+    .fifa-attribute-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      opacity: .48;
+      background:
+        radial-gradient(circle at 21% 31%, var(--card-dot) 0 2px, transparent 2.5px),
+        radial-gradient(circle at 76% 22%, var(--card-dot-soft) 0 2px, transparent 2.5px),
+        linear-gradient(159deg, transparent 0 46%, var(--card-streak-dark) 46.5% 49%, transparent 49.5% 100%);
+      background-size: 49px 47px, 61px 59px, auto;
+    }
+
+    .fifa-attribute-card.is-common {
+      --card-text: #f0f3f4;
+      --card-line: rgba(232, 238, 240, .36);
+      --card-silhouette: rgba(0, 0, 0, .3);
+      --card-silhouette-body: rgba(0, 0, 0, .26);
+      background: linear-gradient(145deg, #41484c 0%, #30373a 52%, #202629 100%);
+    }
+
+    .fifa-attribute-card.is-common::before { display: none; }
+
+    .fifa-attribute-card.is-bronze {
+      --card-text: #28160d;
+      --card-glow: rgba(250, 190, 132, .62);
+      --card-streak-dark: rgba(85, 43, 20, .32);
+      --card-streak-light: rgba(255, 205, 158, .38);
+      --card-start: #8d5739;
+      --card-light: #d39a69;
+      --card-middle: #a9653f;
+      --card-highlight: #dc9f6b;
+      --card-end: #673923;
+      --card-dot: rgba(74, 35, 17, .24);
+      --card-dot-soft: rgba(74, 35, 17, .18);
+      --card-line: rgba(67, 31, 14, .46);
+      --card-silhouette: rgba(74, 35, 17, .3);
+      --card-silhouette-body: rgba(74, 35, 17, .27);
+    }
+
+    .fifa-attribute-card.is-silver {
+      --card-text: #152025;
+      --card-glow: rgba(255, 255, 255, .94);
+      --card-streak-dark: rgba(105, 119, 125, .24);
+      --card-streak-light: rgba(255, 255, 255, .72);
+      --card-start: #b8c0c4;
+      --card-light: #fbfcfc;
+      --card-middle: #dce2e4;
+      --card-highlight: #fff;
+      --card-end: #98a3a8;
+      --card-dot: rgba(75, 91, 98, .17);
+      --card-dot-soft: rgba(75, 91, 98, .12);
+      --card-line: rgba(43, 56, 62, .42);
+      --card-silhouette: rgba(52, 67, 74, .2);
+      --card-silhouette-body: rgba(52, 67, 74, .17);
+    }
+
+    .fifa-card-rating {
+      position: absolute;
+      top: 47px;
+      left: 36.93px;
+      z-index: 2;
+      width: 55px;
+      display: grid;
+      justify-items: center;
+      line-height: 1;
+    }
+
+    .fifa-card-rating strong {
+      font-size: 54.24px;
+      line-height: 54px;
+      font-weight: 350;
+      letter-spacing: -1.5px;
+    }
+
+    .fifa-card-rating span {
+      margin-top: -1px;
+      font-size: 18.4px;
+      line-height: 20px;
+      font-weight: 350;
+    }
+
+    .fifa-card-portrait {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      left: 2px;
+      height: 245px;
+      z-index: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      overflow: visible;
+      color: rgba(240, 243, 244, .72);
+      font-size: 55px;
+      text-transform: uppercase;
+      background:
+        radial-gradient(ellipse at 50% 30%, var(--card-silhouette) 0 20%, transparent 21%),
+        radial-gradient(ellipse at 50% 112%, var(--card-silhouette-body) 0 53%, transparent 54%);
+    }
+
+    .fifa-card-portrait.has-photo { background: transparent; }
+
+    .fifa-card-portrait img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      object-position: 100% bottom;
+      transform: translate(15%, -2%) scale(1.04);
+      transform-origin: center bottom;
+      filter: saturate(.82) contrast(1.04);
+      -webkit-mask-image: linear-gradient(to bottom, #000 0 52%, rgba(0, 0, 0, .94) 60.5%, rgba(0, 0, 0, .68) 70.36%, rgba(0, 0, 0, .3) 78.86%, transparent 86%);
+      mask-image: linear-gradient(to bottom, #000 0 52%, rgba(0, 0, 0, .94) 60.5%, rgba(0, 0, 0, .68) 70.36%, rgba(0, 0, 0, .3) 78.86%, transparent 86%);
+    }
+
+    .fifa-card-name {
+      position: absolute;
+      top: 192px;
+      left: 35.04px;
+      right: 35.04px;
+      height: 34.17px;
+      z-index: 3;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      overflow: hidden;
+      padding: 0 4px 5px;
+      border-bottom: 1px solid var(--card-line);
+      font-size: 20.87px;
+      line-height: 25px;
+      font-weight: 350;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .fifa-card-stats {
+      position: absolute;
+      top: 234.93px;
+      left: 35.04px;
+      right: 35.04px;
+      height: 59.19px;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      text-align: center;
+    }
+
+    .fifa-card-stat {
+      display: grid;
+      grid-template-rows: 36px 21px;
+      align-content: start;
+      justify-items: center;
+      min-height: 59.19px;
+    }
+
+    .fifa-card-stat + .fifa-card-stat { border-left: 1px solid var(--card-line); }
+    .fifa-card-stat strong { font-size: 29px; line-height: 34px; font-weight: 350; }
+    .fifa-card-stat span { font-size: 13px; line-height: 21px; font-weight: 350; }
+
+    .fifa-card-frame {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .fifa-card-frame use {
+      fill: none;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .fifa-card-frame-bevel-shadow { stroke: rgba(0, 0, 0, .52); stroke-width: 3px; }
+    .fifa-card-frame-bevel-highlight { stroke: rgba(255, 255, 255, .24); stroke-width: 1.5px; }
+    .fifa-card-frame-stroke { stroke: var(--card-line); stroke-width: 2px; }
+
+    .fifa-card-shine {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .fifa-card-shine span {
+      position: absolute;
+      top: 0;
+      left: -36%;
+      width: 172%;
+      height: 92px;
+      opacity: 0;
+      background: #fff;
+      transform: translateY(-150%) rotate(-24deg);
+      animation: fifa-card-shine .5s linear both;
+    }
+
+    .fifa-card-shine span:last-child { animation-delay: .1s; animation-duration: .4s; }
+
+    @keyframes fifa-card-shine {
+      0% { opacity: .1; transform: translateY(-150%) rotate(-24deg); }
+      99.9% { opacity: .1; }
+      100% { opacity: 0; transform: translateY(470%) rotate(-24deg); }
+    }
+
+    .player-profile-head {
+      display: grid;
+      grid-template-columns: 58px minmax(72px, .8fr) minmax(0, 2fr);
+      align-items: center;
+      gap: 11px;
+      margin-top: 13px;
+      padding: 13px 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--bg);
+    }
+
+    .player-detail-avatar {
+      position: relative;
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      overflow: visible;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #41484c, #202629);
+      color: var(--text);
+      font-size: 18px;
+      font-weight: 900;
+      isolation: isolate;
+    }
+
+    .player-detail-avatar.is-bronze { background: linear-gradient(145deg, #d39a69, #673923); }
+    .player-detail-avatar.is-silver { background: linear-gradient(145deg, #fbfcfc, #98a3a8); color: #152025; }
+    .player-detail-avatar.is-gold { background: linear-gradient(145deg, #f5dc79, #a8731f); color: #2c220e; }
+
+    .avatar-photo-layer {
+      position: absolute;
+      inset: 0;
+      overflow: visible;
+      -webkit-clip-path: polygon(-200% -200%, 200% -200%, 200% 50%, 97% 50%, 95.4% 62.2%, 90.7% 73.5%, 83.2% 83.2%, 73.5% 90.7%, 62.2% 95.4%, 50% 97%, 37.8% 95.4%, 26.5% 90.7%, 16.8% 83.2%, 9.3% 73.5%, 4.6% 62.2%, 3% 50%, -200% 50%);
+      clip-path: polygon(-200% -200%, 200% -200%, 200% 50%, 97% 50%, 95.4% 62.2%, 90.7% 73.5%, 83.2% 83.2%, 73.5% 90.7%, 62.2% 95.4%, 50% 97%, 37.8% 95.4%, 26.5% 90.7%, 16.8% 83.2%, 9.3% 73.5%, 4.6% 62.2%, 3% 50%, -200% 50%);
+    }
+
+    .avatar-photo-layer img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      transform: scale(1.27);
+      transform-origin: center bottom;
+    }
+
+    .player-profile-info { min-width: 0; }
+    .player-profile-info h2 { margin: 0; font-size: 16px; line-height: 20px; }
+    .player-profile-info p { margin: 4px 0 0; color: var(--muted-2); font-size: 8px; line-height: 11px; text-transform: uppercase; }
+
+    .profile-metrics {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-left: 1px solid var(--line);
+    }
+
+    .profile-metric {
+      min-width: 0;
+      padding: 3px 3px;
+      text-align: center;
+    }
+
+    .profile-metric + .profile-metric { border-left: 1px solid var(--line); }
+    .profile-metric strong {
+      display: block;
+      overflow: hidden;
+      font-family: "Roboto Mono", monospace;
+      font-size: 13px;
+      line-height: 18px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .profile-metric span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted-2);
+      font-size: 6.5px;
+      line-height: 9px;
+      font-weight: 800;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+
+    .panel {
+      margin-top: 12px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--bg);
+    }
+
+    .panel-head {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 11px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-head strong {
+      font-size: 10px;
+      line-height: 13px;
+      text-transform: uppercase;
+    }
+
+    .panel-head small { color: var(--muted-2); font-size: 8px; line-height: 11px; }
+
+    .chart {
+      width: 100%;
+      min-height: 210px;
+      display: grid;
+      place-items: center;
+      padding: 8px 4px 3px;
+    }
+
+    .chart svg { width: 100%; height: 205px; display: block; overflow: visible; }
+    .chart-grid { stroke: rgba(157, 180, 187, .14); stroke-width: 1; }
+    .chart-label { fill: var(--muted-2); font: 8px LivesportFinderLatin, Arial, sans-serif; }
+    .chart-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .chart-line.weight { stroke: #e1b84a; }
+    .chart-line.overall { stroke: var(--accent); }
+    .chart-dot { stroke: var(--bg); stroke-width: 1.5; }
+    .chart-dot.weight { fill: #e1b84a; }
+    .chart-dot.overall { fill: var(--accent); }
+    .chart-empty { color: var(--muted-2); font-size: 9px; text-transform: uppercase; }
+
+    .overall-history {
+      margin-top: 12px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--bg);
+    }
+
+    .overall-history-head {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 11px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .overall-history-head strong {
+      font-size: 10px;
+      line-height: 13px;
+      text-transform: uppercase;
+    }
+
+    .overall-history-chart {
+      position: relative;
+      height: 220px;
+      width: 100%;
+      cursor: crosshair;
+      touch-action: pan-y;
+      user-select: none;
+    }
+
+    .overall-history-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .overall-history-grid-line {
+      stroke: rgba(157, 180, 187, .14);
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .overall-history-grid-label {
+      fill: var(--muted-2);
+      font-family: Oswald, "Arial Narrow", Arial, sans-serif;
+      font-size: 9px;
+      font-weight: 350;
+    }
+
+    .overall-history-path {
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .overall-history-path.is-common { stroke: #778187; }
+    .overall-history-path.is-bronze { stroke: #d39a69; }
+    .overall-history-path.is-silver { stroke: #eef2f3; }
+    .overall-history-path.is-gold { stroke: #e1b84a; }
+
+    .overall-history-point {
+      --history-tier-color: #778187;
+      position: absolute;
+      z-index: 4;
+      width: 7px;
+      height: 7px;
+      padding: 0;
+      border: 1px solid var(--bg);
+      border-radius: 50%;
+      background: var(--history-tier-color);
+      box-shadow: none;
+      cursor: pointer;
+      transform: translate(-50%, -50%);
+    }
+
+    .overall-history-point.is-common { --history-tier-color: #778187; }
+    .overall-history-point.is-bronze { --history-tier-color: #d39a69; }
+    .overall-history-point.is-silver { --history-tier-color: #eef2f3; }
+    .overall-history-point.is-gold { --history-tier-color: #e1b84a; }
+
+    .overall-history-point:focus-visible {
+      outline: none;
+      filter: brightness(1.35);
+    }
+
+    .overall-history-cursor-line {
+      position: absolute;
+      top: 20px;
+      bottom: 40px;
+      left: 0;
+      z-index: 2;
+      width: 1px;
+      background: rgba(255, 255, 255, .2);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%);
+    }
+
+    .overall-history-cursor-tooltip {
+      --history-cursor-y: 20px;
+      position: absolute;
+      top: var(--history-cursor-y);
+      left: 0;
+      z-index: 7;
+      width: max-content;
+      min-width: 76px;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #06171d;
+      color: var(--text);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, .36);
+      font-size: 9px;
+      line-height: 13px;
+      font-weight: 700;
+      text-align: center;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, calc(-100% - 11px));
+    }
+
+    .overall-history-cursor-tooltip strong {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--text);
+      font-family: Oswald, "Arial Narrow", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 17px;
+      font-weight: 350;
+    }
+
+    .overall-history-chart.is-inspecting .overall-history-cursor-line,
+    .overall-history-chart.is-inspecting .overall-history-cursor-tooltip {
+      opacity: 1;
+    }
+
+    .overall-history-cursor-tooltip.is-below {
+      transform: translate(-50%, 11px);
+    }
+
+    .overall-history-cursor-tooltip.is-left-edge {
+      transform: translate(0, calc(-100% - 11px));
+    }
+
+    .overall-history-cursor-tooltip.is-left-edge.is-below {
+      transform: translate(0, 11px);
+    }
+
+    .overall-history-cursor-tooltip.is-right-edge {
+      transform: translate(-100%, calc(-100% - 11px));
+    }
+
+    .overall-history-cursor-tooltip.is-right-edge.is-below {
+      transform: translate(-100%, 11px);
+    }
+
+    .mode-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+      margin-top: 12px;
+      padding: 5px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--bg);
+    }
+
+    .mode-button {
+      min-height: 38px;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .mode-button.is-active { background: var(--accent); color: #fff; }
+    .mode-panel { display: none; }
+    .mode-panel.is-active { display: block; }
+
+    .mode-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      margin-top: 12px;
+    }
+
+    .mode-metrics.two { grid-template-columns: repeat(2, 1fr); }
+
+    .metric-card {
+      min-height: 66px;
+      display: grid;
+      align-content: center;
+      gap: 3px;
+      padding: 10px 8px;
+      border-radius: 7px;
+      background: var(--panel-2);
+      text-align: center;
+    }
+
+    .metric-card strong { font-family: "Roboto Mono", monospace; font-size: 18px; line-height: 24px; }
+    .metric-card span { color: var(--muted); font-size: 7px; line-height: 10px; font-weight: 800; text-transform: uppercase; }
+
+    .entry-form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 11px;
+    }
+
+    .entry-form label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted-2);
+      font-size: 7px;
+      line-height: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .entry-form input[type="date"],
+    .entry-form input[type="number"] {
+      width: 100%;
+      min-width: 0;
+      height: 38px;
+      padding: 0 9px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      outline: 0;
+      background: var(--panel-3);
+      color: var(--text);
+      font-size: 11px;
+    }
+
+    .entry-form input:focus { border-color: var(--accent); }
+
+    .check-field {
+      min-height: 38px;
+      display: flex !important;
+      grid-column: span 2;
+      flex-direction: row !important;
+      align-items: center;
+      gap: 8px !important;
+      padding: 0 9px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--panel-3);
+      color: var(--text) !important;
+      cursor: pointer;
+    }
+
+    .check-field input, .food-check { accent-color: var(--accent); }
+
+    .save-button {
+      min-height: 40px;
+      grid-column: span 2;
+      border: 0;
+      border-radius: 5px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .form-note {
+      grid-column: span 2;
+      min-height: 12px;
+      margin: 0;
+      color: var(--muted-2);
+      font-size: 8px;
+      line-height: 12px;
+    }
+
+    .training-entry-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .training-entry-form .save-button,
+    .training-entry-form .form-note { grid-column: span 3; }
+
+    .table-wrap {
+      width: 100%;
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border: 0;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 7.4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    th, td {
+      height: 27px;
+      padding: 2px 2px;
+      border: 0;
+      background: rgba(15, 45, 55, .14);
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    tbody tr:nth-child(even) td { background: rgba(15, 45, 55, .28); }
+
+    th {
+      height: 31px;
+      background: var(--panel-2);
+      color: var(--text);
+      font-size: 6.8px;
+      font-weight: 800;
+      letter-spacing: -.01em;
+      text-transform: uppercase;
+    }
+
+    .date-cell { text-align: left; }
+
+    input[type="number"] { -moz-appearance: textfield; }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      margin: 0;
+      -webkit-appearance: none;
+    }
+
+    .editable-cell {
+      position: relative;
+      cursor: text;
+    }
+
+    .cell-display {
+      width: 100%;
+      min-height: 23px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      overflow: hidden;
+    }
+
+    .table-input {
+      width: 100%;
+      height: 23px;
+      display: none;
+      padding: 0 1px;
+      border: 0;
+      border-radius: 3px;
+      outline: 0;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-size: 8px;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+    }
+
+    .editable-cell.is-editing .cell-display { display: none; }
+    .editable-cell.is-editing .table-input { display: block; }
+
+    .editable-cell.is-editing .table-input {
+      background: rgba(255, 0, 70, .13);
+      box-shadow: inset 0 0 0 1px rgba(255, 0, 70, .42);
+    }
+
+    .kcal-minutes {
+      font-size: 5.8px;
+      font-weight: 700;
+      opacity: .9;
+    }
+
+    .kcal-value { font-size: 8.3px; font-weight: 800; }
+
+    .ovr-pill {
+      min-width: 26px;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 6px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      border-radius: 999px;
+      font-family: "Roboto Mono", monospace;
+      font-size: 7.4px;
+      line-height: 18px;
+      font-weight: 900;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 2px 5px rgba(0, 0, 0, .24);
+    }
+
+    .ovr-pill.is-common {
+      background: linear-gradient(145deg, #41484c, #202629);
+      color: #f0f3f4;
+    }
+
+    .ovr-pill.is-bronze {
+      background: linear-gradient(145deg, #d39a69, #673923);
+      color: #28160d;
+    }
+
+    .ovr-pill.is-silver {
+      background: linear-gradient(145deg, #fbfcfc, #98a3a8);
+      color: #152025;
+    }
+
+    .ovr-pill.is-gold {
+      background: linear-gradient(145deg, #f5dc79, #a8731f);
+      color: #2c220e;
+    }
+
+    .week-cell {
+      background: rgba(15, 45, 55, .36) !important;
+      font-family: "Roboto Mono", monospace;
+      font-size: 10px;
+      font-weight: 800;
+      vertical-align: middle;
+    }
+
+    .test-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 18px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: rgba(225, 184, 74, .14);
+      color: var(--gold);
+      font-size: 6px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .good { color: var(--green); }
+    .bad { color: var(--bad); }
+    .gold { color: var(--gold); }
+    .muted { color: var(--muted-2); }
+
+    .delete-button {
+      padding: 4px 7px;
+      border: 0;
+      background: transparent;
+      color: var(--bad);
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .food-cell.good { color: var(--green); }
+    .food-cell.bad { color: var(--bad); }
+
+    .food-check {
+      width: 14px;
+      height: 14px;
+      margin: 0;
+      border: 1px solid var(--green);
+      border-radius: 50%;
+      appearance: none;
+      -webkit-appearance: none;
+      background: rgba(0, 201, 104, .72);
+      box-shadow: 0 0 7px rgba(0, 201, 104, .28);
+      cursor: pointer;
+    }
+
+    .food-check:checked {
+      border-color: var(--bad);
+      background: var(--bad);
+      box-shadow: 0 0 7px rgba(255, 118, 153, .32);
+    }
+
+    details.scale-panel {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--bg);
+    }
+
+    details.scale-panel summary {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 11px;
+      font-size: 9px;
+      line-height: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .scale-content {
+      padding: 0 11px 12px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 14px;
+    }
+
+    .scale-content p { margin: 10px 0 0; }
+    .tier-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
+
+    .tier-chip {
+      min-height: 37px;
+      display: grid;
+      place-items: center;
+      border-radius: 5px;
+      color: #fff;
+      font-size: 7px;
+      line-height: 10px;
+      font-weight: 800;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .tier-chip.common { background: linear-gradient(145deg, #41484c, #202629); }
+    .tier-chip.bronze { background: linear-gradient(145deg, #d39a69, #673923); }
+    .tier-chip.silver { background: linear-gradient(145deg, #fbfcfc, #98a3a8); color: #152025; }
+    .tier-chip.gold-tier { background: linear-gradient(145deg, #f5dc79, #a8731f); color: #2c220e; }
+
+    body.card-presentation-open { overflow: hidden; }
+
+    .card-update-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: grid;
+      place-items: center;
+      opacity: 1;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .card-update-overlay.is-open {
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .card-update-overlay.is-closing {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .5s ease;
+    }
+
+    .card-update-backdrop {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      border: 0;
+      background: #000;
+      opacity: 0;
+      cursor: pointer;
+      transition: opacity 1s linear;
+    }
+
+    .card-update-overlay.is-dimmed .card-update-backdrop { opacity: .7; }
+
+    .card-update-presentation {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      justify-items: center;
+      pointer-events: auto;
+    }
+
+    .card-update-stack {
+      position: relative;
+      width: min(238.12px, 76vw);
+      aspect-ratio: 238.12 / 344;
+    }
+
+    .card-update-layer {
+      position: absolute;
+      inset: 0;
+      opacity: 1;
+      transition: opacity 1s linear;
+    }
+
+    .card-update-layer.is-next-tier { opacity: 0; }
+    .card-update-overlay.is-tier-swapped .card-update-layer.is-previous-tier { opacity: 0; }
+    .card-update-overlay.is-tier-swapped .card-update-layer.is-next-tier { opacity: 1; }
+
+    .card-update-layer .fifa-card-stage {
+      width: 100%;
+      margin: 0;
+      opacity: 0;
+      animation: none;
+    }
+
+    .card-update-overlay.is-card-visible .card-update-layer .fifa-card-stage {
+      animation:
+        fifa-card-y-entry 1s cubic-bezier(.0001, 0, 0, 1) both,
+        fifa-card-opacity-entry .1s linear both;
+    }
+
+    .fifa-card-rating .card-stat-delta,
+    .fifa-card-stat .card-stat-delta {
+      position: absolute;
+      z-index: 6;
+      width: auto;
+      min-width: 0;
+      height: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      color: rgba(255, 255, 255, .82);
+      font-family: "Roboto Mono", monospace;
+      font-size: 8px;
+      line-height: 12px;
+      font-weight: 800;
+      letter-spacing: -.03em;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, .9);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(2px);
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .fifa-card-rating .card-stat-delta {
+      top: 3px;
+      right: -8px;
+    }
+
+    .fifa-card-stat { position: relative; }
+
+    .fifa-card-stat .card-stat-delta {
+      top: -3px;
+      right: -2px;
+    }
+
+    .card-stat-delta.is-up { color: #56e89b; }
+    .card-stat-delta.is-down { color: #ff8aa7; }
+
+    .card-update-overlay.is-counting .card-stat-delta {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 370px) {
+      .player-profile-head { grid-template-columns: 50px 64px minmax(0, 1fr); gap: 8px; }
+      .player-detail-avatar { width: 50px; height: 50px; }
+      .profile-metric strong { font-size: 11px; }
+      .profile-metric span { font-size: 5.8px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fifa-card-stage, .fifa-card-stage.is-gold > .fifa-card-glow, .fifa-card-shine span {
+        animation: none;
+      }
+
+      .card-update-backdrop,
+      .card-update-layer,
+      .card-update-overlay { transition-duration: .01ms; }
+
+      .card-update-overlay.is-card-visible .card-update-layer .fifa-card-stage {
+        opacity: 1;
+        transform: none;
+      }
     }
   </style>
 </head>
-<body class="theme-new">
+<body>
+  <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute;overflow:hidden">
+    <defs>
+      <clipPath id="player-card-shape" clipPathUnits="objectBoundingBox">
+        <path transform="scale(0.0041995632454 0.0029069767442)" d="M238.12,34.86v246.74s-119.06,32.77-119.06,62.4c0-14.82-29.76-30.29-59.53-42.06-29.77-11.77-59.53-19.84-59.53-19.84V35.36C77.81,35.36,51.87,0,119.06,0c33.6,0,43.91,8.72,55.55,17.43,11.64,8.71,24.61,17.43,63.51,17.43Z"/>
+      </clipPath>
+      <path id="player-card-outline" d="M238.12,34.86v246.74s-119.06,32.77-119.06,62.4c0-14.82-29.76-30.29-59.53-42.06-29.77-11.77-59.53-19.84-59.53-19.84V35.36C77.81,35.36,51.87,0,119.06,0c33.6,0,43.91,8.72,55.55,17.43,11.64,8.71,24.61,17.43,63.51,17.43Z"/>
+      <filter id="gold-card-glow-wide" x="-75" y="-75" width="388.12" height="494" filterUnits="userSpaceOnUse">
+        <feGaussianBlur stdDeviation="18"/>
+      </filter>
+      <filter id="gold-card-glow-near" x="-40" y="-40" width="318.12" height="424" filterUnits="userSpaceOnUse">
+        <feGaussianBlur stdDeviation="7"/>
+      </filter>
+    </defs>
+  </svg>
+
   <div class="app">
-    <main>
-      <div class="top-switches">
-        <div id="weight-stage-tabs-wrap" class="tabs-wrap stage-tabs-wrap">
-          <div class="tabs">
-            <button class="tab weight-stage-tab active" data-weight-stage="new" type="button" aria-pressed="true">Nowe</button>
-            <button class="tab weight-stage-tab" data-weight-stage="old" type="button" aria-pressed="false">Stare</button>
-          </div>
-        </div>
-        <div class="tabs-wrap">
-          <div class="tabs">
-            <button class="tab mode-tab active" data-mode="weight">Waga</button>
-            <button class="tab mode-tab" data-mode="training">Trening</button>
-          </div>
-        </div>
-        <div id="weight-tabs-wrap" class="tabs-wrap sub-tabs-wrap active">
-          <div class="tabs">
-            <button class="tab weight-tab active" data-weight-tab="dashboard">Dashboard</button>
-            <button class="tab weight-tab" data-weight-tab="table">Tabela</button>
-          </div>
-        </div>
-        <div id="training-tabs-wrap" class="tabs-wrap sub-tabs-wrap">
-          <div class="tabs">
-            <button class="tab training-tab active" data-training-tab="run">Bieg</button>
-            <button class="tab training-tab" data-training-tab="table">Tabela</button>
-            <button class="tab training-tab" data-training-tab="ranking">Ranking</button>
-          </div>
-        </div>
+    <header class="topbar">
+      <div>
+        <span>Champion Stamina</span>
+        <h1>Profil zawodnika</h1>
       </div>
+      <div class="sync-state" id="sync-state">Wczytywanie danych</div>
+    </header>
 
-      <section id="mode-weight" class="mode-panel active">
-        <section id="weight-dashboard" class="tab-panel weight-panel active">
-          <section class="card hero-card" id="summary-card"></section>
+    <main>
+      <div id="player-card"></div>
 
-          <section class="metrics-grid">
-            <div class="card metric-card"><div class="metric-label">Waga</div><div id="metric-weight" class="metric-value neutral">Brak</div></div>
-            <div class="card metric-card"><div class="metric-label">Roznica od wczoraj</div><div id="metric-daily" class="metric-value neutral">Brak</div></div>
-            <div class="card metric-card"><div class="metric-label">Roznica tygodniowa</div><div id="metric-weekly" class="metric-value neutral">Brak</div></div>
-          </section>
+      <section class="player-profile-head">
+        <div class="player-detail-avatar" id="profile-avatar">PT</div>
+        <div class="player-profile-info">
+          <h2>Piotrek</h2>
+          <p>Mój profil</p>
+        </div>
+        <div class="profile-metrics">
+          <div class="profile-metric"><strong id="profile-weight">—</strong><span>Waga · śr. 7d</span></div>
+          <div class="profile-metric"><strong id="profile-pace">—</strong><span>Tempo · ostatnie</span></div>
+          <div class="profile-metric"><strong id="profile-discipline">0%</strong><span>Dyscyplina · 14d</span></div>
+        </div>
+      </section>
 
-          <section id="test-controls-card" class="card" style="display:none;">
-            <div class="time-grid">
-              <div>
-                <label for="test-enabled">Tryb testowy czasu (0/1)</label>
-                <select id="test-enabled"><option value="0">0</option><option value="1">1</option></select>
-              </div>
-              <div>
-                <label for="test-offset">Przesuniecie dni</label>
-                <input id="test-offset" type="number" step="1" value="0" />
-              </div>
-              <div class="time-actions">
-                <button id="test-minus" class="ghost-btn" type="button">-1 dzien</button>
-                <button id="test-plus" class="ghost-btn" type="button">+1 dzien</button>
-                <button id="test-today" class="ghost-btn" type="button">Dzis</button>
-              </div>
-            </div>
-            <p id="test-time-note" class="test-note"></p>
-          </section>
+      <section class="overall-history">
+        <div class="overall-history-head">
+          <strong>Historia OVR</strong>
+        </div>
+        <div id="overall-chart"></div>
+      </section>
 
-          <div id="entry-cards" class="weight-entry-cards">
-            <section id="weight-entry-card" class="card weight-entry-card">
-              <div class="input-column">
-                <h4>Waga</h4>
-                <input id="weight-input" type="number" inputmode="decimal" step="0.1" min="0" placeholder="np. 94.3" aria-label="Dzisiejsza waga" />
-                <button id="save-btn" disabled>Zapisz wage</button>
-              </div>
-            </section>
-            <section id="kcal-entry-card" class="card weight-entry-card">
-              <div class="input-column">
-                <h4>Kcal</h4>
-                <input id="kcal-input" type="number" inputmode="numeric" step="1" min="0" placeholder="np. 2300" aria-label="Dzisiejsze kcal" />
-                <button id="kcal-save-btn" disabled>Zapisz kcal</button>
-              </div>
-            </section>
+      <section class="panel">
+        <div class="panel-head">
+          <strong>Wykres wagi</strong>
+          <small>pełna historia · średnia krocząca 7d</small>
+        </div>
+        <div class="chart" id="weight-chart"></div>
+      </section>
+
+      <nav class="mode-switch" aria-label="Tryb danych">
+        <button class="mode-button is-active" type="button" data-mode="weight">Waga</button>
+        <button class="mode-button" type="button" data-mode="training">Trening</button>
+      </nav>
+
+      <section class="mode-panel is-active" id="mode-weight">
+        <div class="mode-metrics">
+          <div class="metric-card"><strong id="weight-current">—</strong><span>Średnia 7 dni</span></div>
+          <div class="metric-card"><strong id="kcal-balance">0</strong><span>Bilans kcal · 14 dni</span></div>
+          <div class="metric-card"><strong id="weight-to-go">12.00</strong><span>Do celu 82 kg</span></div>
+        </div>
+
+        <section class="panel">
+          <div class="panel-head">
+            <strong>Tabela do dzisiaj</strong>
+            <small id="table-mode-note">wpisuj dane bezpośrednio</small>
           </div>
-
-          <div class="weight-chart-controls">
-            <button id="weight-trend-toggle-btn" class="ghost-btn weight-mode-toggle-btn" type="button" aria-pressed="false">Tryb: Sr. tyg.</button>
-          </div>
-          <section id="weight-chart-card" class="card fade-swap-target"><div class="chart-wrap"><canvas id="weightChart"></canvas></div></section>
-
-          <section id="week-table-card" class="table-panel" style="display:none;">
-            <div class="table-panel-header">
-              <h3>Tabela do dzisiaj</h3>
-              <button id="week-table-collapse-btn" class="table-collapse-toggle" type="button" aria-pressed="false">Zwin</button>
-            </div>
-            <div class="sheet-wrap" id="week-table-wrap"></div>
-          </section>
-        </section>
-
-        <section id="weight-table" class="tab-panel weight-panel">
-          <section id="weight-full-table-card" class="table-panel">
-            <h3 style="margin-top:0; margin-bottom:12px;">Tabela</h3>
-            <div class="sheet-wrap" id="table-wrap"></div>
-          </section>
+          <div class="table-wrap" id="weight-table"></div>
         </section>
       </section>
 
-      <section id="mode-training" class="mode-panel">
-        <section id="training-run" class="tab-panel training-panel active">
-          <section class="card hero-card" id="training-summary-card"></section>
+      <section class="mode-panel" id="mode-training">
+        <div class="mode-metrics two">
+          <div class="metric-card"><strong id="training-pace">6,0</strong><span>Tempo · km/h</span></div>
+          <div class="metric-card"><strong id="training-bpm">—</strong><span>Średnia BPM</span></div>
+        </div>
 
-          <section class="metrics-grid two">
-            <div class="card metric-card"><div class="metric-label">Ostatni</div><div id="training-metric-last" class="metric-value neutral">Brak</div></div>
-            <div class="card metric-card"><div class="metric-label">Rekord</div><div id="training-metric-record" class="metric-value neutral">Brak</div></div>
-          </section>
-
-          <div class="training-entry-cards">
-            <section class="card training-entry-card">
-              <div class="input-column">
-                <h4>Czas</h4>
-                <input id="training-time-input" type="text" inputmode="text" placeholder="MM:SS, np. 12:34" aria-label="Czas do 150 bpm" />
-                <button id="training-save-time-btn" disabled>Zapisz czas</button>
-                <p id="training-time-saved" class="saved-state">Czas zapisany</p>
-              </div>
-            </section>
-            <section class="card training-entry-card">
-              <div class="input-column">
-                <h4>Dystans</h4>
-                <input id="training-distance-input" type="text" inputmode="decimal" placeholder="km, np. 6,5" aria-label="Dystans w kilometrach" />
-                <button id="training-save-distance-btn" disabled>Zapisz dystans</button>
-              </div>
-            </section>
+        <section class="panel">
+          <div class="panel-head">
+            <strong>Dodaj trening</strong>
+            <small>cel: 4 treningi / tydzień</small>
           </div>
-          <p id="training-entry-hint" class="training-hint"></p>
-
-          <section class="card"><div class="chart-wrap"><canvas id="trainingChart"></canvas></div></section>
+          <form class="entry-form training-entry-form" id="training-form">
+            <label>Tempo [km/h]<input id="pace-input" type="number" inputmode="decimal" min="1" max="30" step="0.1" placeholder="6,0" required></label>
+            <label>Średnia BPM<input id="bpm-input" type="number" inputmode="numeric" min="40" max="230" step="1" placeholder="145" required></label>
+            <label>Czas [min]<input id="minutes-input" type="number" inputmode="numeric" min="1" max="600" step="1" placeholder="60" required></label>
+            <button class="save-button" type="submit">Zapisz trening</button>
+            <p class="form-note" id="training-form-note"></p>
+          </form>
         </section>
 
-        <section id="training-table" class="tab-panel training-panel">
-          <section class="table-panel">
-            <h3 style="margin-top:0; margin-bottom:12px;">Tabela</h3>
-            <div class="sheet-wrap" id="training-table-wrap"></div>
-          </section>
-        </section>
-
-        <section id="training-ranking" class="tab-panel training-panel">
-          <section class="table-panel">
-            <h3 style="margin-top:0; margin-bottom:12px;">Ranking</h3>
-            <div class="ranking-mode-tabs" role="tablist" aria-label="Rodzaj rankingu">
-              <button class="ranking-mode-tab active" data-ranking-view="classic" type="button">Czas 150</button>
-              <button class="ranking-mode-tab" data-ranking-view="intervals" type="button">Interwaly</button>
-            </div>
-            <div id="ranking-view-classic" class="ranking-view-panel active">
-              <div class="ranking-live-controls">
-                <button id="ranking-live-toggle-btn" class="ranking-live-toggle-btn" type="button">START!</button>
-              </div>
-              <p id="ranking-live-status" class="ranking-live-status"></p>
-              <div class="sheet-wrap" id="training-ranking-wrap"></div>
-              <div class="ranking-manual-add-wrap">
-                <button id="ranking-manual-add-btn" class="ranking-manual-add-btn" type="button" aria-label="Dodaj wpis recznie">+</button>
-              </div>
-              <div id="ranking-manual-form" class="ranking-manual-form">
-                <div class="ranking-manual-grid">
-                  <input id="ranking-manual-date" type="date" aria-label="Data treningu" />
-                  <input id="ranking-manual-time" type="text" inputmode="text" placeholder="MM:SS" aria-label="Czas treningu" />
-                  <input id="ranking-manual-distance" type="text" inputmode="decimal" placeholder="Dystans km" aria-label="Dystans treningu" />
-                </div>
-                <div class="ranking-manual-actions">
-                  <button id="ranking-manual-save-btn" class="ranking-manual-save" type="button">Dodaj</button>
-                  <button id="ranking-manual-cancel-btn" class="ranking-manual-cancel" type="button">Anuluj</button>
-                </div>
-                <p id="ranking-manual-error" class="ranking-manual-error"></p>
-              </div>
-            </div>
-            <div id="ranking-view-intervals" class="ranking-view-panel">
-              <div class="ranking-live-controls">
-                <button id="interval-toggle-btn" class="ranking-live-toggle-btn" type="button">START</button>
-              </div>
-              <p id="interval-status" class="ranking-live-status"></p>
-              <button id="interval-finish-btn" class="interval-finish-btn" type="button" disabled>Skoncz trening</button>
-              <div class="interval-ranking-grid">
-                <section class="interval-ranking-card">
-                  <h4 class="interval-ranking-title">BIEG</h4>
-                  <div class="sheet-wrap" id="interval-run-ranking-wrap"></div>
-                </section>
-                <section class="interval-ranking-card">
-                  <h4 class="interval-ranking-title">COOLDOWN</h4>
-                  <div class="sheet-wrap" id="interval-cooldown-ranking-wrap"></div>
-                </section>
-              </div>
-            </div>
-          </section>
+        <section class="panel">
+          <div class="panel-head">
+            <strong>Historia treningów</strong>
+            <small>tempo i średnia BPM</small>
+          </div>
+          <div class="table-wrap" id="training-table"></div>
         </section>
       </section>
+
+      <details class="scale-panel">
+        <summary>Skala karty i liczenie OVR <span>+</span></summary>
+        <div class="scale-content">
+          <p><strong>OVR = 60% WAGA + 30% TEMPO + 10% DYSCYPLINA.</strong> Waga 94 kg i tempo 6,0 km/h zaczynają od 40 pkt. Waga 82 kg oraz tempo 8,5 km/h dają po 100 pkt. Wynik pomiędzy nimi rośnie liniowo.</p>
+          <p>Dyscyplinę zbierasz przez ruchome 14 dni: maks. 2,86 pkt dziennie za kalorie, 2,14 pkt za dzień bez FFood/sweets oraz 3,75 pkt za punktowany trening (maks. 1 dziennie i 4 w każdym tygodniu). Limit dnia to 1700 kcal + 7,5 kcal za każdą minutę treningu (450 kcal za godzinę). Niewpisane kalorie nie przyznają punktów, a przekroczenie limitu stopniowo zmniejsza wynik do zera przy +500 kcal.</p>
+          <div class="tier-list">
+            <div class="tier-chip common">Czarna<br>0–49</div>
+            <div class="tier-chip bronze">Brązowa<br>50–69</div>
+            <div class="tier-chip silver">Srebrna<br>70–84</div>
+            <div class="tier-chip gold-tier">Złota<br>85–100</div>
+          </div>
+        </div>
+      </details>
+
     </main>
   </div>
 
-    <script src="app.js"></script>
+  <div class="card-update-overlay" id="card-update-overlay" aria-hidden="true">
+    <button class="card-update-backdrop" id="card-update-backdrop" type="button" aria-label="Zamknij prezentację karty"></button>
+    <div class="card-update-presentation" role="dialog" aria-label="Aktualizacja statystyk karty">
+      <div class="card-update-stack" id="card-update-stack"></div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const BASE_WEIGHT = 94;
+      const GOAL_WEIGHT = 82;
+      const BASE_PACE = 6;
+      const GOAL_PACE = 8.5;
+      const REST_KCAL = 1700;
+      const KCAL_PER_TRAINING_MINUTE = 450 / 60;
+      const CALORIE_POINTS_PER_DAY = 40 / 14;
+      const CLEAN_POINTS_PER_DAY = 30 / 14;
+      const TRAINING_POINTS_PER_SESSION = 30 / 8;
+      const DAY_MS = 86400000;
+      const DAY_START_HOUR = 5;
+      const START_AT = new Date(2026, 6, 29, 5, 0, 0, 0);
+      const START_DATE_KEY = "2026-07-29";
+      const TEST_ROW_COUNT = 20;
+      const isTestMode = Date.now() < START_AT.getTime();
+      const WEIGHTS_KEY = isTestMode ? "champion-stamina-test-weights-v2" : "champion-stamina-weights-v2";
+      const TRAININGS_KEY = isTestMode ? "champion-stamina-test-trainings-v2" : "champion-stamina-trainings-v2";
+      const OVR_KEY = isTestMode ? "champion-stamina-test-ovr-v2" : "champion-stamina-ovr-history-v2";
+      const TACTICS_PLAYERS_KEY = "stamina-tactics-universal-players-v1";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyA7JqE7bNPU6FHqJSad5lKwjm-c8ozY9rg",
+        authDomain: "bieganie-f4ada.firebaseapp.com",
+        databaseURL: "https://bieganie-f4ada-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "bieganie-f4ada",
+        storageBucket: "bieganie-f4ada.appspot.com",
+        messagingSenderId: "798631807038",
+        appId: "1:798631807038:web:fe21df42faead2b981696f"
+      };
+
+      let weights = [];
+      let trainings = [];
+      let ovrHistory = [];
+      let avatarPhoto = "";
+      let firebaseEnabled = false;
+      let weightsRef = null;
+      let trainingsRef = null;
+      let ovrRef = null;
+      let lastStoredOvrSignature = "";
+      let cardPresentationToken = 0;
+      let cardPresentationFrame = null;
+      let cardPresentationTimers = [];
+      let hasPlayedPrimaryCardEntry = false;
+
+      const $ = selector => document.querySelector(selector);
+      const $$ = selector => Array.from(document.querySelectorAll(selector));
+      const CARD_TIER_CLASSES = ["is-common", "is-bronze", "is-silver", "is-gold"];
+      const CARD_COUNTER_FIELDS = ["overall", "weightPoints", "pacePoints", "discipline"];
+
+      const todayKey = () => {
+        if (isTestMode) return shiftDateKey(START_DATE_KEY, TEST_ROW_COUNT - 1);
+        return statDateKey();
+      };
+      const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+      const average = values => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+      const format1 = value => Number.isFinite(value) ? value.toFixed(1).replace(".", ",") : "—";
+      const format2 = value => Number.isFinite(value) ? value.toFixed(2).replace(".", ",") : "—";
+      const formatWeight = value => Number.isFinite(value) ? value.toFixed(2) : "—";
+      const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      })[char]);
+
+      function localDateKey(value) {
+        const date = value instanceof Date ? value : new Date(value);
+        if (Number.isNaN(date.getTime())) return "";
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+
+      function statDateKey(value = new Date()) {
+        const date = new Date(value instanceof Date ? value.getTime() : value);
+        if (Number.isNaN(date.getTime())) return "";
+        if (date.getHours() < DAY_START_HOUR) date.setDate(date.getDate() - 1);
+        return localDateKey(date);
+      }
+
+      function dateFromKey(key) {
+        const [year, month, day] = String(key).split("-").map(Number);
+        return new Date(year, month - 1, day, 12);
+      }
+
+      function shiftDateKey(key, days) {
+        const date = dateFromKey(key);
+        date.setDate(date.getDate() + days);
+        return localDateKey(date);
+      }
+
+      function calendarDayNumber(key) {
+        const [year, month, day] = String(key).split("-").map(Number);
+        return Math.floor(Date.UTC(year, month - 1, day) / DAY_MS);
+      }
+
+      function formatDate(key) {
+        const date = dateFromKey(key);
+        return `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}`;
+      }
+
+      function uid(prefix) {
+        return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+      }
+
+      function normalizeWeights(source) {
+        return (Array.isArray(source) ? source : Object.values(source || {}))
+          .map(entry => ({
+            id: String(entry.id || uid("w")),
+            date: entry.date || (Number.isFinite(Number(entry.dayAnchor)) ? localDateKey(Number(entry.dayAnchor)) : ""),
+            weight: entry.weight !== null && entry.weight !== "" && Number.isFinite(Number(entry.weight)) ? Number(entry.weight) : null,
+            kcal: entry.kcal !== null && entry.kcal !== "" && Number.isFinite(Number(entry.kcal)) ? Math.round(Number(entry.kcal)) : null,
+            fastFood: Boolean(entry.fastFood),
+            recordedAt: String(entry.recordedAt || new Date().toISOString())
+          }))
+          .filter(entry => entry.date && (Number.isFinite(entry.weight) || Number.isFinite(entry.kcal) || entry.fastFood))
+          .sort((a, b) => a.date.localeCompare(b.date) || a.recordedAt.localeCompare(b.recordedAt));
+      }
+
+      function normalizeTrainings(source) {
+        return (Array.isArray(source) ? source : Object.values(source || {}))
+          .map(entry => ({
+            id: String(entry.id || uid("t")),
+            date: entry.date || statDateKey(entry.recordedAt),
+            pace: Number(entry.pace),
+            bpm: Number(entry.bpm),
+            minutes: Math.max(1, Math.round(Number(entry.minutes) || 0)),
+            recordedAt: String(entry.recordedAt || new Date().toISOString())
+          }))
+          .filter(entry => entry.date && Number.isFinite(entry.pace) && entry.pace > 0 && Number.isFinite(entry.bpm) && entry.bpm > 0 && entry.minutes > 0)
+          .sort((a, b) => a.date.localeCompare(b.date) || a.recordedAt.localeCompare(b.recordedAt));
+      }
+
+      function normalizeOvr(source) {
+        return (Array.isArray(source) ? source : Object.values(source || {}))
+          .map(entry => ({
+            id: String(entry.id || entry.date || uid("o")),
+            date: String(entry.date || ""),
+            overall: clamp(Math.round(Number(entry.overall) || 0), 0, 100),
+            weightScore: clamp(Math.round(Number(entry.weightScore) || 0), 0, 100),
+            paceScore: clamp(Math.round(Number(entry.paceScore) || 0), 0, 100),
+            disciplineScore: clamp(Math.round(Number(entry.disciplineScore) || 0), 0, 100)
+          }))
+          .filter(entry => entry.date)
+          .sort((a, b) => a.date.localeCompare(b.date));
+      }
+
+      function loadLocal() {
+        try { weights = normalizeWeights(JSON.parse(localStorage.getItem(WEIGHTS_KEY) || "[]")); } catch { weights = []; }
+        try { trainings = normalizeTrainings(JSON.parse(localStorage.getItem(TRAININGS_KEY) || "[]")); } catch { trainings = []; }
+        try { ovrHistory = normalizeOvr(JSON.parse(localStorage.getItem(OVR_KEY) || "[]")); } catch { ovrHistory = []; }
+      }
+
+      function saveLocal() {
+        localStorage.setItem(WEIGHTS_KEY, JSON.stringify(weights));
+        localStorage.setItem(TRAININGS_KEY, JSON.stringify(trainings));
+        localStorage.setItem(OVR_KEY, JSON.stringify(ovrHistory));
+      }
+
+      function latestWeightRows() {
+        const byDate = new Map();
+        weights.forEach(entry => byDate.set(entry.date, { ...(byDate.get(entry.date) || {}), ...entry }));
+        return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+      }
+
+      function latestTrainingRows() {
+        return [...trainings].sort((a, b) => a.date.localeCompare(b.date) || a.recordedAt.localeCompare(b.recordedAt));
+      }
+
+      function challengeRows() {
+        const count = isTestMode
+          ? TEST_ROW_COUNT
+          : Math.max(0, calendarDayNumber(todayKey()) - calendarDayNumber(START_DATE_KEY) + 1);
+        const storedByDate = new Map(latestWeightRows().map(entry => [entry.date, entry]));
+        return Array.from({ length: count }, (_, index) => {
+          const date = shiftDateKey(START_DATE_KEY, index);
+          return storedByDate.get(date) || {
+            id: `day-${date}`,
+            date,
+            weight: null,
+            kcal: null,
+            fastFood: false,
+            recordedAt: ""
+          };
+        });
+      }
+
+      function weightAverage7(endDate = todayKey()) {
+        const start = shiftDateKey(endDate, -6);
+        const values = latestWeightRows()
+          .filter(entry => entry.date >= start && entry.date <= endDate && Number.isFinite(entry.weight))
+          .map(entry => entry.weight);
+        return average(values);
+      }
+
+      function latestPace(endDate = todayKey()) {
+        const latest = latestTrainingRows().filter(entry => entry.date <= endDate).at(-1);
+        return latest?.pace ?? null;
+      }
+
+      function latestBpm(endDate = todayKey()) {
+        const latest = latestTrainingRows().filter(entry => entry.date <= endDate).at(-1);
+        return latest?.bpm ?? null;
+      }
+
+      function trainingMinutesForDay(date) {
+        return trainings
+          .filter(entry => entry.date === date)
+          .reduce((sum, entry) => sum + entry.minutes, 0);
+      }
+
+      function kcalLimitForDay(date) {
+        return Math.round(REST_KCAL + trainingMinutesForDay(date) * KCAL_PER_TRAINING_MINUTE);
+      }
+
+      function kcalBalance14(endDate = todayKey()) {
+        const start = shiftDateKey(endDate, -13);
+        const kcalEntries = latestWeightRows()
+          .filter(entry => entry.date >= start && entry.date <= endDate && Number.isFinite(entry.kcal));
+        const consumed = kcalEntries.reduce((sum, entry) => sum + entry.kcal, 0);
+        const baseNeed = kcalEntries.length * REST_KCAL;
+        const trainingBurn = trainings
+          .filter(entry => entry.date >= start && entry.date <= endDate)
+          .reduce((sum, entry) => sum + entry.minutes * KCAL_PER_TRAINING_MINUTE, 0);
+        return Math.round(consumed - baseNeed - trainingBurn);
+      }
+
+      function disciplineBreakdown(endDate = todayKey()) {
+        const days = Array.from({ length: 14 }, (_, index) => shiftDateKey(endDate, index - 13));
+        const rowByDate = new Map(latestWeightRows().map(entry => [entry.date, entry]));
+        const elapsedDates = new Set(
+          challengeRows()
+            .filter(row => row.date >= days[0] && row.date <= days[13])
+            .map(row => row.date)
+        );
+        const balance = kcalBalance14(endDate);
+        let enteredCalorieDays = 0;
+        let fastFoodDays = 0;
+        let calorieScore = 0;
+        let cleanScore = 0;
+
+        days.forEach(date => {
+          if (!elapsedDates.has(date)) return;
+          const entry = rowByDate.get(date);
+
+          if (Number.isFinite(entry?.kcal)) {
+            enteredCalorieDays += 1;
+            const surplus = entry.kcal - kcalLimitForDay(date);
+            const calorieQuality = clamp(1 - Math.max(0, surplus) / 500, 0, 1);
+            calorieScore += CALORIE_POINTS_PER_DAY * calorieQuality;
+          }
+
+          if (entry?.fastFood) {
+            fastFoodDays += 1;
+          } else {
+            cleanScore += CLEAN_POINTS_PER_DAY;
+          }
+        });
+
+        const creditedTrainingDays = (from, to) => Math.min(
+          4,
+          new Set(
+            trainings
+              .filter(entry => elapsedDates.has(entry.date) && entry.date >= from && entry.date <= to)
+              .map(entry => entry.date)
+          ).size
+        );
+        const firstWeekSessions = creditedTrainingDays(days[0], days[6]);
+        const secondWeekSessions = creditedTrainingDays(days[7], days[13]);
+        const sessions = firstWeekSessions + secondWeekSessions;
+        const trainingScore = sessions * TRAINING_POINTS_PER_SESSION;
+
+        return {
+          enteredCalorieDays,
+          sessions,
+          firstWeekSessions,
+          secondWeekSessions,
+          fastFoodDays,
+          kcalBalance: balance,
+          calorieScore,
+          trainingScore,
+          cleanScore,
+          total: clamp(Math.round(calorieScore + trainingScore + cleanScore), 0, 100)
+        };
+      }
+
+      function weightScore(weight = weightAverage7()) {
+        const measured = Number.isFinite(weight) ? weight : BASE_WEIGHT;
+        return clamp(Math.round(40 + ((BASE_WEIGHT - measured) / (BASE_WEIGHT - GOAL_WEIGHT)) * 60), 0, 100);
+      }
+
+      function paceScore(pace = latestPace()) {
+        const measured = Number.isFinite(pace) ? pace : BASE_PACE;
+        return clamp(Math.round(40 + ((measured - BASE_PACE) / (GOAL_PACE - BASE_PACE)) * 60), 0, 100);
+      }
+
+      function currentScore(endDate = todayKey()) {
+        const weight = weightAverage7(endDate);
+        const pace = latestPace(endDate);
+        const discipline = disciplineBreakdown(endDate).total;
+        const weightPoints = weightScore(weight);
+        const pacePoints = paceScore(pace);
+        return {
+          weight,
+          pace,
+          discipline,
+          weightPoints,
+          pacePoints,
+          overall: clamp(Math.round(weightPoints * .6 + pacePoints * .3 + discipline * .1), 0, 100)
+        };
+      }
+
+      function tierFor(overall) {
+        if (overall >= 85) return { className: "is-gold", label: "Złota" };
+        if (overall >= 70) return { className: "is-silver", label: "Srebrna" };
+        if (overall >= 50) return { className: "is-bronze", label: "Brązowa" };
+        return { className: "is-common", label: "Czarna" };
+      }
+
+      function avatarMarkup(tier) {
+        const content = avatarPhoto
+          ? `<span class="avatar-photo-layer"><img src="${escapeHtml(avatarPhoto)}" alt=""></span>`
+          : "PT";
+        return `<div class="player-detail-avatar ${tier.className}">${content}</div>`;
+      }
+
+      function renderCard() {
+        const score = currentScore();
+        const tier = tierFor(score.overall);
+        const portrait = avatarPhoto ? `<img src="${escapeHtml(avatarPhoto)}" alt="">` : "PT";
+        const entryClass = hasPlayedPrimaryCardEntry ? " no-entry-animation" : "";
+        $("#player-card").innerHTML = `
+          <div class="fifa-card-stage ${tier.className}${entryClass}">
+            <svg class="fifa-card-glow" viewBox="0 0 238.12 344" preserveAspectRatio="none" aria-hidden="true">
+              <use class="fifa-card-glow-wide" href="#player-card-outline"></use>
+              <use class="fifa-card-glow-near" href="#player-card-outline"></use>
+            </svg>
+            <section class="fifa-attribute-card ${tier.className}" aria-label="${tier.label} karta Piotrka: OVR ${score.overall}, waga ${score.weightPoints}, tempo ${score.pacePoints}, dyscyplina ${score.discipline}">
+              <div class="fifa-card-rating"><strong data-card-value="overall">${score.overall}</strong><span>OVR</span></div>
+              <div class="fifa-card-portrait ${avatarPhoto ? "has-photo" : ""}" aria-hidden="true">${portrait}</div>
+              <div class="fifa-card-name">PIOTREK</div>
+              <div class="fifa-card-stats">
+                <div class="fifa-card-stat"><strong data-card-value="weightPoints">${score.weightPoints}</strong><span>WAG</span></div>
+                <div class="fifa-card-stat"><strong data-card-value="pacePoints">${score.pacePoints}</strong><span>TEM</span></div>
+                <div class="fifa-card-stat"><strong data-card-value="discipline">${score.discipline}</strong><span>DYS</span></div>
+              </div>
+              <div class="fifa-card-shine" aria-hidden="true"><span></span><span></span></div>
+              <svg class="fifa-card-frame" viewBox="0 0 238.12 344" preserveAspectRatio="none" aria-hidden="true">
+                <use class="fifa-card-frame-bevel-shadow" href="#player-card-outline"></use>
+                <use class="fifa-card-frame-bevel-highlight" href="#player-card-outline"></use>
+                <use class="fifa-card-frame-stroke" href="#player-card-outline" transform="translate(4 4) scale(0.966403494 0.976744186)"></use>
+              </svg>
+            </section>
+          </div>`;
+        hasPlayedPrimaryCardEntry = true;
+        $("#profile-avatar").outerHTML = avatarMarkup(tier).replace(
+          '<div class="player-detail-avatar',
+          '<div id="profile-avatar" class="player-detail-avatar'
+        );
+      }
+
+      function clearCardPresentationSchedule() {
+        cardPresentationTimers.forEach(timer => clearTimeout(timer));
+        cardPresentationTimers = [];
+        if (cardPresentationFrame !== null) cancelAnimationFrame(cardPresentationFrame);
+        cardPresentationFrame = null;
+      }
+
+      function resetCardUpdatePresentationDom() {
+        const overlay = $("#card-update-overlay");
+        overlay.className = "card-update-overlay";
+        overlay.setAttribute("aria-hidden", "true");
+        $("#card-update-stack").replaceChildren();
+        document.body.classList.remove("card-presentation-open");
+      }
+
+      function closeCardUpdatePresentation() {
+        cardPresentationToken += 1;
+        clearCardPresentationSchedule();
+        const overlay = $("#card-update-overlay");
+        if (!overlay.classList.contains("is-open")) {
+          resetCardUpdatePresentationDom();
+          return;
+        }
+        const token = cardPresentationToken;
+        overlay.setAttribute("aria-hidden", "true");
+        overlay.classList.add("is-closing");
+        document.body.classList.remove("card-presentation-open");
+        scheduleCardPresentation(500, () => {
+          if (token === cardPresentationToken) resetCardUpdatePresentationDom();
+        });
+      }
+
+      function scheduleCardPresentation(delay, callback) {
+        const timer = setTimeout(callback, delay);
+        cardPresentationTimers.push(timer);
+      }
+
+      function applyTierToCard(stage, tierClass) {
+        const card = stage.querySelector(".fifa-attribute-card");
+        [stage, card].forEach(element => {
+          if (!element) return;
+          element.classList.remove(...CARD_TIER_CLASSES);
+          element.classList.add(tierClass);
+        });
+      }
+
+      function setCardLayerValues(layer, score) {
+        CARD_COUNTER_FIELDS.forEach(field => {
+          const valueElement = layer.querySelector(`[data-card-value="${field}"]`);
+          if (valueElement) valueElement.textContent = String(score[field]);
+        });
+      }
+
+      function addCardDeltaMarkers(layer, beforeScore, afterScore) {
+        CARD_COUNTER_FIELDS.forEach(field => {
+          const valueElement = layer.querySelector(`[data-card-value="${field}"]`);
+          if (!valueElement) return;
+          const delta = afterScore[field] - beforeScore[field];
+          if (delta === 0) return;
+          const marker = document.createElement("span");
+          marker.className = `card-stat-delta ${delta > 0 ? "is-up" : "is-down"}`;
+          marker.textContent = delta > 0 ? `▲${delta}` : `▼${Math.abs(delta)}`;
+          marker.setAttribute("aria-hidden", "true");
+          valueElement.parentElement.append(marker);
+        });
+      }
+
+      function createCardPresentationLayer(sourceStage, layerClass, tierClass, beforeScore, afterScore) {
+        const layer = document.createElement("div");
+        layer.className = `card-update-layer ${layerClass}`;
+        const stage = sourceStage.cloneNode(true);
+        applyTierToCard(stage, tierClass);
+        layer.append(stage);
+        setCardLayerValues(layer, beforeScore);
+        addCardDeltaMarkers(layer, beforeScore, afterScore);
+        return layer;
+      }
+
+      function animateCardCounters(beforeScore, afterScore, token) {
+        const overlay = $("#card-update-overlay");
+        const start = performance.now();
+        const duration = 2000;
+        overlay.classList.add("is-counting");
+
+        const tick = now => {
+          if (token !== cardPresentationToken || !overlay.classList.contains("is-open")) return;
+          const progress = clamp((now - start) / duration, 0, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          const visibleScore = {};
+          CARD_COUNTER_FIELDS.forEach(field => {
+            visibleScore[field] = Math.round(
+              beforeScore[field] + (afterScore[field] - beforeScore[field]) * eased
+            );
+          });
+          $$("#card-update-stack .card-update-layer").forEach(layer => {
+            setCardLayerValues(layer, visibleScore);
+          });
+
+          if (progress < 1) {
+            cardPresentationFrame = requestAnimationFrame(tick);
+          } else {
+            cardPresentationFrame = null;
+            $$("#card-update-stack .card-update-layer").forEach(layer => {
+              setCardLayerValues(layer, afterScore);
+            });
+          }
+        };
+
+        cardPresentationFrame = requestAnimationFrame(tick);
+      }
+
+      function showCardUpdatePresentation(beforeScore, afterScore) {
+        cardPresentationToken += 1;
+        clearCardPresentationSchedule();
+        resetCardUpdatePresentationDom();
+        const sourceStage = $("#player-card .fifa-card-stage");
+        if (!sourceStage) return;
+
+        const overlay = $("#card-update-overlay");
+        const stack = $("#card-update-stack");
+        const beforeTier = tierFor(beforeScore.overall);
+        const afterTier = tierFor(afterScore.overall);
+        const tierChanged = beforeTier.className !== afterTier.className;
+        const token = cardPresentationToken;
+
+        stack.append(createCardPresentationLayer(
+          sourceStage,
+          "is-previous-tier",
+          beforeTier.className,
+          beforeScore,
+          afterScore
+        ));
+        if (tierChanged) {
+          stack.append(createCardPresentationLayer(
+            sourceStage,
+            "is-next-tier",
+            afterTier.className,
+            beforeScore,
+            afterScore
+          ));
+        }
+
+        document.body.classList.add("card-presentation-open");
+        overlay.setAttribute("aria-hidden", "false");
+        overlay.classList.add("is-open");
+        scheduleCardPresentation(20, () => {
+          if (token === cardPresentationToken) overlay.classList.add("is-dimmed");
+        });
+        scheduleCardPresentation(1000, () => {
+          if (token === cardPresentationToken) overlay.classList.add("is-card-visible");
+        });
+        scheduleCardPresentation(2000, () => {
+          if (token !== cardPresentationToken) return;
+          if (tierChanged) overlay.classList.add("is-tier-swapped");
+          animateCardCounters(beforeScore, afterScore, token);
+        });
+      }
+
+      function renderProfileMetrics() {
+        const score = currentScore();
+        $("#profile-weight").textContent = formatWeight(score.weight);
+        $("#profile-pace").textContent = format1(score.pace);
+        $("#profile-discipline").textContent = `${score.discipline}%`;
+      }
+
+      function chartMarkup(points, options) {
+        const width = 390;
+        const height = 205;
+        const pad = { left: 32, right: 10, top: 16, bottom: 31 };
+        if (!points.length) return '<div class="chart-empty">Brak danych</div>';
+
+        const values = points.map(point => point.value).filter(Number.isFinite);
+        if (!values.length) return '<div class="chart-empty">Brak danych</div>';
+        let min = Number.isFinite(options.min) ? options.min : Math.min(...values);
+        let max = Number.isFinite(options.max) ? options.max : Math.max(...values);
+        const spread = Math.max(max - min, options.minSpread || 1);
+        const extra = spread * .2;
+        min -= extra;
+        max += extra;
+        if (min === max) { min -= .5; max += .5; }
+
+        const innerWidth = width - pad.left - pad.right;
+        const innerHeight = height - pad.top - pad.bottom;
+        const x = index => pad.left + (points.length === 1 ? innerWidth / 2 : (index / (points.length - 1)) * innerWidth);
+        const y = value => pad.top + ((max - value) / (max - min)) * innerHeight;
+        const coords = points
+          .map((point, index) => Number.isFinite(point.value) ? `${x(index).toFixed(1)},${y(point.value).toFixed(1)}` : "")
+          .filter(Boolean)
+          .join(" ");
+        const grid = [0, .5, 1].map(fraction => {
+          const gridY = pad.top + innerHeight * fraction;
+          const value = max - (max - min) * fraction;
+          return `<line class="chart-grid" x1="${pad.left}" y1="${gridY}" x2="${width - pad.right}" y2="${gridY}"></line>
+            <text class="chart-label" x="${pad.left - 5}" y="${gridY + 3}" text-anchor="end">${options.format(value)}</text>`;
+        }).join("");
+        const every = points.length > 12 ? Math.ceil(points.length / 6) : 1;
+        const labels = points.map((point, index) => (
+          index % every === 0 || index === points.length - 1
+            ? `<text class="chart-label" x="${x(index)}" y="${height - 10}" text-anchor="middle">${escapeHtml(point.label)}</text>`
+            : ""
+        )).join("");
+        const dots = points.map((point, index) => Number.isFinite(point.value)
+          ? `<circle class="chart-dot ${options.kind}" cx="${x(index)}" cy="${y(point.value)}" r="3.5"><title>${escapeHtml(point.fullLabel)}: ${escapeHtml(options.format(point.value))}</title></circle>`
+          : "").join("");
+
+        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(options.ariaLabel)}">
+          ${grid}
+          ${coords ? `<polyline class="chart-line ${options.kind}" points="${coords}"></polyline>` : ""}
+          ${dots}
+          ${labels}
+        </svg>`;
+      }
+
+      function renderWeightChart() {
+        const weightRows = latestWeightRows().filter(entry => Number.isFinite(entry.weight));
+        const points = weightRows.map(entry => {
+          const rollingStart = shiftDateKey(entry.date, -6);
+          const value = average(weightRows
+            .filter(candidate => (
+              candidate.date >= rollingStart
+              && candidate.date <= entry.date
+            ))
+            .map(candidate => candidate.weight));
+          return {
+            label: formatDate(entry.date),
+            fullLabel: `${formatDate(entry.date)} · średnia z 7 dni`,
+            value
+          };
+        });
+        $("#weight-chart").innerHTML = chartMarkup(points, {
+          kind: "weight",
+          ariaLabel: "Pełna historia pomiarów wagi jako krocząca średnia z siedmiu dni",
+          minSpread: 1,
+          format: value => formatWeight(value)
+        });
+      }
+
+      function overallHistoryMarkup(records, ariaLabel) {
+        if (!records.length) {
+          return '<div class="chart-empty" style="min-height:220px">Brak danych</div>';
+        }
+
+        const chartHeight = 220;
+        const plotTop = 20;
+        const plotBottom = 180;
+        const plotLeft = 34;
+        const plotRight = 16;
+        const chartWidth = 360;
+        const step = records.length > 1
+          ? (chartWidth - plotLeft - plotRight) / (records.length - 1)
+          : 0;
+        const overalls = records.map(entry => entry.overall);
+        const minimumOverall = Math.min(...overalls);
+        const maximumOverall = Math.max(...overalls);
+        const overallRange = maximumOverall - minimumOverall;
+        const rawGridStep = overallRange > 0 ? overallRange / 5 : 5;
+        const gridStepOptions = [1, 2, 5, 10, 20];
+        const gridStep = gridStepOptions.reduce((nearest, option) => (
+          Math.abs(option - rawGridStep) < Math.abs(nearest - rawGridStep) ? option : nearest
+        ), gridStepOptions[0]);
+        let chartMinimum = Math.max(0, Math.floor(minimumOverall / gridStep) * gridStep);
+        let chartMaximum = Math.min(100, Math.ceil(maximumOverall / gridStep) * gridStep);
+        if (chartMinimum === minimumOverall && chartMinimum > 0) {
+          chartMinimum = Math.max(0, chartMinimum - gridStep);
+        }
+        if (chartMaximum === maximumOverall && chartMaximum < 100) {
+          chartMaximum = Math.min(100, chartMaximum + gridStep);
+        }
+        if (chartMaximum === chartMinimum) {
+          chartMinimum = Math.max(0, chartMinimum - 5);
+          chartMaximum = Math.min(100, chartMaximum + 5);
+        }
+        const yForOverall = overall => (
+          plotTop
+          + ((chartMaximum - overall) / (chartMaximum - chartMinimum))
+          * (plotBottom - plotTop)
+        );
+        const gridLevels = [];
+        for (let level = chartMaximum; level >= chartMinimum; level -= gridStep) {
+          gridLevels.push(level);
+        }
+        if (gridLevels[gridLevels.length - 1] !== chartMinimum) {
+          gridLevels.push(chartMinimum);
+        }
+
+        let previousTier = null;
+        const points = records.map((entry, index) => {
+          const x = records.length === 1 ? chartWidth / 2 : plotLeft + index * step;
+          const xPercent = (x / chartWidth) * 100;
+          const y = yForOverall(entry.overall);
+          const tier = tierFor(entry.overall);
+          const isTransition = index > 0 && tier.className !== previousTier;
+          previousTier = tier.className;
+          return {
+            x,
+            xPercent,
+            y,
+            overall: entry.overall,
+            dateLabel: formatDate(entry.date),
+            tier: tier.className,
+            tierLabel: tier.label,
+            isTransition,
+            index
+          };
+        });
+        const historyData = points.map(({ xPercent, y, overall, dateLabel, tierLabel }) => ({
+          xPercent,
+          y,
+          overall,
+          dateLabel,
+          tierLabel
+        }));
+
+        return `
+          <div
+            class="overall-history-chart"
+            data-overall-history-chart
+            data-overall-history-points="${escapeHtml(JSON.stringify(historyData))}"
+            tabindex="0"
+            aria-label="${escapeHtml(ariaLabel)}">
+            <svg
+              class="overall-history-svg"
+              viewBox="0 0 ${chartWidth} ${chartHeight}"
+              preserveAspectRatio="none"
+              aria-hidden="true">
+              ${gridLevels.map(level => {
+                const y = yForOverall(level);
+                return `
+                  <line class="overall-history-grid-line" x1="${plotLeft}" y1="${y}" x2="${chartWidth - plotRight}" y2="${y}"></line>
+                  <text class="overall-history-grid-label" x="7" y="${y + 3}">${level}</text>
+                `;
+              }).join("")}
+              ${points.slice(1).map((point, index) => {
+                const previousPoint = points[index];
+                return `
+                  <line
+                    class="overall-history-path ${previousPoint.tier}"
+                    x1="${previousPoint.x}"
+                    y1="${previousPoint.y}"
+                    x2="${point.x}"
+                    y2="${point.y}">
+                  </line>
+                `;
+              }).join("")}
+            </svg>
+            <span class="overall-history-cursor-line" data-overall-history-cursor-line aria-hidden="true"></span>
+            <span class="overall-history-cursor-tooltip" data-overall-history-cursor-tooltip aria-live="polite">
+              <strong data-overall-history-tooltip-overall></strong>
+              <span data-overall-history-tooltip-meta></span>
+            </span>
+            ${points.filter(point => point.isTransition).map(point => `
+              <button
+                class="overall-history-point ${point.tier}"
+                type="button"
+                data-overall-history-index="${point.index}"
+                style="left:${point.xPercent}%;top:${point.y}px"
+                aria-label="Zmiana klasy na ${point.tierLabel}, OVR ${point.overall}, ${point.dateLabel}">
+              </button>
+            `).join("")}
+          </div>
+        `;
+      }
+
+      function initializeOverallHistoryInteraction(chart) {
+        if (!chart) return;
+        let points = [];
+        try {
+          points = JSON.parse(chart.dataset.overallHistoryPoints || "[]");
+        } catch {}
+        if (!points.length) return;
+
+        const cursorLine = chart.querySelector("[data-overall-history-cursor-line]");
+        const tooltip = chart.querySelector("[data-overall-history-cursor-tooltip]");
+        const tooltipOverall = chart.querySelector("[data-overall-history-tooltip-overall]");
+        const tooltipMeta = chart.querySelector("[data-overall-history-tooltip-meta]");
+        let selectedIndex = points.length - 1;
+
+        const showPoint = rawIndex => {
+          selectedIndex = clamp(Math.round(rawIndex), 0, points.length - 1);
+          const point = points[selectedIndex];
+          const left = `${point.xPercent}%`;
+          cursorLine.style.left = left;
+          tooltip.style.left = left;
+          tooltip.style.setProperty("--history-cursor-y", `${point.y}px`);
+          tooltip.classList.toggle("is-below", point.y < 72);
+          tooltip.classList.toggle("is-left-edge", point.xPercent < 15);
+          tooltip.classList.toggle("is-right-edge", point.xPercent > 85);
+          tooltipOverall.textContent = `OVR ${point.overall}`;
+          tooltipMeta.textContent = `${point.dateLabel} · ${point.tierLabel} karta`;
+          chart.classList.add("is-inspecting");
+        };
+
+        const indexAtPointer = clientX => {
+          const bounds = chart.getBoundingClientRect();
+          const pointerPercent = clamp(((clientX - bounds.left) / bounds.width) * 100, 0, 100);
+          let nearestIndex = 0;
+          let nearestDistance = Infinity;
+          points.forEach((point, index) => {
+            const distance = Math.abs(point.xPercent - pointerPercent);
+            if (distance < nearestDistance) {
+              nearestDistance = distance;
+              nearestIndex = index;
+            }
+          });
+          return nearestIndex;
+        };
+
+        chart.addEventListener("pointerdown", event => {
+          if (!event.isPrimary) return;
+          showPoint(indexAtPointer(event.clientX));
+          if (event.pointerType !== "mouse") {
+            try {
+              chart.setPointerCapture(event.pointerId);
+            } catch {}
+          }
+        });
+        chart.addEventListener("pointermove", event => {
+          if (!event.isPrimary) return;
+          showPoint(indexAtPointer(event.clientX));
+        });
+        chart.addEventListener("pointerleave", event => {
+          if (event.pointerType === "mouse") chart.classList.remove("is-inspecting");
+        });
+        chart.addEventListener("focus", () => showPoint(selectedIndex));
+        chart.addEventListener("blur", event => {
+          if (!chart.contains(event.relatedTarget)) chart.classList.remove("is-inspecting");
+        });
+        chart.addEventListener("keydown", event => {
+          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+          event.preventDefault();
+          showPoint(selectedIndex + (event.key === "ArrowLeft" ? -1 : 1));
+        });
+        chart.querySelectorAll("[data-overall-history-index]").forEach(pointEl => {
+          const pointIndex = Number(pointEl.dataset.overallHistoryIndex);
+          pointEl.addEventListener("mouseenter", () => showPoint(pointIndex));
+          pointEl.addEventListener("focus", () => showPoint(pointIndex));
+          pointEl.addEventListener("click", () => showPoint(pointIndex));
+        });
+      }
+
+      function renderOverallChart() {
+        const score = currentScore();
+        const today = todayKey();
+        const rows = normalizeOvr([
+          ...ovrHistory.filter(entry => entry.date !== today),
+          { id: today, date: today, overall: score.overall, weightScore: score.weightPoints, paceScore: score.pacePoints, disciplineScore: score.discipline }
+        ]);
+        $("#overall-chart").innerHTML = overallHistoryMarkup(
+          rows,
+          "Wykres historii OVR. Przesuń wskaźnik, aby sprawdzić dzień i klasę karty."
+        );
+        initializeOverallHistoryInteraction($("#overall-chart [data-overall-history-chart]"));
+      }
+
+      function rowTone(value) {
+        if (!Number.isFinite(value) || value === 0) return "";
+        return value < 0 ? "good" : "bad";
+      }
+
+      function renderWeightTable() {
+        const rows = challengeRows();
+        $("#table-mode-note").innerHTML = isTestMode
+          ? '<span class="test-badge">Test · 20 wierszy</span>'
+          : `${rows.length} ${rows.length === 1 ? "dzień" : "dni"} od 29.07`;
+        if (!rows.length) {
+          $("#weight-table").innerHTML = '<div class="chart-empty" style="min-height:72px">Start 29.07 o 05:00</div>';
+          return;
+        }
+
+        const weeks = [];
+        let comparisonAverage = BASE_WEIGHT;
+        for (let start = 0; start < rows.length; start += 7) {
+          const weekRows = rows.slice(start, start + 7);
+          const averageWeight = average(weekRows.map(row => row.weight).filter(Number.isFinite));
+          const difference = Number.isFinite(averageWeight)
+            ? averageWeight - comparisonAverage
+            : null;
+          weeks.push({
+            start,
+            length: weekRows.length,
+            averageWeight,
+            difference
+          });
+          if (Number.isFinite(averageWeight)) comparisonAverage = averageWeight;
+        }
+
+        $("#weight-table").innerHTML = `
+          <table>
+            <colgroup>
+              <col style="width:5%"><col style="width:11%"><col style="width:9%"><col style="width:20%"><col style="width:12%">
+              <col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:7%">
+            </colgroup>
+            <thead><tr><th>#</th><th>Data</th><th>OVR</th><th>Kcal</th><th>Waga</th><th>Różnica</th><th>Śr. tyg.</th><th>Roz. tyg.</th><th>FF/S</th></tr></thead>
+            <tbody>${rows.map((entry, index) => {
+              const previousWeight = index > 0 ? rows[index - 1].weight : null;
+              const delta = Number.isFinite(entry.weight) && Number.isFinite(previousWeight) ? entry.weight - previousWeight : null;
+              const dailyScore = currentScore(entry.date);
+              const dailyTier = tierFor(dailyScore.overall);
+              const kcalLimit = kcalLimitForDay(entry.date);
+              const kcalDelta = Number.isFinite(entry.kcal) ? Math.round(entry.kcal - kcalLimit) : null;
+              const kcalClass = Number.isFinite(kcalDelta) ? (kcalDelta <= 0 ? "good" : "bad") : "muted";
+              const kcalEquivalentMinutes = Number.isFinite(kcalDelta)
+                ? Math.round(Math.abs(kcalDelta) / KCAL_PER_TRAINING_MINUTE)
+                : null;
+              const kcalDisplay = Number.isFinite(kcalDelta)
+                ? `<span class="kcal-minutes">${kcalDelta > 0 ? `(+${kcalEquivalentMinutes} min)` : `(${kcalEquivalentMinutes} min zapasu)`}</span><span class="kcal-value">${kcalDelta > 0 ? "+" : ""}${kcalDelta}</span>`
+                : "";
+              const week = weeks.find(item => item.start === index);
+              return `<tr>
+                <td>${index + 1}</td>
+                <td class="date-cell">${formatDate(entry.date)}</td>
+                <td><span class="ovr-pill ${dailyTier.className}" title="${dailyTier.label} karta · OVR ${dailyScore.overall}">${dailyScore.overall}</span></td>
+                <td class="editable-cell ${kcalClass}" data-edit-cell title="${Number.isFinite(entry.kcal) ? `Wpisano: ${entry.kcal} kcal · ` : ""}Limit: ${kcalLimit} kcal (${trainingMinutesForDay(entry.date)} min treningu)">
+                  <span class="cell-display">${kcalDisplay}</span>
+                  <input class="table-input" data-day-field="kcal" data-date="${entry.date}" type="text" inputmode="numeric" value="${Number.isFinite(entry.kcal) ? entry.kcal : ""}" aria-label="Kalorie ${formatDate(entry.date)}">
+                </td>
+                <td class="editable-cell" data-edit-cell>
+                  <span class="cell-display">${Number.isFinite(entry.weight) ? formatWeight(entry.weight) : ""}</span>
+                  <input class="table-input" data-day-field="weight" data-date="${entry.date}" type="text" inputmode="decimal" value="${Number.isFinite(entry.weight) ? formatWeight(entry.weight) : ""}" aria-label="Waga ${formatDate(entry.date)}">
+                </td>
+                <td class="${rowTone(delta)}">${Number.isFinite(delta) ? `${delta > 0 ? "+" : ""}${format2(delta)}` : "—"}</td>
+                ${week ? `<td class="week-cell" rowspan="${week.length}">${formatWeight(week.averageWeight)}</td>` : ""}
+                ${week ? `<td class="week-cell ${rowTone(week.difference)}" rowspan="${week.length}">${Number.isFinite(week.difference) ? `${week.difference > 0 ? "+" : ""}${format2(week.difference)}` : "—"}</td>` : ""}
+                <td class="food-cell ${entry.fastFood ? "bad" : "good"}"><input class="food-check" type="checkbox" data-food-date="${entry.date}" aria-label="Fast food lub słodycze ${formatDate(entry.date)}" ${entry.fastFood ? "checked" : ""}></td>
+              </tr>`;
+            }).join("")}</tbody>
+          </table>`;
+      }
+
+      function renderTrainingTable() {
+        const rows = [...latestTrainingRows()].reverse();
+        $("#training-table").innerHTML = rows.length ? `
+          <table class="training-table">
+            <colgroup><col style="width:9%"><col style="width:22%"><col style="width:25%"><col style="width:18%"><col style="width:17%"><col style="width:9%"></colgroup>
+            <thead><tr><th>#</th><th>Data</th><th>Tempo</th><th>BPM</th><th>Czas</th><th>X</th></tr></thead>
+            <tbody>${rows.map((entry, index) => `<tr>
+              <td>${rows.length - index}</td>
+              <td class="date-cell">${formatDate(entry.date)}</td>
+              <td>${format1(entry.pace)}</td>
+              <td>${Math.round(entry.bpm)}</td>
+              <td>${entry.minutes} min</td>
+              <td><button class="delete-button" type="button" data-delete-training="${escapeHtml(entry.id)}" aria-label="Usuń trening">X</button></td>
+            </tr>`).join("")}</tbody>
+          </table>` : '<div class="chart-empty" style="min-height:72px">Brak treningów</div>';
+      }
+
+      function renderModeMetrics() {
+        const weight = weightAverage7();
+        const remaining = Number.isFinite(weight) ? Math.max(0, weight - GOAL_WEIGHT) : null;
+        const balance = kcalBalance14();
+        $("#weight-current").textContent = formatWeight(weight);
+        $("#kcal-balance").textContent = `${balance > 0 ? "+" : ""}${Math.round(balance)}`;
+        $("#kcal-balance").className = balance < 0 ? "good" : balance > 0 ? "bad" : "";
+        $("#weight-to-go").textContent = formatWeight(remaining);
+        $("#training-pace").textContent = format1(latestPace());
+        $("#training-bpm").textContent = Number.isFinite(latestBpm()) ? String(Math.round(latestBpm())) : "—";
+      }
+
+      function storeOvrSnapshot() {
+        const score = currentScore();
+        const date = todayKey();
+        const snapshot = {
+          id: date,
+          date,
+          overall: score.overall,
+          weightScore: score.weightPoints,
+          paceScore: score.pacePoints,
+          disciplineScore: score.discipline
+        };
+        const signature = JSON.stringify(snapshot);
+        if (signature === lastStoredOvrSignature) return;
+        lastStoredOvrSignature = signature;
+        ovrHistory = normalizeOvr([...ovrHistory.filter(entry => entry.date !== date), snapshot]);
+        saveLocal();
+        if (firebaseEnabled && ovrRef) ovrRef.child(date).set(snapshot).catch(() => {});
+      }
+
+      function renderAll() {
+        renderCard();
+        renderProfileMetrics();
+        renderOverallChart();
+        renderWeightChart();
+        renderWeightTable();
+        renderTrainingTable();
+        renderModeMetrics();
+        storeOvrSnapshot();
+      }
+
+      function parseTymekPhoto(raw) {
+        try {
+          const players = typeof raw === "string" ? JSON.parse(raw) : raw;
+          if (!Array.isArray(players)) return "";
+          const tymek = players.find(player => String(player.nickname || player.name || "").trim().toLocaleLowerCase("pl") === "tymek");
+          return typeof tymek?.photo === "string" && tymek.photo.startsWith("data:image/") ? tymek.photo : "";
+        } catch {
+          return "";
+        }
+      }
+
+      async function loadAvatar(db) {
+        avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY));
+        if (avatarPhoto) {
+          renderAll();
+          return;
+        }
+        try {
+          const snapshot = await db.ref(`stamina-tactics-data-v1/values/${TACTICS_PLAYERS_KEY}`).once("value");
+          const record = snapshot.val();
+          avatarPhoto = parseTymekPhoto(typeof record === "string" ? record : record?.value);
+          if (avatarPhoto) renderAll();
+        } catch {}
+      }
+
+      function persistWeights() {
+        weights = normalizeWeights(weights);
+        saveLocal();
+        if (!firebaseEnabled || !weightsRef) return Promise.resolve();
+        return weightsRef.set(Object.fromEntries(weights.map(entry => [entry.id, entry])));
+      }
+
+      function persistTrainings() {
+        trainings = normalizeTrainings(trainings);
+        saveLocal();
+        if (!firebaseEnabled || !trainingsRef) return Promise.resolve();
+        return trainingsRef.set(Object.fromEntries(trainings.map(entry => [entry.id, entry])));
+      }
+
+      async function initializeStorage() {
+        loadLocal();
+        renderAll();
+        try {
+          if (!window.firebase?.database) throw new Error("Firebase niedostępny");
+          const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
+          const db = app.database();
+          loadAvatar(db);
+
+          if (isTestMode) {
+            firebaseEnabled = false;
+            $("#sync-state").textContent = "Test • start 29.07 05:00";
+            return;
+          }
+
+          const root = db.ref("champion-stamina-v2");
+          weightsRef = root.child("weights");
+          trainingsRef = root.child("trainings");
+          ovrRef = root.child("ovr-history");
+          firebaseEnabled = true;
+          $("#sync-state").textContent = "Synchronizacja online";
+
+          const [weightSnapshot, trainingSnapshot, ovrSnapshot] = await Promise.all([
+            weightsRef.once("value"),
+            trainingsRef.once("value"),
+            ovrRef.once("value")
+          ]);
+          weights = normalizeWeights(weightSnapshot.val() || weights);
+          trainings = normalizeTrainings(trainingSnapshot.val() || trainings);
+          ovrHistory = normalizeOvr(ovrSnapshot.val() || ovrHistory);
+          saveLocal();
+          renderAll();
+
+          weightsRef.on("value", snapshot => {
+            weights = normalizeWeights(snapshot.val());
+            saveLocal();
+            renderAll();
+          });
+          trainingsRef.on("value", snapshot => {
+            trainings = normalizeTrainings(snapshot.val());
+            saveLocal();
+            renderAll();
+          });
+          ovrRef.on("value", snapshot => {
+            ovrHistory = normalizeOvr(snapshot.val());
+            saveLocal();
+            renderOverallChart();
+          });
+        } catch (error) {
+          firebaseEnabled = false;
+          $("#sync-state").textContent = "Tryb lokalny";
+          avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY));
+          renderAll();
+        }
+      }
+
+      $$(".mode-button").forEach(button => {
+        button.addEventListener("click", () => {
+          const mode = button.dataset.mode;
+          $$(".mode-button").forEach(item => item.classList.toggle("is-active", item === button));
+          $$(".mode-panel").forEach(panel => panel.classList.toggle("is-active", panel.id === `mode-${mode}`));
+        });
+      });
+
+      $("#training-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const date = todayKey();
+        const pace = Number($("#pace-input").value);
+        const bpm = Number($("#bpm-input").value);
+        const minutes = Math.round(Number($("#minutes-input").value));
+        if (!Number.isFinite(pace) || !Number.isFinite(bpm) || !Number.isFinite(minutes) || minutes <= 0) {
+          $("#training-form-note").textContent = "Podaj tempo, średnie BPM i czas.";
+          return;
+        }
+        const beforeScore = currentScore();
+        trainings.push({ id: uid("t"), date, pace, bpm: Math.round(bpm), minutes, recordedAt: new Date().toISOString() });
+        $("#training-form-note").textContent = `Trening zapisany jako ${formatDate(date)}. Limit dnia: ${kcalLimitForDay(date)} kcal.`;
+        $("#pace-input").value = "";
+        $("#bpm-input").value = "";
+        $("#minutes-input").value = "";
+        const persistPromise = persistTrainings().catch(() => { $("#sync-state").textContent = "Zapis lokalny"; });
+        renderAll();
+        showCardUpdatePresentation(beforeScore, currentScore());
+        await persistPromise;
+      });
+
+      async function saveWeightTableCell(event) {
+        const fieldInput = event.target.closest("[data-day-field][data-date]");
+        const foodInput = event.target.closest("[data-food-date]");
+        if (!fieldInput && !foodInput) return;
+        const date = fieldInput?.dataset.date || foodInput?.dataset.foodDate;
+        const existing = weights.find(entry => entry.date === date);
+        const next = {
+          id: existing?.id || `day-${date}`,
+          date,
+          weight: existing?.weight ?? null,
+          kcal: existing?.kcal ?? null,
+          fastFood: existing?.fastFood ?? false,
+          recordedAt: new Date().toISOString()
+        };
+
+        if (fieldInput) {
+          const field = fieldInput.dataset.dayField;
+          const raw = fieldInput.value.trim().replace(",", ".");
+          const value = raw === "" ? null : Number(raw);
+          if (value !== null && (!Number.isFinite(value) || value < 0)) {
+            renderAll();
+            return;
+          }
+          next[field] = field === "kcal" && Number.isFinite(value) ? Math.round(value) : value;
+        } else {
+          next.fastFood = foodInput.checked;
+        }
+
+        const beforeScore = currentScore();
+        weights = weights.filter(entry => entry.date !== date);
+        if (Number.isFinite(next.weight) || Number.isFinite(next.kcal) || next.fastFood) weights.push(next);
+        const persistPromise = persistWeights().catch(() => {});
+        renderAll();
+        showCardUpdatePresentation(beforeScore, currentScore());
+        await persistPromise;
+      }
+
+      $("#weight-table").addEventListener("click", event => {
+        if (event.target.matches("[data-food-date]")) return;
+        const cell = event.target.closest("[data-edit-cell]");
+        if (!cell || cell.classList.contains("is-editing")) return;
+        const input = cell.querySelector("[data-day-field][data-date]");
+        if (!input) return;
+        cell.classList.add("is-editing");
+        input.focus();
+        input.select();
+      });
+
+      $("#weight-table").addEventListener("keydown", event => {
+        if (!event.target.matches("[data-day-field][data-date]")) return;
+        if (event.key === "Enter") {
+          event.preventDefault();
+          event.target.dataset.enterCommit = "1";
+          saveWeightTableCell(event);
+          event.target.blur();
+        } else if (event.key === "Escape") {
+          event.preventDefault();
+          renderAll();
+        }
+      });
+
+      $("#weight-table").addEventListener("change", event => {
+        if (event.target.matches("[data-food-date]")) saveWeightTableCell(event);
+      });
+      $("#weight-table").addEventListener("focusout", event => {
+        if (!event.target.matches("[data-day-field][data-date]")) return;
+        if (event.target.dataset.enterCommit === "1") {
+          delete event.target.dataset.enterCommit;
+          return;
+        }
+        saveWeightTableCell(event);
+      });
+
+      $("#training-table").addEventListener("click", async event => {
+        const button = event.target.closest("[data-delete-training]");
+        if (!button) return;
+        const beforeScore = currentScore();
+        trainings = trainings.filter(entry => entry.id !== button.dataset.deleteTraining);
+        const persistPromise = persistTrainings().catch(() => {});
+        renderAll();
+        showCardUpdatePresentation(beforeScore, currentScore());
+        await persistPromise;
+      });
+
+      $("#card-update-backdrop").addEventListener("click", closeCardUpdatePresentation);
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && $("#card-update-overlay").classList.contains("is-open")) {
+          closeCardUpdatePresentation();
+        }
+      });
+
+      initializeStorage();
+    })();
+  </script>
 </body>
 </html>
-
-
