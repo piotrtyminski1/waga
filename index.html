@@ -167,6 +167,11 @@
       animation: none;
     }
 
+    .fifa-card-stage.is-entry-pending {
+      opacity: 0;
+      animation: none;
+    }
+
     .fifa-card-glow {
       position: absolute;
       inset: 0;
@@ -350,6 +355,41 @@
       mask-image: linear-gradient(to bottom, #000 0 52%, rgba(0, 0, 0, .94) 60.5%, rgba(0, 0, 0, .68) 70.36%, rgba(0, 0, 0, .3) 78.86%, transparent 86%);
     }
 
+    .fifa-card-portrait-shine {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: block;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      -webkit-clip-path: polygon(-38% -21.5%, 121.9% -89.5%, 137.9% -55.2%, -21.9% 12.8%);
+      clip-path: polygon(-38% -21.5%, 121.9% -89.5%, 137.9% -55.2%, -21.9% 12.8%);
+      animation: fifa-portrait-shine .5s linear both;
+    }
+
+    .fifa-card-portrait-shine img {
+      position: absolute;
+      inset: 0;
+      opacity: 1;
+      filter: brightness(0) invert(1);
+      mix-blend-mode: screen;
+    }
+
+    @keyframes fifa-portrait-shine {
+      0% {
+        opacity: .4;
+        -webkit-clip-path: polygon(-38% -21.5%, 121.9% -89.5%, 137.9% -55.2%, -21.9% 12.8%);
+        clip-path: polygon(-38% -21.5%, 121.9% -89.5%, 137.9% -55.2%, -21.9% 12.8%);
+      }
+      99.9% { opacity: .4; }
+      100% {
+        opacity: 0;
+        -webkit-clip-path: polygon(-38% 211.3%, 121.9% 143.3%, 137.9% 177.6%, -21.9% 245.6%);
+        clip-path: polygon(-38% 211.3%, 121.9% 143.3%, 137.9% 177.6%, -21.9% 245.6%);
+      }
+    }
+
     .fifa-card-name {
       position: absolute;
       top: 192px;
@@ -433,12 +473,27 @@
       animation: fifa-card-shine .5s linear both;
     }
 
-    .fifa-card-shine span:last-child { animation-delay: .1s; animation-duration: .4s; }
+    .fifa-card-shine span:last-child {
+      animation-delay: .1s;
+      animation-duration: .4s;
+    }
 
     @keyframes fifa-card-shine {
       0% { opacity: .1; transform: translateY(-150%) rotate(-24deg); }
       99.9% { opacity: .1; }
       100% { opacity: 0; transform: translateY(470%) rotate(-24deg); }
+    }
+
+    .fifa-card-stage.no-entry-animation .fifa-card-shine span,
+    .fifa-card-stage.is-entry-pending .fifa-card-shine span {
+      opacity: 0;
+      animation: none;
+    }
+
+    .fifa-card-stage.no-entry-animation .fifa-card-portrait-shine,
+    .fifa-card-stage.is-entry-pending .fifa-card-portrait-shine {
+      opacity: 0;
+      animation: none;
     }
 
     .player-profile-head {
@@ -1176,6 +1231,19 @@
         fifa-card-opacity-entry .1s linear both;
     }
 
+    .card-update-overlay.is-card-visible .card-update-layer .fifa-card-shine span {
+      animation: fifa-card-shine .5s linear both;
+    }
+
+    .card-update-overlay.is-card-visible .card-update-layer .fifa-card-shine span:last-child {
+      animation-delay: .1s;
+      animation-duration: .4s;
+    }
+
+    .card-update-overlay.is-card-visible .card-update-layer .fifa-card-portrait-shine {
+      animation: fifa-portrait-shine .5s linear both;
+    }
+
     .fifa-card-rating .card-stat-delta,
     .fifa-card-stat .card-stat-delta {
       position: absolute;
@@ -1422,6 +1490,7 @@
       let cardPresentationFrame = null;
       let cardPresentationTimers = [];
       let hasPlayedPrimaryCardEntry = false;
+      let isPrimaryCardEntryReady = false;
 
       const $ = selector => document.querySelector(selector);
       const $$ = selector => Array.from(document.querySelectorAll(selector));
@@ -1707,7 +1776,13 @@
         const score = currentScore();
         const tier = tierFor(score.overall);
         const portrait = avatarPhoto ? `<img src="${escapeHtml(avatarPhoto)}" alt="">` : "PT";
-        const entryClass = hasPlayedPrimaryCardEntry ? " no-entry-animation" : "";
+        const portraitShine = avatarPhoto
+          ? `<span class="fifa-card-portrait-shine" aria-hidden="true"><img src="${escapeHtml(avatarPhoto)}" alt=""></span>`
+          : "";
+        const shouldPlayEntry = isPrimaryCardEntryReady && !hasPlayedPrimaryCardEntry;
+        const entryClass = !isPrimaryCardEntryReady
+          ? " is-entry-pending"
+          : shouldPlayEntry ? "" : " no-entry-animation";
         $("#player-card").innerHTML = `
           <div class="fifa-card-stage ${tier.className}${entryClass}">
             <svg class="fifa-card-glow" viewBox="0 0 238.12 344" preserveAspectRatio="none" aria-hidden="true">
@@ -1716,7 +1791,7 @@
             </svg>
             <section class="fifa-attribute-card ${tier.className}" aria-label="${tier.label} karta Piotrka: OVR ${score.overall}, waga ${score.weightPoints}, tempo ${score.pacePoints}, dyscyplina ${score.discipline}">
               <div class="fifa-card-rating"><strong data-card-value="overall">${score.overall}</strong><span>OVR</span></div>
-              <div class="fifa-card-portrait ${avatarPhoto ? "has-photo" : ""}" aria-hidden="true">${portrait}</div>
+              <div class="fifa-card-portrait ${avatarPhoto ? "has-photo" : ""}" aria-hidden="true">${portrait}${portraitShine}</div>
               <div class="fifa-card-name">PIOTREK</div>
               <div class="fifa-card-stats">
                 <div class="fifa-card-stat"><strong data-card-value="weightPoints">${score.weightPoints}</strong><span>WAG</span></div>
@@ -1731,7 +1806,7 @@
               </svg>
             </section>
           </div>`;
-        hasPlayedPrimaryCardEntry = true;
+        if (shouldPlayEntry) hasPlayedPrimaryCardEntry = true;
         $("#profile-avatar").outerHTML = avatarMarkup(tier).replace(
           '<div class="player-detail-avatar',
           '<div id="profile-avatar" class="player-detail-avatar'
@@ -2339,15 +2414,11 @@
 
       async function loadAvatar(db) {
         avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY));
-        if (avatarPhoto) {
-          renderAll();
-          return;
-        }
+        if (avatarPhoto) return;
         try {
           const snapshot = await db.ref(`stamina-tactics-data-v1/values/${TACTICS_PLAYERS_KEY}`).once("value");
           const record = snapshot.val();
           avatarPhoto = parseTymekPhoto(typeof record === "string" ? record : record?.value);
-          if (avatarPhoto) renderAll();
         } catch {}
       }
 
@@ -2372,11 +2443,13 @@
           if (!window.firebase?.database) throw new Error("Firebase niedostępny");
           const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
           const db = app.database();
-          loadAvatar(db);
+          await loadAvatar(db);
 
           if (isTestMode) {
             firebaseEnabled = false;
             $("#sync-state").textContent = "Test • start 29.07 05:00";
+            isPrimaryCardEntryReady = true;
+            renderAll();
             return;
           }
 
@@ -2396,15 +2469,20 @@
           trainings = normalizeTrainings(trainingSnapshot.val() || trainings);
           ovrHistory = normalizeOvr(ovrSnapshot.val() || ovrHistory);
           saveLocal();
+          isPrimaryCardEntryReady = true;
           renderAll();
 
           weightsRef.on("value", snapshot => {
-            weights = normalizeWeights(snapshot.val());
+            const nextWeights = normalizeWeights(snapshot.val());
+            if (JSON.stringify(nextWeights) === JSON.stringify(weights)) return;
+            weights = nextWeights;
             saveLocal();
             renderAll();
           });
           trainingsRef.on("value", snapshot => {
-            trainings = normalizeTrainings(snapshot.val());
+            const nextTrainings = normalizeTrainings(snapshot.val());
+            if (JSON.stringify(nextTrainings) === JSON.stringify(trainings)) return;
+            trainings = nextTrainings;
             saveLocal();
             renderAll();
           });
@@ -2417,6 +2495,7 @@
           firebaseEnabled = false;
           $("#sync-state").textContent = "Tryb lokalny";
           avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY));
+          isPrimaryCardEntryReady = true;
           renderAll();
         }
       }
