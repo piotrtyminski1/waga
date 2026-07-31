@@ -622,11 +622,81 @@
     .chart-label { fill: var(--muted-2); font: 8px LivesportFinderLatin, Arial, sans-serif; }
     .chart-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .chart-line.weight { stroke: #e1b84a; }
+    .chart-line.pace { stroke: var(--accent); }
     .chart-line.overall { stroke: var(--accent); }
     .chart-dot { stroke: var(--bg); stroke-width: 1.5; }
     .chart-dot.weight { fill: #e1b84a; }
+    .chart-dot.pace { fill: var(--accent); }
     .chart-dot.overall { fill: var(--accent); }
     .chart-empty { color: var(--muted-2); font-size: 9px; text-transform: uppercase; }
+
+    .metric-history-chart {
+      position: relative;
+      width: 100%;
+      height: 205px;
+      cursor: crosshair;
+      touch-action: pan-y;
+      user-select: none;
+    }
+
+    .metric-history-chart svg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .metric-history-cursor-line {
+      position: absolute;
+      top: 16px;
+      bottom: 31px;
+      left: 0;
+      z-index: 2;
+      width: 1px;
+      background: rgba(255, 255, 255, .2);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(-50%);
+    }
+
+    .metric-history-cursor-tooltip {
+      --metric-cursor-y: 16px;
+      position: absolute;
+      top: var(--metric-cursor-y);
+      left: 0;
+      z-index: 7;
+      width: max-content;
+      min-width: 30px;
+      padding: 4px 6px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #06171d;
+      color: var(--text);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, .36);
+      font-size: 8px;
+      line-height: 11px;
+      font-weight: 700;
+      text-align: center;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, calc(-100% - 9px));
+    }
+
+    .metric-history-cursor-tooltip strong {
+      display: block;
+      font-family: Oswald, "Arial Narrow", Arial, sans-serif;
+      font-size: 12px;
+      line-height: 14px;
+      font-weight: 350;
+    }
+
+    .metric-history-chart.is-inspecting .metric-history-cursor-line,
+    .metric-history-chart.is-inspecting .metric-history-cursor-tooltip { opacity: 1; }
+    .metric-history-cursor-tooltip.is-below { transform: translate(-50%, 9px); }
+    .metric-history-cursor-tooltip.is-left-edge { transform: translate(0, calc(-100% - 9px)); }
+    .metric-history-cursor-tooltip.is-left-edge.is-below { transform: translate(0, 9px); }
+    .metric-history-cursor-tooltip.is-right-edge { transform: translate(-100%, calc(-100% - 9px)); }
+    .metric-history-cursor-tooltip.is-right-edge.is-below { transform: translate(-100%, 9px); }
 
     .overall-history {
       margin-top: 12px;
@@ -741,15 +811,15 @@
       left: 0;
       z-index: 7;
       width: max-content;
-      min-width: 76px;
-      padding: 6px 8px;
+      min-width: 30px;
+      padding: 4px 6px;
       border: 1px solid var(--line);
       border-radius: 6px;
       background: #06171d;
       color: var(--text);
       box-shadow: 0 8px 20px rgba(0, 0, 0, .36);
-      font-size: 9px;
-      line-height: 13px;
+      font-size: 8px;
+      line-height: 11px;
       font-weight: 700;
       text-align: center;
       white-space: nowrap;
@@ -760,11 +830,10 @@
 
     .overall-history-cursor-tooltip strong {
       display: block;
-      margin-bottom: 2px;
       color: var(--text);
       font-family: Oswald, "Arial Narrow", Arial, sans-serif;
-      font-size: 15px;
-      line-height: 17px;
+      font-size: 12px;
+      line-height: 14px;
       font-weight: 350;
     }
 
@@ -944,6 +1013,66 @@
     }
 
     tbody tr:nth-child(even) td { background: rgba(15, 45, 55, .28); }
+
+    .training-bpm-value {
+      position: relative;
+      display: inline-block;
+      line-height: 1;
+    }
+
+    .training-form-star {
+      position: absolute;
+      top: 50%;
+      left: calc(100% + 2px);
+      width: 12px;
+      height: 12px;
+      display: block;
+      pointer-events: none;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .8));
+      transform: translateY(-50%);
+    }
+
+    .training-form-star svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    .training-form-star-shape {
+      fill: #ffd83d;
+      stroke: #fff5a6;
+      stroke-width: 1.2;
+      stroke-linejoin: round;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: training-form-star-pulse 1.5s ease-in-out infinite;
+    }
+
+    .training-form-star-glint {
+      fill: #fff;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: training-form-star-glint 1.5s ease-in-out infinite;
+    }
+
+    @keyframes training-form-star-pulse {
+      0%, 100% { transform: scale(.9) rotate(-5deg); }
+      45% { transform: scale(1.08) rotate(4deg); }
+      62% { transform: scale(1) rotate(0); }
+    }
+
+    @keyframes training-form-star-glint {
+      0%, 25%, 100% { opacity: 0; transform: scale(.25); }
+      45%, 58% { opacity: 1; transform: scale(1); }
+      72% { opacity: 0; transform: scale(.4); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .training-form-star-shape,
+      .training-form-star-glint { animation: none; }
+      .training-form-star-glint { opacity: 1; }
+    }
 
     th {
       height: 31px;
@@ -1363,10 +1492,10 @@
 
       <section class="panel">
         <div class="panel-head">
-          <strong>Wykres wagi</strong>
-          <small>pełna historia · średnia krocząca 7d</small>
+          <strong id="metric-chart-title">Wykres wagi</strong>
+          <small id="metric-chart-note">pełna historia · średnia krocząca 7d</small>
         </div>
-        <div class="chart" id="weight-chart"></div>
+        <div class="chart" id="metric-chart"></div>
       </section>
 
       <nav class="mode-switch" aria-label="Tryb danych">
@@ -2018,15 +2147,111 @@
           ? `<circle class="chart-dot ${options.kind}" cx="${x(index)}" cy="${y(point.value)}" r="3.5"><title>${escapeHtml(point.fullLabel)}: ${escapeHtml(options.format(point.value))}</title></circle>`
           : "").join("");
 
-        return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(options.ariaLabel)}">
-          ${grid}
-          ${coords ? `<polyline class="chart-line ${options.kind}" points="${coords}"></polyline>` : ""}
-          ${dots}
-          ${labels}
-        </svg>`;
+        const interactionPoints = points.map((point, index) => ({
+          xPercent: (x(index) / width) * 100,
+          y: y(point.value),
+          valueLabel: options.tooltipFormat(point.value)
+        }));
+
+        return `<div
+          class="metric-history-chart"
+          data-metric-history-chart
+          data-metric-history-points="${escapeHtml(JSON.stringify(interactionPoints))}"
+          tabindex="0"
+          aria-label="${escapeHtml(options.ariaLabel)}">
+          <svg viewBox="0 0 ${width} ${height}" aria-hidden="true">
+            ${grid}
+            ${coords ? `<polyline class="chart-line ${options.kind}" points="${coords}"></polyline>` : ""}
+            ${dots}
+            ${labels}
+          </svg>
+          <span class="metric-history-cursor-line" data-metric-history-cursor-line aria-hidden="true"></span>
+          <span class="metric-history-cursor-tooltip" data-metric-history-cursor-tooltip aria-live="polite">
+            <strong data-metric-history-tooltip-value></strong>
+          </span>
+        </div>`;
       }
 
-      function renderWeightChart() {
+      function initializeMetricHistoryInteraction(chart) {
+        if (!chart) return;
+        let points = [];
+        try {
+          points = JSON.parse(chart.dataset.metricHistoryPoints || "[]");
+        } catch {}
+        if (!points.length) return;
+
+        const cursorLine = chart.querySelector("[data-metric-history-cursor-line]");
+        const tooltip = chart.querySelector("[data-metric-history-cursor-tooltip]");
+        const tooltipValue = chart.querySelector("[data-metric-history-tooltip-value]");
+        let selectedIndex = points.length - 1;
+
+        const showPoint = rawIndex => {
+          selectedIndex = clamp(Math.round(rawIndex), 0, points.length - 1);
+          const point = points[selectedIndex];
+          const left = `${point.xPercent}%`;
+          cursorLine.style.left = left;
+          tooltip.style.left = left;
+          tooltip.style.setProperty("--metric-cursor-y", `${point.y}px`);
+          tooltip.classList.toggle("is-below", point.y < 55);
+          tooltip.classList.toggle("is-left-edge", point.xPercent < 18);
+          tooltip.classList.toggle("is-right-edge", point.xPercent > 82);
+          tooltipValue.textContent = point.valueLabel;
+          chart.classList.add("is-inspecting");
+        };
+
+        const indexAtPointer = clientX => {
+          const bounds = chart.getBoundingClientRect();
+          const pointerPercent = clamp(((clientX - bounds.left) / bounds.width) * 100, 0, 100);
+          return points.reduce((nearestIndex, point, index) => (
+            Math.abs(point.xPercent - pointerPercent) < Math.abs(points[nearestIndex].xPercent - pointerPercent)
+              ? index
+              : nearestIndex
+          ), 0);
+        };
+
+        chart.addEventListener("pointerdown", event => {
+          if (!event.isPrimary) return;
+          showPoint(indexAtPointer(event.clientX));
+          if (event.pointerType !== "mouse") {
+            try { chart.setPointerCapture(event.pointerId); } catch {}
+          }
+        });
+        chart.addEventListener("pointermove", event => {
+          if (event.isPrimary) showPoint(indexAtPointer(event.clientX));
+        });
+        chart.addEventListener("pointerleave", event => {
+          if (event.pointerType === "mouse") chart.classList.remove("is-inspecting");
+        });
+        chart.addEventListener("focus", () => showPoint(selectedIndex));
+        chart.addEventListener("blur", () => chart.classList.remove("is-inspecting"));
+        chart.addEventListener("keydown", event => {
+          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+          event.preventDefault();
+          showPoint(selectedIndex + (event.key === "ArrowLeft" ? -1 : 1));
+        });
+      }
+
+      function renderMetricChart() {
+        const mode = $(".mode-button.is-active")?.dataset.mode || "weight";
+        if (mode === "training") {
+          const points = latestTrainingRows().map(entry => ({
+            label: formatDate(entry.date),
+            fullLabel: `${formatDate(entry.date)} · ${entry.minutes} min · ${Math.round(entry.bpm)} BPM`,
+            value: entry.pace
+          }));
+          $("#metric-chart-title").textContent = "Wykres tempa";
+          $("#metric-chart-note").textContent = "pełna historia treningów";
+          $("#metric-chart").innerHTML = chartMarkup(points, {
+            kind: "pace",
+            ariaLabel: "Pełna historia tempa treningów. Przesuń wskaźnik, aby sprawdzić wynik.",
+            minSpread: .5,
+            format: value => format1(value),
+            tooltipFormat: value => format1(value)
+          });
+          initializeMetricHistoryInteraction($("#metric-chart [data-metric-history-chart]"));
+          return;
+        }
+
         const weightRows = latestWeightRows().filter(entry => Number.isFinite(entry.weight));
         const points = weightRows.map(entry => {
           const rollingStart = shiftDateKey(entry.date, -6);
@@ -2042,12 +2267,16 @@
             value
           };
         });
-        $("#weight-chart").innerHTML = chartMarkup(points, {
+        $("#metric-chart-title").textContent = "Wykres wagi";
+        $("#metric-chart-note").textContent = "pełna historia · średnia krocząca 7d";
+        $("#metric-chart").innerHTML = chartMarkup(points, {
           kind: "weight",
-          ariaLabel: "Pełna historia pomiarów wagi jako krocząca średnia z siedmiu dni",
+          ariaLabel: "Pełna historia pomiarów wagi jako krocząca średnia z siedmiu dni. Przesuń wskaźnik, aby sprawdzić wynik.",
           minSpread: 1,
-          format: value => formatWeight(value)
+          format: value => formatWeight(value),
+          tooltipFormat: value => formatWeight(value)
         });
+        initializeMetricHistoryInteraction($("#metric-chart [data-metric-history-chart]"));
       }
 
       function overallHistoryMarkup(records, ariaLabel) {
@@ -2161,7 +2390,6 @@
             <span class="overall-history-cursor-line" data-overall-history-cursor-line aria-hidden="true"></span>
             <span class="overall-history-cursor-tooltip" data-overall-history-cursor-tooltip aria-live="polite">
               <strong data-overall-history-tooltip-overall></strong>
-              <span data-overall-history-tooltip-meta></span>
             </span>
             ${points.filter(point => point.isTransition).map(point => `
               <button
@@ -2187,7 +2415,6 @@
         const cursorLine = chart.querySelector("[data-overall-history-cursor-line]");
         const tooltip = chart.querySelector("[data-overall-history-cursor-tooltip]");
         const tooltipOverall = chart.querySelector("[data-overall-history-tooltip-overall]");
-        const tooltipMeta = chart.querySelector("[data-overall-history-tooltip-meta]");
         let selectedIndex = points.length - 1;
 
         const showPoint = rawIndex => {
@@ -2200,8 +2427,7 @@
           tooltip.classList.toggle("is-below", point.y < 72);
           tooltip.classList.toggle("is-left-edge", point.xPercent < 15);
           tooltip.classList.toggle("is-right-edge", point.xPercent > 85);
-          tooltipOverall.textContent = `OVR ${point.overall}`;
-          tooltipMeta.textContent = `${point.dateLabel} · ${point.tierLabel} karta`;
+          tooltipOverall.textContent = point.overall;
           chart.classList.add("is-inspecting");
         };
 
@@ -2262,7 +2488,7 @@
         ]);
         $("#overall-chart").innerHTML = overallHistoryMarkup(
           rows,
-          "Wykres historii OVR. Przesuń wskaźnik, aby sprawdzić dzień i klasę karty."
+          "Wykres historii OVR. Przesuń wskaźnik, aby sprawdzić wynik."
         );
         initializeOverallHistoryInteraction($("#overall-chart [data-overall-history-chart]"));
       }
@@ -2343,16 +2569,31 @@
       }
 
       function renderTrainingTable() {
-        const rows = [...latestTrainingRows()].reverse();
+        const rows = latestTrainingRows();
+        const qualifiesForConsistency = entry => entry.bpm < 135 && entry.minutes >= 60;
+        const hasConsistencyStar = index => {
+          const current = rows[index];
+          if (!qualifiesForConsistency(current)) return false;
+          return rows
+            .slice(Math.max(0, index - 2), index)
+            .some(entry => qualifiesForConsistency(entry) && Math.abs(entry.pace - current.pace) < .001);
+        };
+        const consistencyStarMarkup = `
+          <span class="training-form-star" role="img" aria-label="Powtórzone tempo przy tętnie poniżej 135 i treningu co najmniej 60 minut" title="Powtórzone tempo w 3 ostatnich treningach: BPM poniżej 135, minimum 60 min">
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+              <path class="training-form-star-shape" d="M12 1.8l3.04 6.16 6.8.99-4.92 4.79 1.16 6.77L12 17.31l-6.08 3.2 1.16-6.77-4.92-4.79 6.8-.99L12 1.8z"></path>
+              <circle class="training-form-star-glint" cx="8.3" cy="7.4" r="1.45"></circle>
+            </svg>
+          </span>`;
         $("#training-table").innerHTML = rows.length ? `
           <table class="training-table">
             <colgroup><col style="width:9%"><col style="width:22%"><col style="width:25%"><col style="width:18%"><col style="width:17%"><col style="width:9%"></colgroup>
             <thead><tr><th>#</th><th>Data</th><th>Tempo</th><th>BPM</th><th>Czas</th><th>X</th></tr></thead>
             <tbody>${rows.map((entry, index) => `<tr>
-              <td>${rows.length - index}</td>
+              <td>${index + 1}</td>
               <td class="date-cell">${formatDate(entry.date)}</td>
               <td>${format1(entry.pace)}</td>
-              <td>${Math.round(entry.bpm)}</td>
+              <td><span class="training-bpm-value">${Math.round(entry.bpm)}${hasConsistencyStar(index) ? consistencyStarMarkup : ""}</span></td>
               <td>${entry.minutes} min</td>
               <td><button class="delete-button" type="button" data-delete-training="${escapeHtml(entry.id)}" aria-label="Usuń trening">X</button></td>
             </tr>`).join("")}</tbody>
@@ -2394,7 +2635,7 @@
         renderCard();
         renderProfileMetrics();
         renderOverallChart();
-        renderWeightChart();
+        renderMetricChart();
         renderWeightTable();
         renderTrainingTable();
         renderModeMetrics();
@@ -2505,6 +2746,7 @@
           const mode = button.dataset.mode;
           $$(".mode-button").forEach(item => item.classList.toggle("is-active", item === button));
           $$(".mode-panel").forEach(panel => panel.classList.toggle("is-active", panel.id === `mode-${mode}`));
+          renderMetricChart();
         });
       });
 
