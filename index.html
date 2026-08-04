@@ -252,6 +252,60 @@
       background-size: 49px 47px, 61px 59px, auto;
     }
 
+    .fifa-card-history-background {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s linear;
+    }
+
+    #player-card .fifa-attribute-card.history-theme-common {
+      --card-text: #f0f3f4;
+      --card-line: rgba(232, 238, 240, .36);
+    }
+
+    #player-card .fifa-attribute-card.history-theme-bronze {
+      --card-text: #28160d;
+      --card-line: rgba(67, 31, 14, .46);
+    }
+
+    #player-card .fifa-attribute-card.history-theme-silver {
+      --card-text: #152025;
+      --card-line: rgba(43, 56, 62, .42);
+    }
+
+    #player-card .fifa-attribute-card.history-theme-gold {
+      --card-text: #2c220e;
+      --card-line: rgba(81, 52, 6, .48);
+    }
+
+    .fifa-card-history-background.is-common {
+      background: linear-gradient(145deg, #41484c 0%, #30373a 52%, #202629 100%);
+    }
+
+    .fifa-card-history-background.is-bronze {
+      background:
+        radial-gradient(circle at 48% 38%, rgba(250, 190, 132, .62) 0 17%, transparent 44%),
+        linear-gradient(132deg, transparent 0 36%, rgba(85, 43, 20, .32) 36.5% 38%, rgba(255, 205, 158, .38) 38.5% 41%, transparent 41.5% 100%),
+        linear-gradient(145deg, #8d5739 0%, #d39a69 24%, #a9653f 49%, #dc9f6b 72%, #673923 100%);
+    }
+
+    .fifa-card-history-background.is-silver {
+      background:
+        radial-gradient(circle at 48% 38%, rgba(255, 255, 255, .94) 0 17%, transparent 44%),
+        linear-gradient(132deg, transparent 0 36%, rgba(105, 119, 125, .24) 36.5% 38%, rgba(255, 255, 255, .72) 38.5% 41%, transparent 41.5% 100%),
+        linear-gradient(145deg, #b8c0c4 0%, #fbfcfc 24%, #dce2e4 49%, #fff 72%, #98a3a8 100%);
+    }
+
+    .fifa-card-history-background.is-gold {
+      background:
+        radial-gradient(circle at 48% 38%, rgba(255, 245, 166, .88) 0 17%, transparent 44%),
+        linear-gradient(132deg, transparent 0 36%, rgba(141, 92, 13, .32) 36.5% 38%, rgba(255, 239, 146, .46) 38.5% 41%, transparent 41.5% 100%),
+        linear-gradient(145deg, #d9ae43 0%, #f5dc79 24%, #c7932d 49%, #f4d66d 72%, #a8731f 100%);
+    }
+
     .fifa-attribute-card.is-common {
       --card-text: #f0f3f4;
       --card-line: rgba(232, 238, 240, .36);
@@ -627,6 +681,7 @@
     .chart-dot { stroke: var(--bg); stroke-width: 1.5; }
     .chart-dot.weight { fill: #e1b84a; }
     .chart-dot.pace { fill: var(--accent); }
+    .chart-dot.football { fill: #ffd83d; stroke: #6b5200; stroke-width: 2; }
     .chart-dot.overall { fill: var(--accent); }
     .chart-empty { color: var(--muted-2); font-size: 9px; text-transform: uppercase; }
 
@@ -986,8 +1041,65 @@
     }
 
     .training-entry-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .training-entry-form .training-kind-switch { grid-column: span 3; }
     .training-entry-form .save-button,
     .training-entry-form .form-note { grid-column: span 3; }
+
+    .training-kind-switch {
+      min-height: 44px;
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px !important;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--panel-3);
+      color: var(--text) !important;
+      cursor: pointer;
+    }
+
+    .training-kind-switch-control {
+      position: relative;
+      width: 42px;
+      height: 24px;
+      flex: 0 0 auto;
+    }
+
+    .training-kind-switch-control input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+    }
+
+    .training-kind-switch-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: var(--panel-2);
+      box-shadow: inset 0 0 0 1px var(--line);
+      transition: background .18s ease;
+    }
+
+    .training-kind-switch-track::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, .35);
+      transition: transform .18s ease;
+    }
+
+    .training-kind-switch-control input:checked + .training-kind-switch-track { background: #c99f00; }
+    .training-kind-switch-control input:checked + .training-kind-switch-track::after { transform: translateX(18px); }
+    .training-kind-switch-control input:focus-visible + .training-kind-switch-track { outline: 2px solid #ffd83d; outline-offset: 2px; }
+    .training-field[hidden] { display: none; }
 
     .table-wrap {
       width: 100%;
@@ -1531,7 +1643,15 @@
             <small>cel: 4 treningi / tydzień</small>
           </div>
           <form class="entry-form training-entry-form" id="training-form">
-            <label>Tempo [km/h]<input id="pace-input" type="number" inputmode="decimal" min="1" max="30" step="0.1" placeholder="6,0" required></label>
+            <label class="training-kind-switch">
+              <span>Trening piłkarski</span>
+              <span class="training-kind-switch-control">
+                <input id="football-training-input" type="checkbox" role="switch" aria-label="Trening piłkarski">
+                <span class="training-kind-switch-track" aria-hidden="true"></span>
+              </span>
+            </label>
+            <label class="training-field" id="pace-field">Tempo [km/h]<input id="pace-input" type="number" inputmode="decimal" min="1" max="30" step="0.1" placeholder="6,0" required></label>
+            <label class="training-field" id="distance-field" hidden>Dystans [km]<input id="distance-input" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" placeholder="opcjonalnie"></label>
             <label>Średnia BPM<input id="bpm-input" type="number" inputmode="numeric" min="40" max="230" step="1" placeholder="145" required></label>
             <label>Czas [min]<input id="minutes-input" type="number" inputmode="numeric" min="1" max="600" step="1" placeholder="60" required></label>
             <button class="save-button" type="submit">Zapisz trening</button>
@@ -1542,7 +1662,7 @@
         <section class="panel">
           <div class="panel-head">
             <strong>Historia treningów</strong>
-            <small>tempo i średnia BPM</small>
+            <small>biegowe i piłkarskie</small>
           </div>
           <div class="table-wrap" id="training-table"></div>
         </section>
@@ -1552,7 +1672,7 @@
         <summary>Skala karty i liczenie OVR <span>+</span></summary>
         <div class="scale-content">
           <p><strong>OVR = 60% WAGA + 30% TEMPO + 10% DYSCYPLINA.</strong> Waga 94 kg i tempo 6,0 km/h zaczynają od 40 pkt. Waga 82 kg oraz tempo 8,5 km/h dają po 100 pkt. Wynik pomiędzy nimi rośnie liniowo.</p>
-          <p>Dyscyplinę zbierasz przez ruchome 14 dni: maks. 2,86 pkt dziennie za kalorie, 2,14 pkt za dzień bez FFood/sweets oraz 3,75 pkt za punktowany trening (maks. 1 dziennie i 4 w każdym tygodniu). Limit dnia to 1700 kcal + 7,5 kcal za każdą minutę treningu (450 kcal za godzinę). Niewpisane kalorie nie przyznają punktów, a przekroczenie limitu stopniowo zmniejsza wynik do zera przy +500 kcal.</p>
+          <p>Dyscyplinę zbierasz przez ruchome 14 dni: maks. 2,86 pkt dziennie za kalorie, 2,14 pkt za dzień bez FFood/sweets oraz 3,75 pkt za punktowany trening (maks. 1 dziennie i 4 w każdym tygodniu). Trening piłkarski liczy się także bez podania BPM, dystansu i czasu. Limit dnia to 1700 kcal + 7,5 kcal za każdą wpisaną minutę treningu (450 kcal za godzinę). Niewpisane kalorie nie przyznają punktów, a przekroczenie limitu stopniowo zmniejsza wynik do zera przy +500 kcal.</p>
           <div class="tier-list">
             <div class="tier-chip common">Czarna<br>0–49</div>
             <div class="tier-chip bronze">Brązowa<br>50–69</div>
@@ -1620,10 +1740,17 @@
       let cardPresentationTimers = [];
       let hasPlayedPrimaryCardEntry = false;
       let isPrimaryCardEntryReady = false;
+      let historyCardBackgroundFrame = null;
 
       const $ = selector => document.querySelector(selector);
       const $$ = selector => Array.from(document.querySelectorAll(selector));
       const CARD_TIER_CLASSES = ["is-common", "is-bronze", "is-silver", "is-gold"];
+      const CARD_HISTORY_THEME_CLASSES = [
+        "history-theme-common",
+        "history-theme-bronze",
+        "history-theme-silver",
+        "history-theme-gold"
+      ];
       const CARD_COUNTER_FIELDS = ["overall", "weightPoints", "pacePoints", "discipline"];
 
       const todayKey = () => {
@@ -1696,15 +1823,27 @@
 
       function normalizeTrainings(source) {
         return (Array.isArray(source) ? source : Object.values(source || {}))
-          .map(entry => ({
-            id: String(entry.id || uid("t")),
-            date: entry.date || statDateKey(entry.recordedAt),
-            pace: Number(entry.pace),
-            bpm: Number(entry.bpm),
-            minutes: Math.max(1, Math.round(Number(entry.minutes) || 0)),
-            recordedAt: String(entry.recordedAt || new Date().toISOString())
-          }))
-          .filter(entry => entry.date && Number.isFinite(entry.pace) && entry.pace > 0 && Number.isFinite(entry.bpm) && entry.bpm > 0 && entry.minutes > 0)
+          .map(entry => {
+            const type = entry.type === "football" ? "football" : "running";
+            const pace = Number(entry.pace);
+            const bpm = Number(entry.bpm);
+            const minutes = Number(entry.minutes);
+            const distance = Number(entry.distance);
+            return {
+              id: String(entry.id || uid("t")),
+              date: entry.date || statDateKey(entry.recordedAt),
+              type,
+              pace: Number.isFinite(pace) && pace > 0 ? pace : null,
+              bpm: Number.isFinite(bpm) && bpm > 0 ? Math.round(bpm) : null,
+              minutes: Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes) : null,
+              distance: Number.isFinite(distance) && distance > 0 ? distance : null,
+              recordedAt: String(entry.recordedAt || new Date().toISOString())
+            };
+          })
+          .filter(entry => entry.date && (
+            entry.type === "football"
+            || (Number.isFinite(entry.pace) && Number.isFinite(entry.bpm) && Number.isFinite(entry.minutes))
+          ))
           .sort((a, b) => a.date.localeCompare(b.date) || a.recordedAt.localeCompare(b.recordedAt));
       }
 
@@ -1771,19 +1910,23 @@
       }
 
       function latestPace(endDate = todayKey()) {
-        const latest = latestTrainingRows().filter(entry => entry.date <= endDate).at(-1);
+        const latest = latestTrainingRows()
+          .filter(entry => entry.date <= endDate && entry.type !== "football" && Number.isFinite(entry.pace))
+          .at(-1);
         return latest?.pace ?? null;
       }
 
       function latestBpm(endDate = todayKey()) {
-        const latest = latestTrainingRows().filter(entry => entry.date <= endDate).at(-1);
+        const latest = latestTrainingRows()
+          .filter(entry => entry.date <= endDate && Number.isFinite(entry.bpm))
+          .at(-1);
         return latest?.bpm ?? null;
       }
 
       function trainingMinutesForDay(date) {
         return trainings
           .filter(entry => entry.date === date)
-          .reduce((sum, entry) => sum + entry.minutes, 0);
+          .reduce((sum, entry) => sum + (Number.isFinite(entry.minutes) ? entry.minutes : 0), 0);
       }
 
       function kcalLimitForDay(date) {
@@ -1798,7 +1941,7 @@
         const baseNeed = kcalEntries.length * REST_KCAL;
         const trainingBurn = trainings
           .filter(entry => entry.date >= start && entry.date <= endDate)
-          .reduce((sum, entry) => sum + entry.minutes * KCAL_PER_TRAINING_MINUTE, 0);
+          .reduce((sum, entry) => sum + (Number.isFinite(entry.minutes) ? entry.minutes : 0) * KCAL_PER_TRAINING_MINUTE, 0);
         return Math.round(consumed - baseNeed - trainingBurn);
       }
 
@@ -1919,6 +2062,8 @@
               <use class="fifa-card-glow-near" href="#player-card-outline"></use>
             </svg>
             <section class="fifa-attribute-card ${tier.className}" aria-label="${tier.label} karta Piotrka: OVR ${score.overall}, waga ${score.weightPoints}, tempo ${score.pacePoints}, dyscyplina ${score.discipline}">
+              <div class="fifa-card-history-background" data-history-card-background aria-hidden="true"></div>
+              <div class="fifa-card-history-background" data-history-card-background aria-hidden="true"></div>
               <div class="fifa-card-rating"><strong data-card-value="overall">${score.overall}</strong><span>OVR</span></div>
               <div class="fifa-card-portrait ${avatarPhoto ? "has-photo" : ""}" aria-hidden="true">${portrait}${portraitShine}</div>
               <div class="fifa-card-name">PIOTREK</div>
@@ -1940,6 +2085,66 @@
           '<div class="player-detail-avatar',
           '<div id="profile-avatar" class="player-detail-avatar'
         );
+      }
+
+      function setPrimaryCardValues(score) {
+        const stage = $("#player-card .fifa-card-stage");
+        if (!stage) return;
+        CARD_COUNTER_FIELDS.forEach(field => {
+          const valueElement = stage.querySelector(`[data-card-value="${field}"]`);
+          if (valueElement) valueElement.textContent = String(score[field]);
+        });
+        const card = stage.querySelector(".fifa-attribute-card");
+        if (card) {
+          const tier = tierFor(score.overall);
+          card.setAttribute("aria-label", `${tier.label} karta Piotrka: OVR ${score.overall}, waga ${score.weightPoints}, tempo ${score.pacePoints}, dyscyplina ${score.discipline}`);
+        }
+      }
+
+      function previewPrimaryCard(score) {
+        const stage = $("#player-card .fifa-card-stage");
+        if (!stage) return;
+        setPrimaryCardValues(score);
+        const tierClass = tierFor(score.overall).className;
+        const card = stage.querySelector(".fifa-attribute-card");
+        if (card) {
+          card.classList.remove(...CARD_HISTORY_THEME_CLASSES);
+          card.classList.add(`history-theme-${tierClass.replace("is-", "")}`);
+        }
+        if (stage.dataset.historyTier === tierClass) return;
+        stage.dataset.historyTier = tierClass;
+
+        const backgrounds = Array.from(stage.querySelectorAll("[data-history-card-background]"));
+        if (backgrounds.length < 2) return;
+        if (historyCardBackgroundFrame !== null) cancelAnimationFrame(historyCardBackgroundFrame);
+        const currentIndex = Number(stage.dataset.historyBackgroundIndex || 0);
+        const nextIndex = currentIndex === 0 ? 1 : 0;
+        const currentBackground = backgrounds[currentIndex];
+        const nextBackground = backgrounds[nextIndex];
+        nextBackground.className = `fifa-card-history-background ${tierClass}`;
+        nextBackground.style.opacity = "0";
+        nextBackground.getBoundingClientRect();
+        currentBackground.style.opacity = "0";
+        historyCardBackgroundFrame = requestAnimationFrame(() => {
+          nextBackground.style.opacity = "1";
+          historyCardBackgroundFrame = null;
+        });
+        stage.dataset.historyBackgroundIndex = String(nextIndex);
+      }
+
+      function restorePrimaryCard() {
+        const stage = $("#player-card .fifa-card-stage");
+        setPrimaryCardValues(currentScore());
+        if (!stage) return;
+        if (historyCardBackgroundFrame !== null) cancelAnimationFrame(historyCardBackgroundFrame);
+        historyCardBackgroundFrame = null;
+        stage.querySelectorAll("[data-history-card-background]").forEach(background => {
+          background.style.opacity = "0";
+        });
+        const card = stage.querySelector(".fifa-attribute-card");
+        if (card) card.classList.remove(...CARD_HISTORY_THEME_CLASSES);
+        delete stage.dataset.historyTier;
+        delete stage.dataset.historyBackgroundIndex;
       }
 
       function clearCardPresentationSchedule() {
@@ -2107,6 +2312,33 @@
         $("#profile-discipline").textContent = `${score.discipline}%`;
       }
 
+      function smoothSvgSegment(points, index, tension = 1 / 6) {
+        const start = points[index];
+        const end = points[index + 1];
+        if (!start || !end) return "";
+        const before = points[index - 1] || start;
+        const after = points[index + 2] || end;
+        const control1 = {
+          x: start.x + (end.x - before.x) * tension,
+          y: start.y + (end.y - before.y) * tension
+        };
+        const control2 = {
+          x: end.x - (after.x - start.x) * tension,
+          y: end.y - (after.y - start.y) * tension
+        };
+        const number = value => value.toFixed(1);
+        return `C ${number(control1.x)} ${number(control1.y)}, ${number(control2.x)} ${number(control2.y)}, ${number(end.x)} ${number(end.y)}`;
+      }
+
+      function smoothSvgPath(points) {
+        if (!points.length) return "";
+        const path = [`M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`];
+        for (let index = 0; index < points.length - 1; index += 1) {
+          path.push(smoothSvgSegment(points, index));
+        }
+        return path.join(" ");
+      }
+
       function chartMarkup(points, options) {
         const width = 390;
         const height = 205;
@@ -2128,9 +2360,9 @@
         const x = index => pad.left + (points.length === 1 ? innerWidth / 2 : (index / (points.length - 1)) * innerWidth);
         const y = value => pad.top + ((max - value) / (max - min)) * innerHeight;
         const coords = points
-          .map((point, index) => Number.isFinite(point.value) ? `${x(index).toFixed(1)},${y(point.value).toFixed(1)}` : "")
-          .filter(Boolean)
-          .join(" ");
+          .map((point, index) => Number.isFinite(point.value) ? { x: x(index), y: y(point.value) } : null)
+          .filter(Boolean);
+        const pathData = smoothSvgPath(coords);
         const grid = [0, .5, 1].map(fraction => {
           const gridY = pad.top + innerHeight * fraction;
           const value = max - (max - min) * fraction;
@@ -2144,13 +2376,13 @@
             : ""
         )).join("");
         const dots = points.map((point, index) => Number.isFinite(point.value)
-          ? `<circle class="chart-dot ${options.kind}" cx="${x(index)}" cy="${y(point.value)}" r="3.5"><title>${escapeHtml(point.fullLabel)}: ${escapeHtml(options.format(point.value))}</title></circle>`
+          ? `<circle class="chart-dot ${point.kind || options.kind}" cx="${x(index)}" cy="${y(point.value)}" r="3.5"><title>${escapeHtml(point.fullLabel)}: ${escapeHtml(options.format(point.value))}</title></circle>`
           : "").join("");
 
         const interactionPoints = points.map((point, index) => ({
           xPercent: (x(index) / width) * 100,
           y: y(point.value),
-          valueLabel: options.tooltipFormat(point.value)
+          valueLabel: options.tooltipFormat(point.value, point)
         }));
 
         return `<div
@@ -2161,7 +2393,7 @@
           aria-label="${escapeHtml(options.ariaLabel)}">
           <svg viewBox="0 0 ${width} ${height}" aria-hidden="true">
             ${grid}
-            ${coords ? `<polyline class="chart-line ${options.kind}" points="${coords}"></polyline>` : ""}
+            ${pathData ? `<path class="chart-line ${options.kind}" d="${pathData}"></path>` : ""}
             ${dots}
             ${labels}
           </svg>
@@ -2234,19 +2466,31 @@
       function renderMetricChart() {
         const mode = $(".mode-button.is-active")?.dataset.mode || "weight";
         if (mode === "training") {
-          const points = latestTrainingRows().map(entry => ({
-            label: formatDate(entry.date),
-            fullLabel: `${formatDate(entry.date)} · ${entry.minutes} min · ${Math.round(entry.bpm)} BPM`,
-            value: entry.pace
-          }));
+          let lastPace = BASE_PACE;
+          const points = latestTrainingRows().map(entry => {
+            const isFootball = entry.type === "football";
+            if (!isFootball && Number.isFinite(entry.pace)) lastPace = entry.pace;
+            const details = [
+              Number.isFinite(entry.distance) ? `${format1(entry.distance)} km` : "",
+              Number.isFinite(entry.minutes) ? `${entry.minutes} min` : "",
+              Number.isFinite(entry.bpm) ? `${Math.round(entry.bpm)} BPM` : ""
+            ].filter(Boolean);
+            return {
+              label: formatDate(entry.date),
+              fullLabel: `${formatDate(entry.date)} · ${isFootball ? "trening piłkarski" : "trening biegowy"}${details.length ? ` · ${details.join(" · ")}` : ""}`,
+              value: isFootball ? lastPace : entry.pace,
+              kind: isFootball ? "football" : "pace",
+              isFootball
+            };
+          });
           $("#metric-chart-title").textContent = "Wykres tempa";
-          $("#metric-chart-note").textContent = "pełna historia treningów";
+          $("#metric-chart-note").textContent = "żółty punkt · trening piłkarski";
           $("#metric-chart").innerHTML = chartMarkup(points, {
             kind: "pace",
             ariaLabel: "Pełna historia tempa treningów. Przesuń wskaźnik, aby sprawdzić wynik.",
             minSpread: .5,
             format: value => format1(value),
-            tooltipFormat: value => format1(value)
+            tooltipFormat: (value, point) => `${point.isFootball ? "⚽ " : ""}${format1(value)}`
           });
           initializeMetricHistoryInteraction($("#metric-chart [data-metric-history-chart]"));
           return;
@@ -2347,13 +2591,19 @@
             index
           };
         });
-        const historyData = points.map(({ xPercent, y, overall, dateLabel, tierLabel }) => ({
-          xPercent,
-          y,
-          overall,
-          dateLabel,
-          tierLabel
-        }));
+        const historyData = points.map(point => {
+          const entry = records[point.index];
+          return {
+            xPercent: point.xPercent,
+            y: point.y,
+            overall: point.overall,
+            weightPoints: entry.weightScore,
+            pacePoints: entry.paceScore,
+            discipline: entry.disciplineScore,
+            dateLabel: point.dateLabel,
+            tierLabel: point.tierLabel
+          };
+        });
 
         return `
           <div
@@ -2377,13 +2627,10 @@
               ${points.slice(1).map((point, index) => {
                 const previousPoint = points[index];
                 return `
-                  <line
+                  <path
                     class="overall-history-path ${previousPoint.tier}"
-                    x1="${previousPoint.x}"
-                    y1="${previousPoint.y}"
-                    x2="${point.x}"
-                    y2="${point.y}">
-                  </line>
+                    d="M ${previousPoint.x.toFixed(1)} ${previousPoint.y.toFixed(1)} ${smoothSvgSegment(points, index)}">
+                  </path>
                 `;
               }).join("")}
             </svg>
@@ -2429,6 +2676,12 @@
           tooltip.classList.toggle("is-right-edge", point.xPercent > 85);
           tooltipOverall.textContent = point.overall;
           chart.classList.add("is-inspecting");
+          previewPrimaryCard(point);
+        };
+
+        const stopInspecting = () => {
+          chart.classList.remove("is-inspecting");
+          restorePrimaryCard();
         };
 
         const indexAtPointer = clientX => {
@@ -2459,14 +2712,23 @@
           if (!event.isPrimary) return;
           showPoint(indexAtPointer(event.clientX));
         });
+        chart.addEventListener("pointerup", event => {
+          if (event.pointerType !== "mouse") stopInspecting();
+        });
+        chart.addEventListener("pointercancel", stopInspecting);
         chart.addEventListener("pointerleave", event => {
-          if (event.pointerType === "mouse") chart.classList.remove("is-inspecting");
+          if (event.pointerType === "mouse") stopInspecting();
         });
         chart.addEventListener("focus", () => showPoint(selectedIndex));
         chart.addEventListener("blur", event => {
-          if (!chart.contains(event.relatedTarget)) chart.classList.remove("is-inspecting");
+          if (!chart.contains(event.relatedTarget)) stopInspecting();
         });
         chart.addEventListener("keydown", event => {
+          if (event.key === "Escape") {
+            stopInspecting();
+            chart.blur();
+            return;
+          }
           if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
           event.preventDefault();
           showPoint(selectedIndex + (event.key === "ArrowLeft" ? -1 : 1));
@@ -2570,7 +2832,14 @@
 
       function renderTrainingTable() {
         const rows = latestTrainingRows();
-        const qualifiesForConsistency = entry => entry.bpm < 135 && entry.minutes >= 60;
+        const qualifiesForConsistency = entry => (
+          entry.type !== "football"
+          && Number.isFinite(entry.pace)
+          && Number.isFinite(entry.bpm)
+          && Number.isFinite(entry.minutes)
+          && entry.bpm < 135
+          && entry.minutes >= 60
+        );
         const hasConsistencyStar = index => {
           const current = rows[index];
           if (!qualifiesForConsistency(current)) return false;
@@ -2587,14 +2856,15 @@
           </span>`;
         $("#training-table").innerHTML = rows.length ? `
           <table class="training-table">
-            <colgroup><col style="width:9%"><col style="width:22%"><col style="width:25%"><col style="width:18%"><col style="width:17%"><col style="width:9%"></colgroup>
-            <thead><tr><th>#</th><th>Data</th><th>Tempo</th><th>BPM</th><th>Czas</th><th>X</th></tr></thead>
+            <colgroup><col style="width:7%"><col style="width:16%"><col style="width:16%"><col style="width:20%"><col style="width:15%"><col style="width:17%"><col style="width:9%"></colgroup>
+            <thead><tr><th>#</th><th>Data</th><th>Typ</th><th>Tempo/km</th><th>BPM</th><th>Czas</th><th>X</th></tr></thead>
             <tbody>${rows.map((entry, index) => `<tr>
               <td>${index + 1}</td>
               <td class="date-cell">${formatDate(entry.date)}</td>
-              <td>${format1(entry.pace)}</td>
-              <td><span class="training-bpm-value">${Math.round(entry.bpm)}${hasConsistencyStar(index) ? consistencyStarMarkup : ""}</span></td>
-              <td>${entry.minutes} min</td>
+              <td>${entry.type === "football" ? "Piłka" : "Bieg"}</td>
+              <td>${entry.type === "football" ? (Number.isFinite(entry.distance) ? `${format1(entry.distance)} km` : "—") : format1(entry.pace)}</td>
+              <td><span class="training-bpm-value">${Number.isFinite(entry.bpm) ? Math.round(entry.bpm) : "—"}${hasConsistencyStar(index) ? consistencyStarMarkup : ""}</span></td>
+              <td>${Number.isFinite(entry.minutes) ? `${entry.minutes} min` : "—"}</td>
               <td><button class="delete-button" type="button" data-delete-training="${escapeHtml(entry.id)}" aria-label="Usuń trening">X</button></td>
             </tr>`).join("")}</tbody>
           </table>` : '<div class="chart-empty" style="min-height:72px">Brak treningów</div>';
@@ -2750,22 +3020,57 @@
         });
       });
 
+      function optionalTrainingNumber(selector) {
+        const raw = $(selector).value.trim().replace(",", ".");
+        return raw === "" ? null : Number(raw);
+      }
+
+      function syncTrainingKindForm() {
+        const isFootball = $("#football-training-input").checked;
+        $("#pace-field").hidden = isFootball;
+        $("#distance-field").hidden = !isFootball;
+        $("#pace-input").required = !isFootball;
+        $("#bpm-input").required = !isFootball;
+        $("#minutes-input").required = !isFootball;
+        $("#bpm-input").placeholder = isFootball ? "opcjonalnie" : "145";
+        $("#minutes-input").placeholder = isFootball ? "opcjonalnie" : "60";
+        $("#training-form-note").textContent = isFootball
+          ? "BPM, dystans i czas są opcjonalne. Trening zawsze liczy się do dyscypliny."
+          : "";
+      }
+
+      $("#football-training-input").addEventListener("change", syncTrainingKindForm);
+      syncTrainingKindForm();
+
       $("#training-form").addEventListener("submit", async event => {
         event.preventDefault();
         const date = todayKey();
-        const pace = Number($("#pace-input").value);
-        const bpm = Number($("#bpm-input").value);
-        const minutes = Math.round(Number($("#minutes-input").value));
-        if (!Number.isFinite(pace) || !Number.isFinite(bpm) || !Number.isFinite(minutes) || minutes <= 0) {
+        const isFootball = $("#football-training-input").checked;
+        const pace = optionalTrainingNumber("#pace-input");
+        const bpm = optionalTrainingNumber("#bpm-input");
+        const rawMinutes = optionalTrainingNumber("#minutes-input");
+        const minutes = Number.isFinite(rawMinutes) ? Math.round(rawMinutes) : null;
+        const distance = optionalTrainingNumber("#distance-input");
+        if (!isFootball && (!Number.isFinite(pace) || !Number.isFinite(bpm) || !Number.isFinite(minutes) || minutes <= 0)) {
           $("#training-form-note").textContent = "Podaj tempo, średnie BPM i czas.";
           return;
         }
         const beforeScore = currentScore();
-        trainings.push({ id: uid("t"), date, pace, bpm: Math.round(bpm), minutes, recordedAt: new Date().toISOString() });
-        $("#training-form-note").textContent = `Trening zapisany jako ${formatDate(date)}. Limit dnia: ${kcalLimitForDay(date)} kcal.`;
+        trainings.push({
+          id: uid("t"),
+          date,
+          type: isFootball ? "football" : "running",
+          pace: isFootball ? null : pace,
+          bpm: Number.isFinite(bpm) ? Math.round(bpm) : null,
+          minutes,
+          distance: isFootball && Number.isFinite(distance) ? distance : null,
+          recordedAt: new Date().toISOString()
+        });
+        $("#training-form-note").textContent = `${isFootball ? "Trening piłkarski" : "Trening"} zapisany jako ${formatDate(date)}. Limit dnia: ${kcalLimitForDay(date)} kcal.`;
         $("#pace-input").value = "";
         $("#bpm-input").value = "";
         $("#minutes-input").value = "";
+        $("#distance-input").value = "";
         const persistPromise = persistTrainings().catch(() => { $("#sync-state").textContent = "Zapis lokalny"; });
         renderAll();
         showCardUpdatePresentation(beforeScore, currentScore());
