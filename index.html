@@ -1883,6 +1883,12 @@
         return [...trainings].sort((a, b) => a.date.localeCompare(b.date) || a.recordedAt.localeCompare(b.recordedAt));
       }
 
+      function activeStatDateKey() {
+        const today = todayKey();
+        const todayWeight = latestWeightRows().find(entry => entry.date === today)?.weight;
+        return Number.isFinite(todayWeight) ? today : shiftDateKey(today, -1);
+      }
+
       function challengeRows() {
         const count = isTestMode
           ? TEST_ROW_COUNT
@@ -1901,7 +1907,7 @@
         });
       }
 
-      function weightAverage7(endDate = todayKey()) {
+      function weightAverage7(endDate = activeStatDateKey()) {
         const start = shiftDateKey(endDate, -6);
         const values = latestWeightRows()
           .filter(entry => entry.date >= start && entry.date <= endDate && Number.isFinite(entry.weight))
@@ -1909,14 +1915,14 @@
         return average(values);
       }
 
-      function latestPace(endDate = todayKey()) {
+      function latestPace(endDate = activeStatDateKey()) {
         const latest = latestTrainingRows()
           .filter(entry => entry.date <= endDate && entry.type !== "football" && Number.isFinite(entry.pace))
           .at(-1);
         return latest?.pace ?? null;
       }
 
-      function latestBpm(endDate = todayKey()) {
+      function latestBpm(endDate = activeStatDateKey()) {
         const latest = latestTrainingRows()
           .filter(entry => entry.date <= endDate && Number.isFinite(entry.bpm))
           .at(-1);
@@ -1933,7 +1939,7 @@
         return Math.round(REST_KCAL + trainingMinutesForDay(date) * KCAL_PER_TRAINING_MINUTE);
       }
 
-      function kcalBalance14(endDate = todayKey()) {
+      function kcalBalance14(endDate = activeStatDateKey()) {
         const start = shiftDateKey(endDate, -13);
         const kcalEntries = latestWeightRows()
           .filter(entry => entry.date >= start && entry.date <= endDate && Number.isFinite(entry.kcal));
@@ -1945,7 +1951,7 @@
         return Math.round(consumed - baseNeed - trainingBurn);
       }
 
-      function disciplineBreakdown(endDate = todayKey()) {
+      function disciplineBreakdown(endDate = activeStatDateKey()) {
         const days = Array.from({ length: 14 }, (_, index) => shiftDateKey(endDate, index - 13));
         const rowByDate = new Map(latestWeightRows().map(entry => [entry.date, entry]));
         const elapsedDates = new Set(
@@ -2014,7 +2020,7 @@
         return clamp(Math.round(40 + ((measured - BASE_PACE) / (GOAL_PACE - BASE_PACE)) * 60), 0, 100);
       }
 
-      function currentScore(endDate = todayKey()) {
+      function currentScore(endDate = activeStatDateKey()) {
         const weight = weightAverage7(endDate);
         const pace = latestPace(endDate);
         const discipline = disciplineBreakdown(endDate).total;
@@ -2743,10 +2749,10 @@
 
       function renderOverallChart() {
         const score = currentScore();
-        const today = todayKey();
+        const activeDate = activeStatDateKey();
         const rows = normalizeOvr([
-          ...ovrHistory.filter(entry => entry.date !== today),
-          { id: today, date: today, overall: score.overall, weightScore: score.weightPoints, paceScore: score.pacePoints, disciplineScore: score.discipline }
+          ...ovrHistory.filter(entry => entry.date < activeDate),
+          { id: activeDate, date: activeDate, overall: score.overall, weightScore: score.weightPoints, paceScore: score.pacePoints, disciplineScore: score.discipline }
         ]);
         $("#overall-chart").innerHTML = overallHistoryMarkup(
           rows,
@@ -2797,7 +2803,10 @@
             <tbody>${rows.map((entry, index) => {
               const previousWeight = index > 0 ? rows[index - 1].weight : null;
               const delta = Number.isFinite(entry.weight) && Number.isFinite(previousWeight) ? entry.weight - previousWeight : null;
-              const dailyScore = currentScore(entry.date);
+              const scoreDate = entry.date === todayKey() && entry.date !== activeStatDateKey()
+                ? activeStatDateKey()
+                : entry.date;
+              const dailyScore = currentScore(scoreDate);
               const dailyTier = tierFor(dailyScore.overall);
               const kcalLimit = kcalLimitForDay(entry.date);
               const kcalDelta = Number.isFinite(entry.kcal) ? Math.round(entry.kcal - kcalLimit) : null;
@@ -2884,7 +2893,7 @@
 
       function storeOvrSnapshot() {
         const score = currentScore();
-        const date = todayKey();
+        const date = activeStatDateKey();
         const snapshot = {
           id: date,
           date,
