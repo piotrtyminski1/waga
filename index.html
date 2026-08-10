@@ -663,6 +663,77 @@
 
     .panel-head small { color: var(--muted-2); font-size: 8px; line-height: 11px; }
 
+    .table-head-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .table-color-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--muted-2);
+      font-size: 6.5px;
+      line-height: 9px;
+      font-weight: 800;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .table-color-switch-control {
+      position: relative;
+      width: 34px;
+      height: 20px;
+      flex: 0 0 auto;
+    }
+
+    .table-color-switch-control input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+    }
+
+    .table-color-switch-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: var(--panel-3);
+      box-shadow: inset 0 0 0 1px var(--line);
+      transition: background .18s ease, box-shadow .18s ease;
+    }
+
+    .table-color-switch-track::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--muted-2);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, .35);
+      transition: background .18s ease, transform .18s ease;
+    }
+
+    .table-color-switch-control input:checked + .table-color-switch-track {
+      background: rgba(0, 201, 104, .28);
+      box-shadow: inset 0 0 0 1px rgba(0, 201, 104, .7);
+    }
+
+    .table-color-switch-control input:checked + .table-color-switch-track::after {
+      background: var(--green);
+      transform: translateX(14px);
+    }
+
+    .table-color-switch-control input:focus-visible + .table-color-switch-track {
+      outline: 2px solid var(--green);
+      outline-offset: 2px;
+    }
+
     .chart {
       width: 100%;
       min-height: 210px;
@@ -672,6 +743,8 @@
     }
 
     .chart svg { width: 100%; height: 205px; display: block; overflow: visible; }
+    .chart-week-band { fill: var(--bg); }
+    .chart-week-band.is-alternate { fill: #001018; }
     .chart-grid { stroke: rgba(157, 180, 187, .14); stroke-width: 1; }
     .chart-label { fill: var(--muted-2); font: 8px LivesportFinderLatin, Arial, sans-serif; }
     .chart-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -1126,6 +1199,47 @@
 
     tbody tr:nth-child(even) td { background: rgba(15, 45, 55, .28); }
 
+    .weight-history-table tbody tr.week-start td {
+      border-top: 1px solid rgba(157, 180, 187, .14);
+    }
+
+    .weight-history-table tbody td {
+      transition: color .18s ease, filter .18s ease, opacity .18s ease;
+    }
+
+    .weight-history-table:not(.show-all-colors) tbody tr.is-older-than-14-days td {
+      color: var(--muted-2) !important;
+      filter: grayscale(1);
+      opacity: .55;
+    }
+
+    .rolling-window-col,
+    .rolling-window-spacer,
+    .rolling-window-cell {
+      width: 2%;
+      padding: 0;
+    }
+
+    .rolling-window-cell { position: relative; }
+
+    .rolling-window-cell svg {
+      position: absolute;
+      inset: 5px 0;
+      width: 100%;
+      height: calc(100% - 10px);
+      display: block;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .rolling-window-line {
+      fill: none;
+      stroke: var(--green);
+      stroke-width: 5;
+      stroke-linecap: round;
+      vector-effect: non-scaling-stroke;
+    }
+
     .training-bpm-value {
       position: relative;
       display: inline-block;
@@ -1251,6 +1365,28 @@
     }
 
     .kcal-value { font-size: 8.3px; font-weight: 800; }
+
+    .ovr-cell { position: relative; }
+
+    .training-day-dot {
+      position: absolute;
+      top: 50%;
+      left: calc(50% - 18px);
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--green);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+    }
+
+    .training-day-dot.is-football::after {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      border: 1px solid rgba(225, 184, 74, .78);
+      border-radius: 50%;
+    }
 
     .ovr-pill {
       min-width: 26px;
@@ -1625,7 +1761,16 @@
         <section class="panel">
           <div class="panel-head">
             <strong>Tabela do dzisiaj</strong>
-            <small id="table-mode-note">wpisuj dane bezpośrednio</small>
+            <div class="table-head-actions">
+              <small id="table-mode-note">wpisuj dane bezpośrednio</small>
+              <label class="table-color-switch">
+                <span>Kolory</span>
+                <span class="table-color-switch-control">
+                  <input id="table-color-toggle" type="checkbox" role="switch" aria-label="Pokaż pełne kolory starszych wpisów">
+                  <span class="table-color-switch-track" aria-hidden="true"></span>
+                </span>
+              </label>
+            </div>
           </div>
           <div class="table-wrap" id="weight-table"></div>
         </section>
@@ -1715,6 +1860,7 @@
       const TRAININGS_KEY = isTestMode ? "champion-stamina-test-trainings-v2" : "champion-stamina-trainings-v2";
       const OVR_KEY = isTestMode ? "champion-stamina-test-ovr-v2" : "champion-stamina-ovr-history-v2";
       const TACTICS_PLAYERS_KEY = "stamina-tactics-universal-players-v1";
+      const TABLE_COLORS_KEY = "champion-stamina-table-colors-v1";
 
       const firebaseConfig = {
         apiKey: "AIzaSyA7JqE7bNPU6FHqJSad5lKwjm-c8ozY9rg",
@@ -1741,6 +1887,7 @@
       let hasPlayedPrimaryCardEntry = false;
       let isPrimaryCardEntryReady = false;
       let historyCardBackgroundFrame = null;
+      let tableColorsEnabled = loadTableColorsEnabled();
 
       const $ = selector => document.querySelector(selector);
       const $$ = selector => Array.from(document.querySelectorAll(selector));
@@ -1752,6 +1899,14 @@
         "history-theme-gold"
       ];
       const CARD_COUNTER_FIELDS = ["overall", "weightPoints", "pacePoints", "discipline"];
+
+      function loadTableColorsEnabled() {
+        try {
+          return localStorage.getItem(TABLE_COLORS_KEY) === "1";
+        } catch {
+          return false;
+        }
+      }
 
       const todayKey = () => {
         if (isTestMode) return shiftDateKey(START_DATE_KEY, TEST_ROW_COUNT - 1);
@@ -2345,6 +2500,42 @@
         return path.join(" ");
       }
 
+      function challengeWeekIndex(dateKey) {
+        return Math.floor(
+          (calendarDayNumber(dateKey) - calendarDayNumber(START_DATE_KEY)) / 7
+        );
+      }
+
+      function chartWeekBands(items, xForIndex, plotLeft, plotRight, plotTop, plotBottom) {
+        if (!items.length) return "";
+        const bands = [];
+        let startIndex = 0;
+
+        for (let index = 1; index <= items.length; index += 1) {
+          const currentWeek = index < items.length
+            ? challengeWeekIndex(items[index].date)
+            : null;
+          const bandWeek = challengeWeekIndex(items[startIndex].date);
+          if (index < items.length && currentWeek === bandWeek) continue;
+
+          const left = startIndex === 0
+            ? plotLeft
+            : (xForIndex(startIndex - 1) + xForIndex(startIndex)) / 2;
+          const endIndex = index - 1;
+          const right = endIndex === items.length - 1
+            ? plotRight
+            : (xForIndex(endIndex) + xForIndex(endIndex + 1)) / 2;
+          const alternateClass = Math.abs(bandWeek) % 2 === 1 ? " is-alternate" : "";
+
+          bands.push(
+            `<rect class="chart-week-band${alternateClass}" x="${left.toFixed(1)}" y="${plotTop}" width="${Math.max(0, right - left).toFixed(1)}" height="${plotBottom - plotTop}"></rect>`
+          );
+          startIndex = index;
+        }
+
+        return bands.join("");
+      }
+
       function chartMarkup(points, options) {
         const width = 390;
         const height = 205;
@@ -2369,6 +2560,14 @@
           .map((point, index) => Number.isFinite(point.value) ? { x: x(index), y: y(point.value) } : null)
           .filter(Boolean);
         const pathData = smoothSvgPath(coords);
+        const weekBands = chartWeekBands(
+          points,
+          x,
+          pad.left,
+          width - pad.right,
+          pad.top,
+          height - pad.bottom
+        );
         const grid = [0, .5, 1].map(fraction => {
           const gridY = pad.top + innerHeight * fraction;
           const value = max - (max - min) * fraction;
@@ -2398,6 +2597,7 @@
           tabindex="0"
           aria-label="${escapeHtml(options.ariaLabel)}">
           <svg viewBox="0 0 ${width} ${height}" aria-hidden="true">
+            ${weekBands}
             ${grid}
             ${pathData ? `<path class="chart-line ${options.kind}" d="${pathData}"></path>` : ""}
             ${dots}
@@ -2482,6 +2682,7 @@
               Number.isFinite(entry.bpm) ? `${Math.round(entry.bpm)} BPM` : ""
             ].filter(Boolean);
             return {
+              date: entry.date,
               label: formatDate(entry.date),
               fullLabel: `${formatDate(entry.date)} · ${isFootball ? "trening piłkarski" : "trening biegowy"}${details.length ? ` · ${details.join(" · ")}` : ""}`,
               value: isFootball ? lastPace : entry.pace,
@@ -2512,6 +2713,7 @@
             ))
             .map(candidate => candidate.weight));
           return {
+            date: entry.date,
             label: formatDate(entry.date),
             fullLabel: `${formatDate(entry.date)} · średnia z 7 dni`,
             value
@@ -2610,6 +2812,14 @@
             tierLabel: point.tierLabel
           };
         });
+        const weekBands = chartWeekBands(
+          records,
+          index => records.length === 1 ? chartWidth / 2 : plotLeft + index * step,
+          plotLeft,
+          chartWidth - plotRight,
+          plotTop,
+          plotBottom
+        );
 
         return `
           <div
@@ -2623,6 +2833,7 @@
               viewBox="0 0 ${chartWidth} ${chartHeight}"
               preserveAspectRatio="none"
               aria-hidden="true">
+              ${weekBands}
               ${gridLevels.map(level => {
                 const y = yForOverall(level);
                 return `
@@ -2768,6 +2979,8 @@
 
       function renderWeightTable() {
         const rows = challengeRows();
+        const colorToggle = $("#table-color-toggle");
+        if (colorToggle) colorToggle.checked = tableColorsEnabled;
         $("#table-mode-note").innerHTML = isTestMode
           ? '<span class="test-badge">Test · 20 wierszy</span>'
           : `${rows.length} ${rows.length === 1 ? "dzień" : "dni"} od 29.07`;
@@ -2777,6 +2990,16 @@
         }
 
         const weeks = [];
+        const rollingWindowStart = Math.max(0, rows.length - 7);
+        const rollingWindowLength = rows.length - rollingWindowStart;
+        const fullColorWindowStart = Math.max(0, rows.length - 14);
+        const trainingsByDate = new Map();
+        latestTrainingRows().forEach(entry => {
+          const day = trainingsByDate.get(entry.date) || { hasTraining: false, hasFootball: false };
+          day.hasTraining = true;
+          if (entry.type === "football") day.hasFootball = true;
+          trainingsByDate.set(entry.date, day);
+        });
         let comparisonAverage = BASE_WEIGHT;
         for (let start = 0; start < rows.length; start += 7) {
           const weekRows = rows.slice(start, start + 7);
@@ -2794,12 +3017,12 @@
         }
 
         $("#weight-table").innerHTML = `
-          <table>
+          <table class="weight-history-table${tableColorsEnabled ? " show-all-colors" : ""}">
             <colgroup>
-              <col style="width:5%"><col style="width:11%"><col style="width:9%"><col style="width:20%"><col style="width:12%">
+              <col style="width:2%"><col style="width:5%"><col style="width:10%"><col style="width:9%"><col style="width:19%"><col style="width:12%">
               <col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:7%">
             </colgroup>
-            <thead><tr><th>#</th><th>Data</th><th>OVR</th><th>Kcal</th><th>Waga</th><th>Różnica</th><th>Śr. tyg.</th><th>Roz. tyg.</th><th>FF/S</th></tr></thead>
+            <thead><tr><th class="rolling-window-col" aria-label="Ostatnie 7 dni"></th><th>#</th><th>Data</th><th>OVR</th><th>Kcal</th><th>Waga</th><th>Różnica</th><th>Śr. tyg.</th><th>Roz. tyg.</th><th>FF/S</th></tr></thead>
             <tbody>${rows.map((entry, index) => {
               const previousWeight = index > 0 ? rows[index - 1].weight : null;
               const delta = Number.isFinite(entry.weight) && Number.isFinite(previousWeight) ? entry.weight - previousWeight : null;
@@ -2808,6 +3031,9 @@
                 : entry.date;
               const dailyScore = currentScore(scoreDate);
               const dailyTier = tierFor(dailyScore.overall);
+              const trainingDay = trainingsByDate.get(entry.date);
+              const hasTraining = Boolean(trainingDay?.hasTraining);
+              const hasFootball = Boolean(trainingDay?.hasFootball);
               const kcalLimit = kcalLimitForDay(entry.date);
               const kcalDelta = Number.isFinite(entry.kcal) ? Math.round(entry.kcal - kcalLimit) : null;
               const kcalClass = Number.isFinite(kcalDelta) ? (kcalDelta <= 0 ? "good" : "bad") : "muted";
@@ -2818,10 +3044,16 @@
                 ? `<span class="kcal-minutes">${kcalDelta > 0 ? `(+${kcalEquivalentMinutes} min)` : `(${kcalEquivalentMinutes} min zapasu)`}</span><span class="kcal-value">${kcalDelta > 0 ? "+" : ""}${kcalDelta}</span>`
                 : "";
               const week = weeks.find(item => item.start === index);
-              return `<tr>
+              const rowClasses = [
+                index > 0 && index % 7 === 0 ? "week-start" : "",
+                index < fullColorWindowStart ? "is-older-than-14-days" : ""
+              ].filter(Boolean).join(" ");
+              return `<tr${rowClasses ? ` class="${rowClasses}"` : ""}>
+                ${index < rollingWindowStart ? '<td class="rolling-window-spacer"></td>' : ""}
+                ${index === rollingWindowStart ? `<td class="rolling-window-cell" rowspan="${rollingWindowLength}"><svg viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true"><line class="rolling-window-line" x1="5" y1="0" x2="5" y2="100"></line></svg></td>` : ""}
                 <td>${index + 1}</td>
                 <td class="date-cell">${formatDate(entry.date)}</td>
-                <td><span class="ovr-pill ${dailyTier.className}" title="${dailyTier.label} karta · OVR ${dailyScore.overall}">${dailyScore.overall}</span></td>
+                <td class="ovr-cell">${hasTraining ? `<span class="training-day-dot${hasFootball ? " is-football" : ""}" role="img" aria-label="${hasFootball ? "Trening piłkarski" : "Dzień treningowy"}" title="${hasFootball ? "Trening piłkarski" : "Dzień treningowy"}"></span>` : ""}<span class="ovr-pill ${dailyTier.className}" title="${dailyTier.label} karta · OVR ${dailyScore.overall}">${dailyScore.overall}</span></td>
                 <td class="editable-cell ${kcalClass}" data-edit-cell title="${Number.isFinite(entry.kcal) ? `Wpisano: ${entry.kcal} kcal · ` : ""}Limit: ${kcalLimit} kcal (${trainingMinutesForDay(entry.date)} min treningu)">
                   <span class="cell-display">${kcalDisplay}</span>
                   <input class="table-input" data-day-field="kcal" data-date="${entry.date}" type="text" inputmode="numeric" value="${Number.isFinite(entry.kcal) ? entry.kcal : ""}" aria-label="Kalorie ${formatDate(entry.date)}">
@@ -3132,6 +3364,14 @@
         cell.classList.add("is-editing");
         input.focus();
         input.select();
+      });
+
+      $("#table-color-toggle").addEventListener("change", event => {
+        tableColorsEnabled = event.target.checked;
+        try {
+          localStorage.setItem(TABLE_COLORS_KEY, tableColorsEnabled ? "1" : "0");
+        } catch {}
+        renderWeightTable();
       });
 
       $("#weight-table").addEventListener("keydown", event => {
