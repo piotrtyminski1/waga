@@ -1059,7 +1059,8 @@
     }
 
     .entry-form input[type="date"],
-    .entry-form input[type="number"] {
+    .entry-form input[type="number"],
+    .entry-form input[type="text"] {
       width: 100%;
       min-width: 0;
       height: 38px;
@@ -1796,7 +1797,7 @@
               </span>
             </label>
             <label class="training-field" id="pace-field">Tempo [km/h]<input id="pace-input" type="number" inputmode="decimal" min="1" max="30" step="0.1" placeholder="6,0" required></label>
-            <label class="training-field" id="distance-field" hidden>Dystans [km]<input id="distance-input" type="number" inputmode="decimal" min="0.1" max="100" step="0.1" placeholder="opcjonalnie"></label>
+            <label class="training-field" id="distance-field" hidden>Dystans [km]<input id="distance-input" type="text" inputmode="decimal" autocomplete="off" placeholder="np. 4,77 lub 4.77"></label>
             <label>Średnia BPM<input id="bpm-input" type="number" inputmode="numeric" min="40" max="230" step="1" placeholder="145" required></label>
             <label>Czas [min]<input id="minutes-input" type="number" inputmode="numeric" min="1" max="600" step="1" placeholder="60" required></label>
             <button class="save-button" type="submit">Zapisz trening</button>
@@ -2677,7 +2678,7 @@
             const isFootball = entry.type === "football";
             if (!isFootball && Number.isFinite(entry.pace)) lastPace = entry.pace;
             const details = [
-              Number.isFinite(entry.distance) ? `${format1(entry.distance)} km` : "",
+              Number.isFinite(entry.distance) ? `${format2(entry.distance)} km` : "",
               Number.isFinite(entry.minutes) ? `${entry.minutes} min` : "",
               Number.isFinite(entry.bpm) ? `${Math.round(entry.bpm)} BPM` : ""
             ].filter(Boolean);
@@ -3103,7 +3104,7 @@
               <td>${index + 1}</td>
               <td class="date-cell">${formatDate(entry.date)}</td>
               <td>${entry.type === "football" ? "Piłka" : "Bieg"}</td>
-              <td>${entry.type === "football" ? (Number.isFinite(entry.distance) ? `${format1(entry.distance)} km` : "—") : format1(entry.pace)}</td>
+              <td>${entry.type === "football" ? (Number.isFinite(entry.distance) ? `${format2(entry.distance)} km` : "—") : format1(entry.pace)}</td>
               <td><span class="training-bpm-value">${Number.isFinite(entry.bpm) ? Math.round(entry.bpm) : "—"}${hasConsistencyStar(index) ? consistencyStarMarkup : ""}</span></td>
               <td>${Number.isFinite(entry.minutes) ? `${entry.minutes} min` : "—"}</td>
               <td><button class="delete-button" type="button" data-delete-training="${escapeHtml(entry.id)}" aria-label="Usuń trening">X</button></td>
@@ -3292,8 +3293,13 @@
         const rawMinutes = optionalTrainingNumber("#minutes-input");
         const minutes = Number.isFinite(rawMinutes) ? Math.round(rawMinutes) : null;
         const distance = optionalTrainingNumber("#distance-input");
+        const distanceProvided = $("#distance-input").value.trim() !== "";
         if (!isFootball && (!Number.isFinite(pace) || !Number.isFinite(bpm) || !Number.isFinite(minutes) || minutes <= 0)) {
           $("#training-form-note").textContent = "Podaj tempo, średnie BPM i czas.";
+          return;
+        }
+        if (isFootball && distanceProvided && (!Number.isFinite(distance) || distance <= 0 || distance > 100)) {
+          $("#training-form-note").textContent = "Podaj dystans od 0,1 do 100 km. Możesz użyć przecinka lub kropki.";
           return;
         }
         const beforeScore = currentScore();
