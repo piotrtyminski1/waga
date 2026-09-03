@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="theme-color" content="#00141e">
   <title>Champion Stamina</title>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -88,13 +91,18 @@
     button { -webkit-tap-highlight-color: transparent; }
 
     .app {
+      position: relative;
       width: 100%;
       max-width: 430px;
       min-height: 100dvh;
       margin: 0 auto;
       padding: 0 8px max(20px, env(safe-area-inset-bottom));
       background: var(--panel-3);
+      opacity: 1;
+      transition: opacity .24s ease;
     }
+
+    .app.is-mode-transitioning { opacity: 0; pointer-events: none; }
 
     .topbar {
       min-height: 58px;
@@ -992,7 +1000,7 @@
 
     .mode-switch {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 5px;
       margin-top: 12px;
       padding: 5px;
@@ -1119,6 +1127,337 @@
     .training-entry-form .save-button,
     .training-entry-form .form-note { grid-column: span 3; }
 
+    .training-zone-details {
+      grid-column: span 3;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--panel-3);
+    }
+
+    .training-zone-details summary {
+      padding: 11px 10px;
+      color: var(--muted);
+      font-size: 7px;
+      font-weight: 800;
+      letter-spacing: .02em;
+      list-style: none;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .training-zone-details summary::-webkit-details-marker { display: none; }
+    .training-zone-details summary::after { content: "+"; float: right; color: var(--text); }
+    .training-zone-details[open] summary::after { content: "−"; }
+
+    .training-zone-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 5px;
+      padding: 0 8px 9px;
+    }
+
+    .training-zone-grid label { text-align: center; }
+    .training-zone-grid input { padding: 0 3px !important; text-align: center; }
+
+    .mito-feature {
+      margin-top: 12px;
+      overflow: hidden;
+      border: 1px solid #171717;
+      border-radius: 8px;
+      background: #000;
+      color: #f4f4f4;
+    }
+
+    .mito-feature-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 15px 15px 8px;
+    }
+
+    .mito-eyebrow {
+      display: block;
+      margin-bottom: 3px;
+      color: #858585;
+      font-size: 7px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .mito-feature-head h2 {
+      margin: 0;
+      font-family: Oswald, "Arial Narrow", sans-serif;
+      font-size: 18px;
+      font-weight: 350;
+      letter-spacing: .035em;
+      text-transform: uppercase;
+    }
+
+    .mito-score-lockup { flex: 0 0 auto; text-align: right; }
+    .mito-score-lockup strong {
+      display: block;
+      font-family: "Roboto Mono", monospace;
+      font-size: 22px;
+      line-height: 23px;
+      font-weight: 700;
+    }
+
+    .mito-score-lockup span {
+      color: #777;
+      font-size: 6px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .mito-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / .9;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .mito-stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: .085;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E");
+      mix-blend-mode: screen;
+    }
+
+    #mito-canvas { width: 100%; height: 100%; display: block; }
+
+    .mito-update-note {
+      min-height: 29px;
+      margin: 0;
+      padding: 7px 15px 11px;
+      color: #8c8c8c;
+      font-size: 8px;
+      line-height: 11px;
+      text-align: center;
+      letter-spacing: .02em;
+    }
+
+    .mito-metrics { grid-template-columns: repeat(3, 1fr); }
+    .mito-metrics .metric-card { background: #151515; }
+
+    .mito-timeline-panel {
+      margin-top: 10px;
+      border: 1px solid #202020;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #080808;
+    }
+
+    .mito-timeline-head {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 11px;
+      border-bottom: 1px solid #202020;
+    }
+
+    .mito-timeline-head strong { font-size: 9px; text-transform: uppercase; }
+    .mito-timeline-head small { display: block; margin-top: 2px; color: #777; font-size: 7px; }
+
+    .mito-today-button {
+      min-height: 26px;
+      padding: 0 9px;
+      border: 1px solid #343434;
+      border-radius: 999px;
+      background: transparent;
+      color: #d8d8d8;
+      font-size: 7px;
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .mito-today-button[hidden] { display: none; }
+    .mito-timeline {
+      position: relative;
+      height: 128px;
+      cursor: ew-resize;
+      touch-action: pan-y;
+      user-select: none;
+    }
+
+    .mito-timeline svg { width: 100%; height: 100%; display: block; pointer-events: none; }
+    .mito-timeline-grid { stroke: #1d1d1d; stroke-width: 1; vector-effect: non-scaling-stroke; }
+    .mito-timeline-area { fill: rgba(188, 188, 188, .05); }
+    .mito-timeline-line { fill: none; stroke: #a8a8a8; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+    .mito-timeline-dot { fill: #bdbdbd; }
+    .mito-timeline-cursor { stroke: rgba(170,170,170,.36); stroke-width: 1; vector-effect: non-scaling-stroke; }
+    .mito-timeline-label { fill: #5d5d5d; font-family: "Roboto Mono", monospace; font-size: 7px; }
+
+    .mito-settings {
+      margin-top: 10px;
+      border-color: #252525;
+      background: #080808;
+    }
+
+    .mito-settings-form {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .mito-settings-form label {
+      display: grid;
+      gap: 4px;
+      color: #777;
+      font-size: 7px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .mito-settings-form input {
+      width: 100%;
+      height: 36px;
+      padding: 0 8px;
+      border: 1px solid #292929;
+      border-radius: 5px;
+      outline: none;
+      background: #000;
+      color: #fff;
+      font-size: 16px;
+    }
+
+    .mito-settings-form input:focus { border-color: #777; }
+    .mito-settings-form button { grid-column: span 2; background: #eee; color: #000; }
+    .mito-disclaimer { color: #777; font-size: 8px; line-height: 13px; }
+
+    body.mito-mode {
+      --bg: #000;
+      --panel: #000;
+      --panel-2: #0d0d0d;
+      --panel-3: #030303;
+      --line: #292929;
+      --text: #c8c8c8;
+      --muted: #8e8e8e;
+      --muted-2: #575757;
+      --accent: #bdbdbd;
+      --accent-dark: #8d8d8d;
+      --green: #c2c2c2;
+      --gold: #a7a7a7;
+      --bad: #696969;
+      background: #000;
+      color: #c8c8c8;
+      font-family: "Roboto Mono", Consolas, monospace;
+    }
+
+    body.mito-mode .app,
+    body.mito-mode .topbar {
+      background-color: #000;
+      background-image:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.014) 1px, transparent 1px);
+      background-size: 16px 16px;
+    }
+
+    body.mito-mode button,
+    body.mito-mode input,
+    body.mito-mode h1,
+    body.mito-mode h2,
+    body.mito-mode strong,
+    body.mito-mode .overall-history-grid-label,
+    body.mito-mode .overall-history-cursor-tooltip strong,
+    body.mito-mode .mito-feature-head h2 {
+      font-family: "Roboto Mono", Consolas, monospace;
+    }
+
+    body.mito-mode #player-card,
+    body.mito-mode .player-profile-head,
+    body.mito-mode .overall-history,
+    body.mito-mode main > .scale-panel {
+      display: none !important;
+    }
+
+    body.mito-mode .mode-button.is-active {
+      background: #a4a4a4;
+      color: #000;
+      box-shadow: inset 0 0 0 1px #b7b7b7;
+    }
+
+    body.mito-mode .topbar h1,
+    body.mito-mode .mito-feature,
+    body.mito-mode .mito-feature-head h2,
+    body.mito-mode .mito-score-lockup strong { color: #c2c2c2; }
+
+    body.mito-mode .topbar span::before { content: "C:\\STAMINA\\ "; color: #777; }
+    body.mito-mode .topbar h1::before { content: "> "; color: #777; }
+    body.mito-mode .mode-button::before { content: "[ "; color: #777; }
+    body.mito-mode .mode-button::after { content: " ]"; color: #777; }
+    body.mito-mode .mode-button.is-active::before,
+    body.mito-mode .mode-button.is-active::after { color: #292929; }
+    body.mito-mode .mito-eyebrow::before { content: "// "; }
+    body.mito-mode .mito-feature-head h2::before { content: "> "; color: #777; }
+    body.mito-mode .mito-update-note::before { content: ">> "; color: #aaa; }
+    body.mito-mode .mito-timeline-head strong::before { content: "[LOG] "; color: #777; }
+
+    @keyframes terminal-cursor-blink {
+      0%, 44% { opacity: 1; }
+      45%, 100% { opacity: 0; }
+    }
+
+    body.mito-mode .topbar h1::after,
+    body.mito-mode .mito-feature-head h2::after,
+    body.mito-mode #mito-timeline-date::after {
+      content: "_";
+      display: inline-block;
+      margin-left: .18em;
+      color: #8f8f8f;
+      animation: terminal-cursor-blink .92s steps(1, end) infinite;
+    }
+
+    body.mito-mode .mode-switch,
+    body.mito-mode .panel,
+    body.mito-mode .overall-history,
+    body.mito-mode .player-profile-head,
+    body.mito-mode .metric-card,
+    body.mito-mode .scale-panel,
+    body.mito-mode .mito-feature,
+    body.mito-mode .mito-timeline-panel {
+      border-radius: 0;
+      border-color: #282828;
+      background: #040404;
+      box-shadow: none;
+    }
+
+    body.mito-mode .mito-feature-head,
+    body.mito-mode .mito-timeline-head,
+    body.mito-mode .panel-head,
+    body.mito-mode .overall-history-head { border-bottom: 1px dashed #282828; }
+
+    body.mito-mode .mito-update-note { border-top: 1px dashed #242424; }
+    body.mito-mode .metric-card strong { color: #bdbdbd; text-shadow: 0 0 7px rgba(170,170,170,.14); }
+    body.mito-mode input,
+    body.mito-mode .save-button,
+    body.mito-mode .mito-today-button { border-radius: 0; }
+
+    body.mito-mode .app::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      pointer-events: none;
+      opacity: .04;
+      background: repeating-linear-gradient(180deg, transparent 0, transparent 3px, rgba(255,255,255,.16) 4px);
+      mix-blend-mode: screen;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .app { transition-duration: .01ms; }
+    }
+
     .training-kind-switch {
       min-height: 44px;
       display: flex !important;
@@ -1212,6 +1551,41 @@
       color: var(--muted-2) !important;
       filter: grayscale(1);
       opacity: .55;
+    }
+
+    .weight-history-table:not(.show-all-colors) tbody tr.is-older-than-14-days td.weekly-difference-cell.good {
+      color: var(--green) !important;
+      filter: none;
+      opacity: 1;
+    }
+
+    .weight-history-table:not(.show-all-colors) tbody tr.is-older-than-14-days td.weekly-difference-cell.bad {
+      color: var(--bad) !important;
+      filter: none;
+      opacity: 1;
+    }
+
+    .week-kcal-summary-row td {
+      height: 18px;
+      padding: 1px 6px;
+      background: rgba(128, 142, 147, .18) !important;
+      color: var(--muted);
+      font-size: 6.4px;
+      font-weight: 800;
+    }
+
+    .week-kcal-summary-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .week-kcal-summary-value {
+      font-family: "Roboto Mono", monospace;
+      font-size: 7px;
+      font-variant-numeric: tabular-nums;
     }
 
     .rolling-window-col,
@@ -1739,7 +2113,7 @@
         <div id="overall-chart"></div>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="metric-chart-panel">
         <div class="panel-head">
           <strong id="metric-chart-title">Wykres wagi</strong>
           <small id="metric-chart-note">pełna historia · średnia krocząca 7d</small>
@@ -1750,6 +2124,7 @@
       <nav class="mode-switch" aria-label="Tryb danych">
         <button class="mode-button is-active" type="button" data-mode="weight">Waga</button>
         <button class="mode-button" type="button" data-mode="training">Trening</button>
+        <button class="mode-button" type="button" data-mode="mito">Mito</button>
       </nav>
 
       <section class="mode-panel is-active" id="mode-weight">
@@ -1800,6 +2175,16 @@
             <label class="training-field" id="distance-field" hidden>Dystans [km]<input id="distance-input" type="text" inputmode="decimal" autocomplete="off" placeholder="np. 4,77 lub 4.77"></label>
             <label>Średnia BPM<input id="bpm-input" type="number" inputmode="numeric" min="40" max="230" step="1" placeholder="145" required></label>
             <label>Czas [min]<input id="minutes-input" type="number" inputmode="numeric" min="1" max="600" step="1" placeholder="60" required></label>
+            <details class="training-zone-details">
+              <summary>Minuty w strefach tętna · opcjonalnie</summary>
+              <div class="training-zone-grid">
+                <label>Z1<input id="zone1-input" type="number" inputmode="numeric" min="0" max="600" step="1" placeholder="0"></label>
+                <label>Z2<input id="zone2-input" type="number" inputmode="numeric" min="0" max="600" step="1" placeholder="0"></label>
+                <label>Z3<input id="zone3-input" type="number" inputmode="numeric" min="0" max="600" step="1" placeholder="0"></label>
+                <label>Z4<input id="zone4-input" type="number" inputmode="numeric" min="0" max="600" step="1" placeholder="0"></label>
+                <label>Z5<input id="zone5-input" type="number" inputmode="numeric" min="0" max="600" step="1" placeholder="0"></label>
+              </div>
+            </details>
             <button class="save-button" type="submit">Zapisz trening</button>
             <p class="form-note" id="training-form-note"></p>
           </form>
@@ -1812,6 +2197,52 @@
           </div>
           <div class="table-wrap" id="training-table"></div>
         </section>
+      </section>
+
+      <section class="mode-panel" id="mode-mito">
+        <section class="mito-feature" aria-labelledby="mito-title">
+          <div class="mito-feature-head">
+            <div>
+              <span class="mito-eyebrow">AEROBIC_ADAPTATION.SYS</span>
+              <h2 id="mito-title">MITOCHONDRIAL_DENSITY</h2>
+            </div>
+            <div class="mito-score-lockup">
+              <strong id="mito-score">12,0</strong>
+              <span>MITO_SCORE :: 000–100</span>
+            </div>
+          </div>
+          <div class="mito-stage">
+            <canvas id="mito-canvas" role="img" aria-label="Abstrakcyjna, punktowa wizualizacja adaptacji tlenowej"></canvas>
+          </div>
+          <p class="mito-update-note" id="mito-update-note">Każdy regularny trening tlenowy zagęszcza tę samą strukturę.</p>
+        </section>
+
+        <div class="mode-metrics mito-metrics">
+          <div class="metric-card"><strong id="mito-change-28">0,0</strong><span>DELTA_28D</span></div>
+          <div class="metric-card"><strong id="mito-workouts-28">0</strong><span>SESSIONS_28D</span></div>
+          <div class="metric-card"><strong id="mito-active-weeks">0/4</strong><span>ACTIVE_WEEKS</span></div>
+        </div>
+
+        <section class="mito-timeline-panel">
+          <div class="mito-timeline-head">
+            <div><strong>DENSITY_TIMELINE</strong><small id="mito-timeline-date">NOW</small></div>
+            <button class="mito-today-button" id="mito-today-button" type="button" hidden>[ RETURN_NOW ]</button>
+          </div>
+          <div class="mito-timeline" id="mito-timeline" tabindex="0" aria-label="Historia Mitochondrial Density. Przesuń palcem lub użyj strzałek."></div>
+        </section>
+
+        <details class="scale-panel mito-settings">
+          <summary>Jak to działa i ustawienia <span>+</span></summary>
+          <div class="scale-content">
+            <p>Forma rośnie dzięki czasowi w strefach tlenowych, regularności i poprawie prędkości przy podobnym tętnie. Po kilku dniach bez treningu pozostaje stabilna, a później stopniowo się rozrzedza. Powrót do wcześniejszego maksimum jest nieco szybszy.</p>
+            <form class="mito-settings-form" id="mito-settings-form">
+              <label>Początek Z2 · BPM<input id="mito-zone2-low" type="number" min="70" max="210" step="1" value="125"></label>
+              <label>Koniec Z2 · BPM<input id="mito-zone2-high" type="number" min="75" max="220" step="1" value="145"></label>
+              <button class="save-button" type="submit">Zapisz strefę Z2</button>
+            </form>
+            <p class="mito-disclaimer">Mitochondrial Density jest wizualizacją szacowanej adaptacji treningowej na podstawie Twojej aktywności i wydolności. Nie jest pomiarem medycznym ani rzeczywistą liczbą mitochondriów.</p>
+          </div>
+        </details>
       </section>
 
       <details class="scale-panel">
@@ -1839,6 +2270,594 @@
   </div>
 
   <script>
+  (function (global) {
+    "use strict";
+  
+    const DAY_MS = 86400000;
+    const DEFAULT_SCORE = 12;
+    const BASELINE_FLOOR = 5;
+    const MIN_PARTICLES = 120;
+    const MAX_PARTICLES = 2000;
+    const MIN_VISUAL_DENSITY = MIN_PARTICLES / MAX_PARTICLES;
+  
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+    const mean = values => values.length
+      ? values.reduce((sum, value) => sum + value, 0) / values.length
+      : null;
+    const median = values => {
+      if (!values.length) return null;
+      const sorted = [...values].sort((a, b) => a - b);
+      const middle = Math.floor(sorted.length / 2);
+      return sorted.length % 2
+        ? sorted[middle]
+        : (sorted[middle - 1] + sorted[middle]) / 2;
+    };
+  
+    function dayNumber(dateKey) {
+      const parts = String(dateKey || "").split("-").map(Number);
+      if (parts.length !== 3 || parts.some(value => !Number.isFinite(value))) return NaN;
+      return Math.floor(Date.UTC(parts[0], parts[1] - 1, parts[2]) / DAY_MS);
+    }
+  
+    function dateKey(day) {
+      return new Date(day * DAY_MS).toISOString().slice(0, 10);
+    }
+  
+    function number(value) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+  
+    function workoutMinutes(training) {
+      return number(training.durationMinutes) ?? number(training.minutes);
+    }
+  
+    function workoutHeartRate(training) {
+      return number(training.averageHR) ?? number(training.bpm);
+    }
+  
+    function workoutDistance(training) {
+      return number(training.distanceKm) ?? number(training.distance);
+    }
+  
+    function workoutSpeed(training) {
+      const minutes = workoutMinutes(training);
+      const distance = workoutDistance(training);
+      if (distance > 0 && minutes > 0) return distance / (minutes / 60);
+      const paceAsSpeed = number(training.speedKmh) ?? number(training.pace);
+      return paceAsSpeed > 0 ? paceAsSpeed : null;
+    }
+  
+    function zoneValue(training, zone) {
+      return Math.max(0, number(training[`zone${zone}Minutes`]) ?? number(training[`zone${zone}`]) ?? 0);
+    }
+  
+    function createConfig(input) {
+      const source = input || {};
+      const low = clamp(Math.round(number(source.zone2Low) ?? 125), 70, 210);
+      const high = clamp(Math.round(number(source.zone2High) ?? 145), low + 5, 220);
+      return {
+        particleSeed: String(source.particleSeed || `mito-${Math.random().toString(36).slice(2)}-${Date.now().toString(36)}`),
+        zone2Low: low,
+        zone2High: high
+      };
+    }
+  
+    function dominantZoneWeight(heartRate, config) {
+      const width = Math.max(10, config.zone2High - config.zone2Low);
+      if (heartRate < config.zone2Low) return 0.35;
+      if (heartRate <= config.zone2High) return 1;
+      if (heartRate <= config.zone2High + width * 0.75) return 0.85;
+      if (heartRate <= config.zone2High + width * 1.5) return 0.55;
+      return 0.30;
+    }
+  
+    function effectiveAerobicMinutes(training, config) {
+      const minutes = workoutMinutes(training);
+      if (!(minutes > 0)) return { minutes: 0, confidence: 0, source: "none" };
+      const zoneMinutes = [1, 2, 3, 4, 5].map(zone => zoneValue(training, zone));
+      if (zoneMinutes.some(value => value > 0)) {
+        return {
+          minutes: zoneMinutes[0] * 0.35
+            + zoneMinutes[1]
+            + zoneMinutes[2] * 0.85
+            + zoneMinutes[3] * 0.55
+            + zoneMinutes[4] * 0.30,
+          confidence: 1,
+          source: "zones"
+        };
+      }
+      const heartRate = workoutHeartRate(training);
+      if (heartRate > 0) {
+        return {
+          minutes: minutes * dominantZoneWeight(heartRate, config),
+          confidence: 1,
+          source: "average-hr"
+        };
+      }
+      return { minutes: minutes * 0.8, confidence: 0.8, source: "duration" };
+    }
+  
+    function robustSpeedAtHeartRate(rows, referenceHR) {
+      if (rows.length < 5) return null;
+      const slopes = [];
+      for (let left = 0; left < rows.length; left += 1) {
+        for (let right = left + 1; right < rows.length; right += 1) {
+          const hrDelta = rows[right].heartRate - rows[left].heartRate;
+          if (Math.abs(hrDelta) >= 2) slopes.push((rows[right].speed - rows[left].speed) / hrDelta);
+        }
+      }
+      const slope = clamp(median(slopes) ?? 0, -0.06, 0.06);
+      const intercept = median(rows.map(row => row.speed - slope * row.heartRate));
+      return intercept === null ? null : intercept + slope * referenceHR;
+    }
+  
+    function averageWeight(weights, fromDay, toDay) {
+      return mean((weights || [])
+        .filter(entry => {
+          const day = dayNumber(entry.date);
+          return day >= fromDay && day <= toDay && number(entry.weight) > 0;
+        })
+        .map(entry => number(entry.weight)));
+    }
+  
+    function efficiencyDetails(trainings, weights, atDay, config) {
+      const referenceHR = (config.zone2Low + config.zone2High) / 2;
+      const comparable = (trainings || [])
+        .filter(training => training.type !== "football")
+        .map(training => ({
+          day: dayNumber(training.date),
+          heartRate: workoutHeartRate(training),
+          speed: workoutSpeed(training)
+        }))
+        .filter(row => Number.isFinite(row.day) && row.heartRate > 0 && row.speed > 0);
+      const rowsInRange = (from, to) => comparable.filter(row => row.day >= from && row.day <= to);
+      const recent = robustSpeedAtHeartRate(rowsInRange(atDay - 27, atDay), referenceHR);
+      const previous = robustSpeedAtHeartRate(rowsInRange(atDay - 55, atDay - 28), referenceHR);
+      if (!(recent > 0) || !(previous > 0)) {
+        return { factor: 1, trend: 0, adjustedTrend: 0, referenceHR, recent, previous, weightCorrection: 1 };
+      }
+  
+      const trend = clamp((recent - previous) / previous, -0.10, 0.10);
+      const recentWeight = averageWeight(weights, atDay - 27, atDay);
+      const previousWeight = averageWeight(weights, atDay - 55, atDay - 28);
+      let weightCorrection = 1;
+      if (recentWeight > 0 && previousWeight > 0) {
+        const weightChange = Math.abs((recentWeight - previousWeight) / previousWeight);
+        if (weightChange > 0.03) {
+          weightCorrection = 1 - clamp(((weightChange - 0.03) / 0.07) * 0.30, 0, 0.30);
+        }
+      }
+      const adjustedTrend = trend > 0 ? trend * weightCorrection : trend;
+      return {
+        factor: clamp(1 + adjustedTrend * 2, 0.85, 1.20),
+        trend,
+        adjustedTrend,
+        referenceHR,
+        recent,
+        previous,
+        weightCorrection
+      };
+    }
+  
+    function trainingStats(trainings, atDay) {
+      const aerobic = (trainings || []).filter(training => workoutMinutes(training) > 0);
+      const inRange = (from, to) => aerobic.filter(training => {
+        const day = dayNumber(training.date);
+        return day >= from && day <= to;
+      });
+      const workoutsLast7Days = inRange(atDay - 6, atDay).length;
+      const last28 = inRange(atDay - 27, atDay);
+      let activeWeeksLast28Days = 0;
+      for (let week = 0; week < 4; week += 1) {
+        const end = atDay - week * 7;
+        if (inRange(end - 6, end).length >= 2) activeWeeksLast28Days += 1;
+      }
+      return {
+        workoutsLast7Days,
+        workoutsLast28Days: last28.length,
+        activeWeeksLast28Days,
+        trainingMinutesLast28Days: Math.round(last28.reduce((sum, training) => sum + workoutMinutes(training), 0))
+      };
+    }
+  
+    function mapScore(score, decayLevel) {
+      const normalized = clamp(score, 0, 100) / 100;
+      const visualDensity = MIN_VISUAL_DENSITY
+        + (1 - MIN_VISUAL_DENSITY) * Math.pow(normalized, 0.88);
+      return {
+        mitoScore: clamp(score, 0, 100),
+        visualDensity,
+        particleCount: Math.round(MAX_PARTICLES * visualDensity),
+        internalComplexity: 0.12 + 0.88 * Math.pow(normalized, 0.9),
+        coherence: 0.25 + 0.75 * Math.pow(normalized, 0.8),
+        cristaeDensity: 0.08 + 0.92 * Math.pow(normalized, 1.05),
+        decayLevel: clamp(decayLevel || 0, 0, 1)
+      };
+    }
+  
+    function decayForDay(score, daysSinceLastWorkout) {
+      if (daysSinceLastWorkout <= 4) return score;
+      const rate = daysSinceLastWorkout <= 10 ? 0.995 : daysSinceLastWorkout <= 21 ? 0.990 : 0.985;
+      const excess = Math.max(0, score - BASELINE_FLOOR) * rate;
+      return BASELINE_FLOOR + excess;
+    }
+  
+    function workoutGain(score, historicalMax, training, allTrainings, weights, atDay, config) {
+      const effective = effectiveAerobicMinutes(training, config);
+      if (!(effective.minutes > 0)) {
+        return { gain: 0, effectiveAerobicMinutes: 0, efficiencyFactor: 1 };
+      }
+      const stats = trainingStats(allTrainings.filter(candidate => dayNumber(candidate.date) <= atDay), atDay);
+      const durationFactor = clamp(Math.sqrt(effective.minutes / 45), 0.45, 1.35);
+      const frequencyFactor = clamp(0.90 + stats.workoutsLast7Days * 0.07, 0.90, 1.15);
+      const consistencyFactor = 0.90 + stats.activeWeeksLast28Days * 0.05;
+      const efficiency = efficiencyDetails(allTrainings, weights, atDay, config);
+      const rawGain = 0.75 * durationFactor * frequencyFactor * consistencyFactor * efficiency.factor;
+      const diminishingReturns = 1 - 0.75 * Math.pow(score / 100, 1.4);
+      const retrainingBonus = 1 + clamp((historicalMax - score) / 100, 0, 0.20);
+      return {
+        gain: rawGain * diminishingReturns * retrainingBonus,
+        effectiveAerobicMinutes: effective.minutes,
+        confidence: effective.confidence,
+        source: effective.source,
+        durationFactor,
+        frequencyFactor,
+        consistencyFactor,
+        efficiencyFactor: efficiency.factor,
+        efficiencyTrend: efficiency.adjustedTrend,
+        retrainingBonus,
+        ...stats
+      };
+    }
+  
+    function makeSnapshot(day, score, daysSinceLastWorkout, kind, trainingId, stats) {
+      return {
+        id: `${dateKey(day)}-${kind}-${trainingId || "daily"}`,
+        date: dateKey(day),
+        kind,
+        trainingId: trainingId || null,
+        ...mapScore(score, daysSinceLastWorkout > 4 ? clamp((daysSinceLastWorkout - 4) / 28, 0, 1) : 0),
+        daysSinceLastWorkout: Number.isFinite(daysSinceLastWorkout) ? daysSinceLastWorkout : null,
+        workoutsLast7Days: stats.workoutsLast7Days,
+        workoutsLast28Days: stats.workoutsLast28Days,
+        activeWeeksLast28Days: stats.activeWeeksLast28Days,
+        trainingMinutesLast28Days: stats.trainingMinutesLast28Days
+      };
+    }
+  
+    function replay(options) {
+      const config = createConfig(options && options.config);
+      const todayDay = dayNumber(options && options.today);
+      const safeToday = Number.isFinite(todayDay) ? todayDay : dayNumber(new Date().toISOString().slice(0, 10));
+      const allTrainings = (options && options.trainings || [])
+        .filter(training => Number.isFinite(dayNumber(training.date)) && dayNumber(training.date) <= safeToday)
+        .sort((a, b) => dayNumber(a.date) - dayNumber(b.date) || String(a.recordedAt || "").localeCompare(String(b.recordedAt || "")));
+      const retained = allTrainings.filter(training => dayNumber(training.date) >= safeToday - 179);
+      const firstTrainingDay = retained.length ? dayNumber(retained[0].date) : safeToday;
+      const startDay = Math.max(safeToday - 179, firstTrainingDay);
+      const byDay = new Map();
+      retained.forEach(training => {
+        const day = dayNumber(training.date);
+        const dayRows = byDay.get(day) || [];
+        dayRows.push(training);
+        byDay.set(day, dayRows);
+      });
+  
+      let score = clamp(number(options && options.defaultScore) ?? DEFAULT_SCORE, 0, 100);
+      const storedMaxDay = dayNumber(options && options.historicalMaxDate);
+      const canUseStoredMax = Number.isFinite(storedMaxDay) && storedMaxDay < startDay;
+      let historicalMax = canUseStoredMax
+        ? Math.max(score, clamp(number(options && options.historicalMaxMitoScore) ?? score, 0, 100))
+        : score;
+      let historicalMaxDate = canUseStoredMax ? dateKey(storedMaxDay) : dateKey(startDay);
+      let lastWorkoutDay = null;
+      let lastGain = null;
+      const snapshots = [];
+  
+      for (let day = startDay; day <= safeToday; day += 1) {
+        const daysSinceLastWorkout = lastWorkoutDay === null ? null : day - lastWorkoutDay;
+        if (daysSinceLastWorkout !== null) score = decayForDay(score, daysSinceLastWorkout);
+        const dayTrainings = byDay.get(day) || [];
+        dayTrainings.forEach(training => {
+          const details = workoutGain(score, historicalMax, training, retained, options.weights || [], day, config);
+          score = clamp(score + details.gain, 0, 100);
+          if (details.gain > 0) lastWorkoutDay = day;
+          if (score > historicalMax) {
+            historicalMax = score;
+            historicalMaxDate = dateKey(day);
+          }
+          lastGain = { ...details, trainingId: training.id || null, date: dateKey(day) };
+          const stats = trainingStats(retained.filter(candidate => dayNumber(candidate.date) <= day), day);
+          snapshots.push(makeSnapshot(day, score, 0, "workout", training.id, stats));
+        });
+        const finalDaysSince = lastWorkoutDay === null ? null : day - lastWorkoutDay;
+        const stats = trainingStats(retained.filter(candidate => dayNumber(candidate.date) <= day), day);
+        snapshots.push(makeSnapshot(day, score, finalDaysSince, "daily", null, stats));
+      }
+  
+      const current = snapshots[snapshots.length - 1] || makeSnapshot(
+        safeToday,
+        score,
+        null,
+        "daily",
+        null,
+        trainingStats([], safeToday)
+      );
+      return { current, snapshots, historicalMaxMitoScore: historicalMax, historicalMaxDate, lastGain, config };
+    }
+  
+    function interpolateSnapshot(from, to, amount) {
+      const t = clamp(amount, 0, 1);
+      const keys = ["mitoScore", "visualDensity", "particleCount", "internalComplexity", "coherence", "cristaeDensity", "decayLevel"];
+      const result = { ...from };
+      keys.forEach(key => {
+        result[key] = (Number(from[key]) || 0) + ((Number(to[key]) || 0) - (Number(from[key]) || 0)) * t;
+      });
+      return result;
+    }
+  
+    function hashString(value) {
+      let hash = 2166136261;
+      for (let index = 0; index < String(value).length; index += 1) {
+        hash ^= String(value).charCodeAt(index);
+        hash = Math.imul(hash, 16777619);
+      }
+      return hash >>> 0;
+    }
+  
+    function randomGenerator(seed) {
+      let state = seed >>> 0;
+      return function random() {
+        state += 0x6D2B79F5;
+        let value = state;
+        value = Math.imul(value ^ value >>> 15, value | 1);
+        value ^= value + Math.imul(value ^ value >>> 7, value | 61);
+        return ((value ^ value >>> 14) >>> 0) / 4294967296;
+      };
+    }
+  
+    function buildParticles(seed) {
+      const random = randomGenerator(hashString(seed));
+      const particles = [];
+      const rotate = -0.13;
+      const transform = (x, y) => ({
+        x: x * Math.cos(rotate) - y * Math.sin(rotate),
+        y: x * Math.sin(rotate) + y * Math.cos(rotate)
+      });
+      for (let index = 0; index < MAX_PARTICLES; index += 1) {
+        const selector = random();
+        let x;
+        let y;
+        let group;
+        if (selector < 0.08) {
+          group = "membrane";
+          const angle = random() * Math.PI * 2;
+          const radialNoise = 0.9 + (random() - 0.5) * 0.16;
+          const asymmetric = 1 + 0.18 * Math.sin(angle * 3 + 0.8) + 0.09 * Math.sin(angle * 7);
+          x = Math.cos(angle) * radialNoise * asymmetric;
+          y = Math.sin(angle) * 0.6 * radialNoise * (1 + 0.18 * Math.cos(angle * 2 - 0.4));
+          x += 0.12 * Math.sin(angle * 2) - 0.055 * y;
+        } else if (selector < 0.20) {
+          group = "cristae";
+          const band = Math.floor(random() * 6);
+          const t = random() * 1.7 - 0.85;
+          const envelope = Math.sqrt(Math.max(0, 1 - Math.pow(t / 0.94, 2)));
+          const base = (band - 2.5) * 0.13;
+          const wave = Math.sin(t * (4.2 + band * 0.24) + band * 1.31) * (0.075 + random() * 0.05);
+          x = t + (random() - 0.5) * 0.085;
+          y = clamp(base + wave, -envelope * 0.54, envelope * 0.54) + (random() - 0.5) * 0.105;
+          x += 0.055 * Math.sin(y * 7 + 0.6);
+        } else if (selector < 0.42) {
+          group = "interior";
+          do {
+            x = random() * 1.88 - 0.94;
+            y = random() * 1.08 - 0.54;
+          } while ((x * x) + (y * y) / 0.34 > 0.92 + 0.12 * Math.sin(x * 5 + y * 3) + 0.055 * Math.cos(x * 7 - y * 4));
+          x += (random() - 0.5) * 0.1;
+          y += (random() - 0.5) * 0.08;
+        } else {
+          group = "field";
+          const angle = random() * Math.PI * 2;
+          const radius = 0.42 + Math.pow(random(), 0.56) * 1.28;
+          x = Math.cos(angle) * radius * (1 + 0.15 * Math.sin(angle * 3.4));
+          y = Math.sin(angle) * radius * (0.64 + random() * 0.23);
+          x += (random() - 0.5) * 0.36;
+          y += (random() - 0.5) * 0.3;
+        }
+        const point = transform(x, y);
+        particles.push({
+          id: index,
+          x: point.x,
+          y: point.y,
+          z: random() * 2 - 1,
+          group,
+          size: 0.34 + random() * 0.78,
+          opacity: 0.29 + random() * 0.54,
+          activationThreshold: index < MIN_PARTICLES
+            ? 0
+            : MIN_VISUAL_DENSITY + random() * (1 - MIN_VISUAL_DENSITY),
+          phase: random() * Math.PI * 2,
+          phaseSecondary: random() * Math.PI * 2,
+          motionSpeed: 0.55 + random() * 1.05,
+          motionX: 0.48 + random() * 0.72,
+          motionY: 0.42 + random() * 0.76,
+          tone: Math.round(148 + random() * 52)
+        });
+      }
+      return particles;
+    }
+  
+    function createRenderer(canvas, seed) {
+      const context = canvas.getContext("2d", { alpha: false });
+      const particles = buildParticles(seed);
+      const reduceMotion = Boolean(global.matchMedia && global.matchMedia("(prefers-reduced-motion: reduce)").matches);
+      let state = mapScore(DEFAULT_SCORE, 0);
+      let frame = null;
+      let idleFrame = null;
+      let lastIdleDraw = 0;
+      let isVisible = true;
+      let animationToken = 0;
+  
+      function stopIdleMotion() {
+        if (idleFrame !== null) global.cancelAnimationFrame(idleFrame);
+        idleFrame = null;
+      }
+  
+      function idleTick(now) {
+        if (!isVisible || reduceMotion || frame !== null) {
+          idleFrame = null;
+          return;
+        }
+        if (now - lastIdleDraw >= 32) {
+          draw(state, now);
+          lastIdleDraw = now;
+        }
+        idleFrame = global.requestAnimationFrame(idleTick);
+      }
+  
+      function startIdleMotion() {
+        if (idleFrame === null && frame === null && isVisible && !reduceMotion) {
+          idleFrame = global.requestAnimationFrame(idleTick);
+        }
+      }
+  
+      function resize() {
+        const rect = canvas.getBoundingClientRect();
+        const ratio = Math.min(2, global.devicePixelRatio || 1);
+        const width = Math.max(1, Math.round(rect.width * ratio));
+        const height = Math.max(1, Math.round(rect.height * ratio));
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+        draw(state, global.performance.now());
+        startIdleMotion();
+      }
+  
+      function draw(nextState, now) {
+        const width = canvas.width;
+        const height = canvas.height;
+        context.fillStyle = "#000";
+        context.fillRect(0, 0, width, height);
+        const scale = Math.min(width * 0.26, height * 0.34);
+        const centerX = width * 0.5;
+        const centerY = height * 0.5;
+        const density = clamp(nextState.visualDensity, 0, 1);
+        const complexity = clamp(nextState.internalComplexity, 0, 1);
+        const cristae = clamp(nextState.cristaeDensity, 0, 1);
+        const coherence = clamp(nextState.coherence, 0, 1);
+        const decay = clamp(nextState.decayLevel || 0, 0, 1);
+        const motionTime = now / 2000;
+        const motionAmplitude = Math.max(11, width / 32);
+        const breathing = 1 + Math.sin(motionTime * 0.43) * 0.032;
+        particles.forEach(particle => {
+          const activation = clamp((density - particle.activationThreshold) * 18 + 0.5, 0, 1);
+          if (activation <= 0.01) return;
+          let groupOpacity = 1;
+          if (particle.group === "cristae") groupOpacity = 0.16 + cristae * 0.64;
+          if (particle.group === "interior") groupOpacity = 0.22 + complexity * 0.62;
+          if (particle.group === "membrane") groupOpacity = 0.35 + coherence * 0.45;
+          if (particle.group === "field") groupOpacity = 0.24 + density * 0.66;
+          const depth = 0.72 + (particle.z + 1) * 0.14;
+          const driftPhase = particle.phase + motionTime * particle.motionSpeed;
+          const secondaryPhase = particle.phaseSecondary + motionTime * (particle.motionSpeed * 0.63 + 0.11);
+          const motionFreedom = particle.group === "field" ? 2.18 : particle.group === "membrane" ? 1.42 : particle.group === "cristae" ? 1.08 : 0.92;
+          const loopX = (Math.sin(driftPhase) * particle.motionX + Math.sin(secondaryPhase * 1.7) * 0.32)
+            * motionAmplitude * motionFreedom;
+          const loopY = (Math.cos(driftPhase * 0.83) * particle.motionY + Math.cos(secondaryPhase * 1.43) * 0.3)
+            * motionAmplitude * motionFreedom;
+          const flowX = Math.sin(motionTime * 0.5 + particle.y * 5.7 + particle.z * 1.4) * motionAmplitude * 0.58;
+          const flowY = Math.cos(motionTime * 0.41 + particle.x * 4.9 - particle.z * 1.2) * motionAmplitude * 0.5;
+          const particleAngle = Math.atan2(particle.y, particle.x);
+          const shapeFreedom = particle.group === "field" ? 1.45 : particle.group === "membrane" ? 1 : particle.group === "cristae" ? 0.72 : 0.54;
+          const organicBulge = Math.sin(motionTime * 0.38 + particleAngle * 3.2 + particle.z * 0.55)
+            * motionAmplitude * shapeFreedom;
+          const flicker = 0.92 + Math.sin(secondaryPhase * 1.18) * 0.08;
+          const alpha = clamp(particle.opacity * activation * groupOpacity * depth * flicker * (1 - decay * 0.12), 0, 0.78);
+          const x = centerX + particle.x * scale * breathing + flowX
+            + Math.cos(particleAngle) * organicBulge
+            + loopX * depth;
+          const y = centerY + particle.y * scale / breathing + flowY
+            + Math.sin(particleAngle) * organicBulge * 0.72
+            + loopY * depth;
+          const size = particle.size * (0.78 + depth * 0.34) * Math.max(1, width / 420);
+          context.fillStyle = `rgba(${particle.tone},${particle.tone},${particle.tone},${alpha.toFixed(3)})`;
+          context.beginPath();
+          context.arc(x, y, size, 0, Math.PI * 2);
+          context.fill();
+        });
+      }
+  
+      function setState(nextState, options) {
+        const target = { ...state, ...nextState };
+        const duration = reduceMotion ? 0 : Math.max(0, Number(options && options.duration) || 0);
+        animationToken += 1;
+        const token = animationToken;
+        stopIdleMotion();
+        if (frame !== null) global.cancelAnimationFrame(frame);
+        if (!duration) {
+          state = target;
+          frame = null;
+          draw(state, global.performance.now());
+          startIdleMotion();
+          return;
+        }
+        const startState = { ...state };
+        const start = global.performance.now();
+        const tick = now => {
+          if (token !== animationToken) return;
+          const progress = clamp((now - start) / duration, 0, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          state = interpolateSnapshot(startState, target, eased);
+          draw(state, now);
+          if (progress < 1) frame = global.requestAnimationFrame(tick);
+          else {
+            frame = null;
+            startIdleMotion();
+          }
+        };
+        frame = global.requestAnimationFrame(tick);
+      }
+  
+      const resizeObserver = global.ResizeObserver ? new ResizeObserver(resize) : null;
+      const intersectionObserver = global.IntersectionObserver ? new IntersectionObserver(entries => {
+        isVisible = Boolean(entries[0] && entries[0].isIntersecting);
+        if (isVisible) startIdleMotion();
+        else stopIdleMotion();
+      }, { rootMargin: "80px" }) : null;
+      if (resizeObserver) resizeObserver.observe(canvas);
+      else global.addEventListener("resize", resize);
+      if (intersectionObserver) intersectionObserver.observe(canvas);
+      resize();
+      return {
+        particles,
+        resize,
+        setState,
+        destroy() {
+          animationToken += 1;
+          if (frame !== null) global.cancelAnimationFrame(frame);
+          stopIdleMotion();
+          if (resizeObserver) resizeObserver.disconnect();
+          else global.removeEventListener("resize", resize);
+          if (intersectionObserver) intersectionObserver.disconnect();
+        }
+      };
+    }
+  
+    global.MitoDensity = {
+      constants: { DEFAULT_SCORE, BASELINE_FLOOR, MIN_PARTICLES, MAX_PARTICLES },
+      createConfig,
+      effectiveAerobicMinutes,
+      efficiencyDetails,
+      interpolateSnapshot,
+      mapScore,
+      replay,
+      createRenderer
+    };
+  })(typeof window !== "undefined" ? window : globalThis);
+  </script>
+  <script>
     (() => {
       "use strict";
 
@@ -1860,8 +2879,10 @@
       const WEIGHTS_KEY = isTestMode ? "champion-stamina-test-weights-v2" : "champion-stamina-weights-v2";
       const TRAININGS_KEY = isTestMode ? "champion-stamina-test-trainings-v2" : "champion-stamina-trainings-v2";
       const OVR_KEY = isTestMode ? "champion-stamina-test-ovr-v2" : "champion-stamina-ovr-history-v2";
+      const MITO_KEY = isTestMode ? "champion-stamina-test-mito-v1" : "champion-stamina-mito-v1";
       const TACTICS_PLAYERS_KEY = "stamina-tactics-universal-players-v1";
       const TABLE_COLORS_KEY = "champion-stamina-table-colors-v1";
+      const repairStorageRequested = new URLSearchParams(location.search).get("repair") === "1";
 
       const firebaseConfig = {
         apiKey: "AIzaSyA7JqE7bNPU6FHqJSad5lKwjm-c8ozY9rg",
@@ -1881,6 +2902,15 @@
       let weightsRef = null;
       let trainingsRef = null;
       let ovrRef = null;
+      let mitoRef = null;
+      let mitoState = { config: null, history: [], historicalMaxMitoScore: 12, historicalMaxDate: "" };
+      let mitoRenderer = null;
+      let mitoRendererSeed = "";
+      let mitoReplayCache = null;
+      let mitoPersistSignature = "";
+      let mitoRemoteReady = false;
+      let mitoAnimationFrom = null;
+      let modeTransitionTimer = null;
       let lastStoredOvrSignature = "";
       let cardPresentationToken = 0;
       let cardPresentationFrame = null;
@@ -1985,6 +3015,10 @@
             const bpm = Number(entry.bpm);
             const minutes = Number(entry.minutes);
             const distance = Number(entry.distance);
+            const zones = [1, 2, 3, 4, 5].map(zone => {
+              const value = Number(entry[`zone${zone}Minutes`] ?? entry[`zone${zone}`]);
+              return Number.isFinite(value) && value >= 0 ? Math.round(value) : null;
+            });
             return {
               id: String(entry.id || uid("t")),
               date: entry.date || statDateKey(entry.recordedAt),
@@ -1993,6 +3027,11 @@
               bpm: Number.isFinite(bpm) && bpm > 0 ? Math.round(bpm) : null,
               minutes: Number.isFinite(minutes) && minutes > 0 ? Math.round(minutes) : null,
               distance: Number.isFinite(distance) && distance > 0 ? distance : null,
+              zone1Minutes: zones[0],
+              zone2Minutes: zones[1],
+              zone3Minutes: zones[2],
+              zone4Minutes: zones[3],
+              zone5Minutes: zones[4],
               recordedAt: String(entry.recordedAt || new Date().toISOString())
             };
           })
@@ -2017,16 +3056,39 @@
           .sort((a, b) => a.date.localeCompare(b.date));
       }
 
+      function normalizeMitoState(source) {
+        const raw = source && typeof source === "object" ? source : {};
+        const rawConfig = raw.config || raw;
+        const config = window.MitoDensity?.createConfig
+          ? window.MitoDensity.createConfig(rawConfig)
+          : {
+              particleSeed: String(rawConfig.particleSeed || "mito-module-pending"),
+              zone2Low: clamp(Math.round(Number(rawConfig.zone2Low) || 125), 70, 210),
+              zone2High: clamp(Math.round(Number(rawConfig.zone2High) || 145), 75, 220)
+            };
+        const history = Array.isArray(raw.history)
+          ? raw.history.filter(entry => entry && entry.date && Number.isFinite(Number(entry.mitoScore)))
+          : [];
+        return {
+          config,
+          history,
+          historicalMaxMitoScore: clamp(Number(raw.historicalMaxMitoScore) || 12, 0, 100),
+          historicalMaxDate: String(raw.historicalMaxDate || "")
+        };
+      }
+
       function loadLocal() {
         try { weights = normalizeWeights(JSON.parse(localStorage.getItem(WEIGHTS_KEY) || "[]")); } catch { weights = []; }
         try { trainings = normalizeTrainings(JSON.parse(localStorage.getItem(TRAININGS_KEY) || "[]")); } catch { trainings = []; }
         try { ovrHistory = normalizeOvr(JSON.parse(localStorage.getItem(OVR_KEY) || "[]")); } catch { ovrHistory = []; }
+        try { mitoState = normalizeMitoState(JSON.parse(localStorage.getItem(MITO_KEY) || "{}")); } catch { mitoState = normalizeMitoState({}); }
       }
 
       function saveLocal() {
         localStorage.setItem(WEIGHTS_KEY, JSON.stringify(weights));
         localStorage.setItem(TRAININGS_KEY, JSON.stringify(trainings));
         localStorage.setItem(OVR_KEY, JSON.stringify(ovrHistory));
+        localStorage.setItem(MITO_KEY, JSON.stringify(mitoState));
       }
 
       function latestWeightRows() {
@@ -2993,6 +4055,11 @@
         const weeks = [];
         const rollingWindowStart = Math.max(0, rows.length - 7);
         const rollingWindowLength = rows.length - rollingWindowStart;
+        const rollingWindowSummaryRows = rows
+          .slice(rollingWindowStart + 1)
+          .filter((entry, index) => (rollingWindowStart + index + 1) % 7 === 0)
+          .length;
+        const rollingWindowRowspan = rollingWindowLength + rollingWindowSummaryRows;
         const fullColorWindowStart = Math.max(0, rows.length - 14);
         const trainingsByDate = new Map();
         latestTrainingRows().forEach(entry => {
@@ -3008,11 +4075,19 @@
           const difference = Number.isFinite(averageWeight)
             ? averageWeight - comparisonAverage
             : null;
+          const kcalDeltas = weekRows
+            .filter(row => Number.isFinite(row.kcal))
+            .map(row => Math.round(row.kcal - kcalLimitForDay(row.date)));
+          const kcalBalance = kcalDeltas.length
+            ? kcalDeltas.reduce((sum, value) => sum + value, 0)
+            : null;
           weeks.push({
             start,
             length: weekRows.length,
+            number: Math.floor(start / 7) + 1,
             averageWeight,
-            difference
+            difference,
+            kcalBalance
           });
           if (Number.isFinite(averageWeight)) comparisonAverage = averageWeight;
         }
@@ -3049,9 +4124,13 @@
                 index > 0 && index % 7 === 0 ? "week-start" : "",
                 index < fullColorWindowStart ? "is-older-than-14-days" : ""
               ].filter(Boolean).join(" ");
-              return `<tr${rowClasses ? ` class="${rowClasses}"` : ""}>
+              const weekSummaryColspan = index > rollingWindowStart ? 9 : 10;
+              const weekSummary = week
+                ? `<tr class="week-kcal-summary-row"><td colspan="${weekSummaryColspan}"><div class="week-kcal-summary-bar"><span>Tydzień ${week.number}</span><span>Łączny bilans kcal: <strong class="week-kcal-summary-value ${rowTone(week.kcalBalance)}">${Number.isFinite(week.kcalBalance) ? `${week.kcalBalance > 0 ? "+" : ""}${week.kcalBalance} kcal` : "brak danych"}</strong></span></div></td></tr>`
+                : "";
+              return `${weekSummary}<tr${rowClasses ? ` class="${rowClasses}"` : ""}>
                 ${index < rollingWindowStart ? '<td class="rolling-window-spacer"></td>' : ""}
-                ${index === rollingWindowStart ? `<td class="rolling-window-cell" rowspan="${rollingWindowLength}"><svg viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true"><line class="rolling-window-line" x1="5" y1="0" x2="5" y2="100"></line></svg></td>` : ""}
+                ${index === rollingWindowStart ? `<td class="rolling-window-cell" rowspan="${rollingWindowRowspan}"><svg viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true"><line class="rolling-window-line" x1="5" y1="0" x2="5" y2="100"></line></svg></td>` : ""}
                 <td>${index + 1}</td>
                 <td class="date-cell">${formatDate(entry.date)}</td>
                 <td class="ovr-cell">${hasTraining ? `<span class="training-day-dot${hasFootball ? " is-football" : ""}" role="img" aria-label="${hasFootball ? "Trening piłkarski" : "Dzień treningowy"}" title="${hasFootball ? "Trening piłkarski" : "Dzień treningowy"}"></span>` : ""}<span class="ovr-pill ${dailyTier.className}" title="${dailyTier.label} karta · OVR ${dailyScore.overall}">${dailyScore.overall}</span></td>
@@ -3065,7 +4144,7 @@
                 </td>
                 <td class="${rowTone(delta)}">${Number.isFinite(delta) ? `${delta > 0 ? "+" : ""}${format2(delta)}` : "—"}</td>
                 ${week ? `<td class="week-cell" rowspan="${week.length}">${formatWeight(week.averageWeight)}</td>` : ""}
-                ${week ? `<td class="week-cell ${rowTone(week.difference)}" rowspan="${week.length}">${Number.isFinite(week.difference) ? `${week.difference > 0 ? "+" : ""}${format2(week.difference)}` : "—"}</td>` : ""}
+                ${week ? `<td class="week-cell weekly-difference-cell ${rowTone(week.difference)}" rowspan="${week.length}">${Number.isFinite(week.difference) ? `${week.difference > 0 ? "+" : ""}${format2(week.difference)}` : "—"}</td>` : ""}
                 <td class="food-cell ${entry.fastFood ? "bad" : "good"}"><input class="food-check" type="checkbox" data-food-date="${entry.date}" aria-label="Fast food lub słodycze ${formatDate(entry.date)}" ${entry.fastFood ? "checked" : ""}></td>
               </tr>`;
             }).join("")}</tbody>
@@ -3124,6 +4203,179 @@
         $("#training-bpm").textContent = Number.isFinite(latestBpm()) ? String(Math.round(latestBpm())) : "—";
       }
 
+      function computeMitoReplay() {
+        if (!window.MitoDensity?.replay) return null;
+        mitoReplayCache = window.MitoDensity.replay({
+          trainings,
+          weights,
+          today: todayKey(),
+          config: mitoState.config,
+          defaultScore: 12,
+          historicalMaxMitoScore: mitoState.historicalMaxMitoScore,
+          historicalMaxDate: mitoState.historicalMaxDate
+        });
+        mitoState = {
+          config: mitoReplayCache.config,
+          history: mitoReplayCache.snapshots,
+          historicalMaxMitoScore: mitoReplayCache.historicalMaxMitoScore,
+          historicalMaxDate: mitoReplayCache.historicalMaxDate
+        };
+        return mitoReplayCache;
+      }
+
+      function persistMitoState() {
+        const signature = JSON.stringify(mitoState);
+        if (signature === mitoPersistSignature) return;
+        mitoPersistSignature = signature;
+        try { localStorage.setItem(MITO_KEY, signature); } catch {}
+        if (firebaseEnabled && mitoRef && mitoRemoteReady) mitoRef.set(mitoState).catch(() => {});
+      }
+
+      function mitoDailySnapshots(snapshots) {
+        return snapshots.filter(snapshot => snapshot.kind === "daily");
+      }
+
+      function formatMitoDate(date) {
+        const parsed = dateFromKey(date);
+        return `${String(parsed.getDate()).padStart(2, "0")}.${String(parsed.getMonth() + 1).padStart(2, "0")}.${parsed.getFullYear()}`;
+      }
+
+      function setMitoPreview(snapshot, isCurrent, animate = false) {
+        if (!snapshot) return;
+        $("#mito-score").textContent = format1(snapshot.mitoScore);
+        $("#mito-timeline-date").textContent = isCurrent ? "NOW" : `${formatMitoDate(snapshot.date)} :: ${format1(snapshot.mitoScore)}`;
+        $("#mito-today-button").hidden = isCurrent;
+        $("#mito-canvas").setAttribute(
+          "aria-label",
+          `Abstrakcyjna, punktowa wizualizacja adaptacji tlenowej. MitoScore ${format1(snapshot.mitoScore)} na 100.`
+        );
+        if (mitoRenderer) mitoRenderer.setState(snapshot, { duration: animate ? 1100 : 0 });
+      }
+
+      function renderMitoTimeline(snapshots, current) {
+        const timeline = $("#mito-timeline");
+        if (!timeline) return;
+        if (!snapshots.length) {
+          timeline.innerHTML = '<div class="chart-empty" style="min-height:128px">Historia pojawi się po pierwszym treningu</div>';
+          return;
+        }
+        const width = 360;
+        const height = 128;
+        const left = 16;
+        const right = 16;
+        const top = 14;
+        const bottom = 105;
+        const values = snapshots.map(snapshot => snapshot.mitoScore);
+        const rawMin = Math.min(...values);
+        const rawMax = Math.max(...values);
+        const spread = Math.max(5, rawMax - rawMin);
+        const min = Math.max(0, rawMin - spread * 0.18);
+        const max = Math.min(100, rawMax + spread * 0.18);
+        const xAt = position => left + (snapshots.length === 1 ? (width - left - right) / 2 : position / (snapshots.length - 1) * (width - left - right));
+        const yAt = score => top + ((max - score) / Math.max(1, max - min)) * (bottom - top);
+        const line = snapshots.map((snapshot, index) => `${index ? "L" : "M"}${xAt(index).toFixed(2)} ${yAt(snapshot.mitoScore).toFixed(2)}`).join(" ");
+        const area = `${line} L${xAt(snapshots.length - 1).toFixed(2)} ${bottom} L${xAt(0).toFixed(2)} ${bottom} Z`;
+        timeline.innerHTML = `
+          <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
+            ${[0, .5, 1].map(amount => `<line class="mito-timeline-grid" x1="${left}" y1="${top + amount * (bottom - top)}" x2="${width - right}" y2="${top + amount * (bottom - top)}"></line>`).join("")}
+            <path class="mito-timeline-area" d="${area}"></path>
+            <path class="mito-timeline-line" d="${line}"></path>
+            <line class="mito-timeline-cursor" data-mito-cursor x1="${xAt(snapshots.length - 1)}" y1="${top}" x2="${xAt(snapshots.length - 1)}" y2="${bottom}"></line>
+            <circle class="mito-timeline-dot" data-mito-dot cx="${xAt(snapshots.length - 1)}" cy="${yAt(current.mitoScore)}" r="2.7"></circle>
+            <text class="mito-timeline-label" x="${left}" y="120">${escapeHtml(formatDate(snapshots[0].date))}</text>
+            <text class="mito-timeline-label" x="${width - right}" y="120" text-anchor="end">${escapeHtml(formatDate(snapshots.at(-1).date))}</text>
+          </svg>`;
+
+        let selectedPosition = snapshots.length - 1;
+        const cursor = timeline.querySelector("[data-mito-cursor]");
+        const dot = timeline.querySelector("[data-mito-dot]");
+        const showPosition = position => {
+          selectedPosition = clamp(position, 0, snapshots.length - 1);
+          const lowerIndex = Math.floor(selectedPosition);
+          const upperIndex = Math.ceil(selectedPosition);
+          const amount = selectedPosition - lowerIndex;
+          const lower = snapshots[lowerIndex];
+          const upper = snapshots[upperIndex] || lower;
+          const interpolated = window.MitoDensity.interpolateSnapshot(lower, upper, amount);
+          interpolated.date = amount < .5 ? lower.date : upper.date;
+          const x = xAt(selectedPosition);
+          const y = yAt(interpolated.mitoScore);
+          cursor.setAttribute("x1", x);
+          cursor.setAttribute("x2", x);
+          dot.setAttribute("cx", x);
+          dot.setAttribute("cy", y);
+          setMitoPreview(interpolated, selectedPosition >= snapshots.length - 1);
+        };
+        const positionAtPointer = clientX => {
+          const bounds = timeline.getBoundingClientRect();
+          const relative = clamp((clientX - bounds.left) / Math.max(1, bounds.width), 0, 1);
+          return relative * (snapshots.length - 1);
+        };
+        timeline.onpointerdown = event => {
+          if (!event.isPrimary) return;
+          showPosition(positionAtPointer(event.clientX));
+          try { timeline.setPointerCapture(event.pointerId); } catch {}
+        };
+        timeline.onpointermove = event => {
+          if (!event.isPrimary || (event.pointerType !== "mouse" && !timeline.hasPointerCapture(event.pointerId))) return;
+          showPosition(positionAtPointer(event.clientX));
+        };
+        timeline.onkeydown = event => {
+          if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+          event.preventDefault();
+          showPosition(Math.round(selectedPosition) + (event.key === "ArrowLeft" ? -1 : 1));
+        };
+        $("#mito-today-button").onclick = () => showPosition(snapshots.length - 1);
+      }
+
+      function renderMitoFeature() {
+        if (!window.MitoDensity?.replay || !window.MitoDensity?.createRenderer) {
+          $("#mito-score").textContent = "—";
+          $("#mito-update-note").textContent = "Wizualizacja Mito jest chwilowo niedostępna. Pozostałe dane aplikacji działają niezależnie.";
+          return;
+        }
+        const replay = computeMitoReplay();
+        const current = replay.current;
+        const daily = mitoDailySnapshots(replay.snapshots);
+        const compareTarget = calendarDayNumber(todayKey()) - 28;
+        const comparison = daily.reduce((nearest, snapshot) => (
+          Math.abs(calendarDayNumber(snapshot.date) - compareTarget) < Math.abs(calendarDayNumber(nearest.date) - compareTarget)
+            ? snapshot
+            : nearest
+        ), daily[0] || current);
+        const change = current.mitoScore - comparison.mitoScore;
+        $("#mito-change-28").textContent = `${change > 0 ? "+" : ""}${format1(change)}`;
+        $("#mito-change-28").className = change > .01 ? "good" : change < -.01 ? "bad" : "";
+        $("#mito-workouts-28").textContent = String(current.workoutsLast28Days || 0);
+        $("#mito-active-weeks").textContent = `${current.activeWeeksLast28Days || 0}/4`;
+        $("#mito-zone2-low").value = replay.config.zone2Low;
+        $("#mito-zone2-high").value = replay.config.zone2High;
+        const lastGain = replay.lastGain;
+        if (current.daysSinceLastWorkout > 4) {
+          $("#mito-update-note").textContent = `${current.daysSinceLastWorkout} dni od treningu · struktura rozrzedza się łagodnie, bez utraty bazowego poziomu.`;
+        } else if (lastGain && lastGain.gain > 0) {
+          $("#mito-update-note").textContent = `Ostatni bodziec +${format1(lastGain.gain)} · ${Math.round(lastGain.effectiveAerobicMinutes)} efektywnych minut aerobowych.`;
+        } else {
+          $("#mito-update-note").textContent = "Każdy regularny trening tlenowy zagęszcza tę samą strukturę.";
+        }
+
+        if (!mitoRenderer || mitoRendererSeed !== replay.config.particleSeed) {
+          if (mitoRenderer) mitoRenderer.destroy();
+          mitoRenderer = window.MitoDensity.createRenderer($("#mito-canvas"), replay.config.particleSeed);
+          mitoRendererSeed = replay.config.particleSeed;
+        }
+        const isMitoVisible = $("#mode-mito").classList.contains("is-active");
+        if (mitoAnimationFrom !== null && isMitoVisible) {
+          mitoRenderer.setState(window.MitoDensity.mapScore(mitoAnimationFrom, 0));
+          requestAnimationFrame(() => setMitoPreview(current, true, true));
+          mitoAnimationFrom = null;
+        } else {
+          setMitoPreview(current, true);
+        }
+        renderMitoTimeline(daily, current);
+        persistMitoState();
+      }
+
       function storeOvrSnapshot() {
         const score = currentScore();
         const date = activeStatDateKey();
@@ -3151,6 +4403,7 @@
         renderWeightTable();
         renderTrainingTable();
         renderModeMetrics();
+        renderMitoFeature();
         storeOvrSnapshot();
       }
 
@@ -3189,77 +4442,183 @@
         return trainingsRef.set(Object.fromEntries(trainings.map(entry => [entry.id, entry])));
       }
 
+      function withDeadline(promise, milliseconds) {
+        return new Promise((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error("Przekroczono czas pobierania danych")), milliseconds);
+          Promise.resolve(promise).then(
+            value => { clearTimeout(timer); resolve(value); },
+            error => { clearTimeout(timer); reject(error); }
+          );
+        });
+      }
+
+      function firstSuccessful(promises) {
+        return new Promise((resolve, reject) => {
+          let rejected = 0;
+          let lastError = new Error("Nie udało się pobrać danych");
+          promises.forEach(promise => Promise.resolve(promise).then(resolve, error => {
+            rejected += 1;
+            lastError = error;
+            if (rejected === promises.length) reject(lastError);
+          }));
+        });
+      }
+
+      async function loadCoreDataViaRest() {
+        const rootUrl = `${firebaseConfig.databaseURL}/champion-stamina-v2`;
+        const load = async path => {
+          const response = await fetch(`${rootUrl}/${path}.json`, { cache: "no-store" });
+          if (!response.ok) throw new Error(`Błąd danych ${path}: ${response.status}`);
+          return response.json();
+        };
+        return Promise.all([load("weights"), load("trainings"), load("ovr-history")]);
+      }
+
       async function initializeStorage() {
-        loadLocal();
-        renderAll();
         try {
-          if (!window.firebase?.database) throw new Error("Firebase niedostępny");
-          const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
-          const db = app.database();
-          await loadAvatar(db);
+          if (repairStorageRequested) {
+            [WEIGHTS_KEY, TRAININGS_KEY, OVR_KEY, MITO_KEY].forEach(key => localStorage.removeItem(key));
+          }
+          loadLocal();
+          isPrimaryCardEntryReady = true;
+          hasPlayedPrimaryCardEntry = true;
+          renderAll();
 
           if (isTestMode) {
             firebaseEnabled = false;
             $("#sync-state").textContent = "Test • start 29.07 05:00";
+            avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY));
             isPrimaryCardEntryReady = true;
+            hasPlayedPrimaryCardEntry = false;
             renderAll();
             return;
           }
 
-          const root = db.ref("champion-stamina-v2");
-          weightsRef = root.child("weights");
-          trainingsRef = root.child("trainings");
-          ovrRef = root.child("ovr-history");
-          firebaseEnabled = true;
-          $("#sync-state").textContent = "Synchronizacja online";
+          let db = null;
+          let avatarPromise = Promise.resolve();
+          let mitoSnapshotPromise = Promise.resolve(null);
+          const coreSources = [withDeadline(loadCoreDataViaRest(), 7000)];
 
-          const [weightSnapshot, trainingSnapshot, ovrSnapshot] = await Promise.all([
-            weightsRef.once("value"),
-            trainingsRef.once("value"),
-            ovrRef.once("value")
-          ]);
-          weights = normalizeWeights(weightSnapshot.val() || weights);
-          trainings = normalizeTrainings(trainingSnapshot.val() || trainings);
-          ovrHistory = normalizeOvr(ovrSnapshot.val() || ovrHistory);
+          if (window.firebase?.database) {
+            const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
+            db = app.database();
+            avatarPromise = withDeadline(loadAvatar(db), 2500).catch(() => {});
+            const root = db.ref("champion-stamina-v2");
+            weightsRef = root.child("weights");
+            trainingsRef = root.child("trainings");
+            ovrRef = root.child("ovr-history");
+            mitoRef = root.child("mitochondrial-density");
+            firebaseEnabled = true;
+            mitoSnapshotPromise = mitoRef.once("value").catch(() => null);
+            coreSources.push(withDeadline(Promise.all([
+              weightsRef.once("value"),
+              trainingsRef.once("value"),
+              ovrRef.once("value")
+            ]).then(([weightSnapshot, trainingSnapshot, ovrSnapshot]) => [
+              weightSnapshot.val(),
+              trainingSnapshot.val(),
+              ovrSnapshot.val()
+            ]), 7000));
+          } else {
+            firebaseEnabled = false;
+          }
+
+          mitoRemoteReady = false;
+          $("#sync-state").textContent = "Pobieranie danych";
+          const [remoteWeights, remoteTrainings, remoteOvr] = await firstSuccessful(coreSources);
+          weights = normalizeWeights(remoteWeights || weights);
+          trainings = normalizeTrainings(remoteTrainings || trainings);
+          ovrHistory = normalizeOvr(remoteOvr || ovrHistory);
           saveLocal();
           isPrimaryCardEntryReady = true;
+          $("#sync-state").textContent = "Synchronizacja online";
           renderAll();
+          await avatarPromise;
+          hasPlayedPrimaryCardEntry = false;
+          renderCard();
+          renderProfileMetrics();
 
-          weightsRef.on("value", snapshot => {
-            const nextWeights = normalizeWeights(snapshot.val());
-            if (JSON.stringify(nextWeights) === JSON.stringify(weights)) return;
-            weights = nextWeights;
-            saveLocal();
-            renderAll();
-          });
-          trainingsRef.on("value", snapshot => {
-            const nextTrainings = normalizeTrainings(snapshot.val());
-            if (JSON.stringify(nextTrainings) === JSON.stringify(trainings)) return;
-            trainings = nextTrainings;
-            saveLocal();
-            renderAll();
-          });
-          ovrRef.on("value", snapshot => {
-            ovrHistory = normalizeOvr(snapshot.val());
-            saveLocal();
-            renderOverallChart();
-          });
+          if (firebaseEnabled) {
+            weightsRef.on("value", snapshot => {
+              const nextWeights = normalizeWeights(snapshot.val());
+              if (JSON.stringify(nextWeights) === JSON.stringify(weights)) return;
+              weights = nextWeights;
+              saveLocal();
+              renderAll();
+            });
+            trainingsRef.on("value", snapshot => {
+              const nextTrainings = normalizeTrainings(snapshot.val());
+              if (JSON.stringify(nextTrainings) === JSON.stringify(trainings)) return;
+              trainings = nextTrainings;
+              saveLocal();
+              renderAll();
+            });
+            ovrRef.on("value", snapshot => {
+              ovrHistory = normalizeOvr(snapshot.val());
+              saveLocal();
+              renderOverallChart();
+            });
+          }
+
+          const mitoSnapshot = await mitoSnapshotPromise;
+          if (mitoSnapshot?.val()) mitoState = normalizeMitoState(mitoSnapshot.val());
+          mitoRemoteReady = true;
+          mitoPersistSignature = "";
+          renderMitoFeature();
+          if (repairStorageRequested) {
+            const repairedUrl = new URL(location.href);
+            repairedUrl.searchParams.delete("repair");
+            history.replaceState(null, "", repairedUrl);
+          }
         } catch (error) {
           firebaseEnabled = false;
+          mitoRemoteReady = false;
           $("#sync-state").textContent = "Tryb lokalny";
           avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY));
           isPrimaryCardEntryReady = true;
+          hasPlayedPrimaryCardEntry = false;
           renderAll();
         }
       }
 
+      function applyMode(mode) {
+        const isMitoMode = mode === "mito";
+        $$(".mode-button").forEach(item => item.classList.toggle("is-active", item.dataset.mode === mode));
+        $$(".mode-panel").forEach(panel => panel.classList.toggle("is-active", panel.id === `mode-${mode}`));
+        document.body.classList.toggle("mito-mode", isMitoMode);
+        $(".topbar span").textContent = isMitoMode ? "MITO SYSTEM" : "Champion Stamina";
+        $(".topbar h1").textContent = isMitoMode ? "DENSITY MONITOR" : "Profil zawodnika";
+        $("#metric-chart-panel").hidden = isMitoMode;
+        if (!isMitoMode) renderMetricChart();
+        if (isMitoMode) {
+          renderMitoFeature();
+          if (mitoRenderer) requestAnimationFrame(() => mitoRenderer.resize());
+        }
+      }
+
+      function activateMode(mode, options = {}) {
+        const currentMode = $(".mode-button.is-active")?.dataset.mode || "weight";
+        const crossesMitoBoundary = (currentMode === "mito") !== (mode === "mito");
+        if (modeTransitionTimer !== null) {
+          clearTimeout(modeTransitionTimer);
+          modeTransitionTimer = null;
+          $(".app").classList.remove("is-mode-transitioning");
+        }
+        if (currentMode === mode || !crossesMitoBoundary || options.instant) {
+          applyMode(mode);
+          return;
+        }
+        const app = $(".app");
+        app.classList.add("is-mode-transitioning");
+        modeTransitionTimer = setTimeout(() => {
+          applyMode(mode);
+          requestAnimationFrame(() => app.classList.remove("is-mode-transitioning"));
+          modeTransitionTimer = null;
+        }, 250);
+      }
+
       $$(".mode-button").forEach(button => {
-        button.addEventListener("click", () => {
-          const mode = button.dataset.mode;
-          $$(".mode-button").forEach(item => item.classList.toggle("is-active", item === button));
-          $$(".mode-panel").forEach(panel => panel.classList.toggle("is-active", panel.id === `mode-${mode}`));
-          renderMetricChart();
-        });
+        button.addEventListener("click", () => activateMode(button.dataset.mode));
       });
 
       function optionalTrainingNumber(selector) {
@@ -3291,7 +4650,11 @@
         const pace = optionalTrainingNumber("#pace-input");
         const bpm = optionalTrainingNumber("#bpm-input");
         const rawMinutes = optionalTrainingNumber("#minutes-input");
-        const minutes = Number.isFinite(rawMinutes) ? Math.round(rawMinutes) : null;
+        const zoneMinutes = [1, 2, 3, 4, 5].map(zone => optionalTrainingNumber(`#zone${zone}-input`));
+        const enteredZoneMinutes = zoneMinutes.filter(Number.isFinite).reduce((sum, value) => sum + Math.max(0, value), 0);
+        const minutes = Number.isFinite(rawMinutes)
+          ? Math.round(rawMinutes)
+          : enteredZoneMinutes > 0 ? Math.round(enteredZoneMinutes) : null;
         const distance = optionalTrainingNumber("#distance-input");
         const distanceProvided = $("#distance-input").value.trim() !== "";
         if (!isFootball && (!Number.isFinite(pace) || !Number.isFinite(bpm) || !Number.isFinite(minutes) || minutes <= 0)) {
@@ -3303,6 +4666,8 @@
           return;
         }
         const beforeScore = currentScore();
+        const mitoBeforeReplay = computeMitoReplay();
+        const beforeMito = mitoBeforeReplay?.current?.mitoScore ?? null;
         trainings.push({
           id: uid("t"),
           date,
@@ -3311,6 +4676,11 @@
           bpm: Number.isFinite(bpm) ? Math.round(bpm) : null,
           minutes,
           distance: isFootball && Number.isFinite(distance) ? distance : null,
+          zone1Minutes: Number.isFinite(zoneMinutes[0]) ? Math.round(Math.max(0, zoneMinutes[0])) : null,
+          zone2Minutes: Number.isFinite(zoneMinutes[1]) ? Math.round(Math.max(0, zoneMinutes[1])) : null,
+          zone3Minutes: Number.isFinite(zoneMinutes[2]) ? Math.round(Math.max(0, zoneMinutes[2])) : null,
+          zone4Minutes: Number.isFinite(zoneMinutes[3]) ? Math.round(Math.max(0, zoneMinutes[3])) : null,
+          zone5Minutes: Number.isFinite(zoneMinutes[4]) ? Math.round(Math.max(0, zoneMinutes[4])) : null,
           recordedAt: new Date().toISOString()
         });
         $("#training-form-note").textContent = `${isFootball ? "Trening piłkarski" : "Trening"} zapisany jako ${formatDate(date)}. Limit dnia: ${kcalLimitForDay(date)} kcal.`;
@@ -3318,10 +4688,30 @@
         $("#bpm-input").value = "";
         $("#minutes-input").value = "";
         $("#distance-input").value = "";
+        [1, 2, 3, 4, 5].forEach(zone => { $(`#zone${zone}-input`).value = ""; });
         const persistPromise = persistTrainings().catch(() => { $("#sync-state").textContent = "Zapis lokalny"; });
+        if (Number.isFinite(beforeMito)) mitoAnimationFrom = beforeMito;
         renderAll();
         showCardUpdatePresentation(beforeScore, currentScore());
         await persistPromise;
+      });
+
+      $("#mito-settings-form").addEventListener("submit", event => {
+        event.preventDefault();
+        if (!window.MitoDensity?.createConfig) {
+          $("#mito-update-note").textContent = "Nie można zapisać strefy, dopóki moduł Mito nie zostanie załadowany.";
+          return;
+        }
+        const low = Math.round(Number($("#mito-zone2-low").value));
+        const high = Math.round(Number($("#mito-zone2-high").value));
+        if (!Number.isFinite(low) || !Number.isFinite(high) || high < low + 5) {
+          $("#mito-update-note").textContent = "Koniec strefy Z2 musi być co najmniej 5 BPM powyżej początku.";
+          return;
+        }
+        mitoState.config = window.MitoDensity.createConfig({ ...mitoState.config, zone2Low: low, zone2High: high });
+        mitoPersistSignature = "";
+        renderAll();
+        $("#mito-update-note").textContent = `Strefa Z2 zapisana: ${mitoState.config.zone2Low}–${mitoState.config.zone2High} BPM.`;
       });
 
       async function saveWeightTableCell(event) {
