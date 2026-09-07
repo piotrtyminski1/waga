@@ -2881,6 +2881,7 @@
       const OVR_KEY = isTestMode ? "champion-stamina-test-ovr-v2" : "champion-stamina-ovr-history-v2";
       const MITO_KEY = isTestMode ? "champion-stamina-test-mito-v1" : "champion-stamina-mito-v1";
       const TACTICS_PLAYERS_KEY = "stamina-tactics-universal-players-v1";
+      const AVATAR_CACHE_KEY = "champion-stamina-avatar-v1";
       const TABLE_COLORS_KEY = "champion-stamina-table-colors-v1";
       const repairStorageRequested = new URLSearchParams(location.search).get("repair") === "1";
 
@@ -2898,6 +2899,7 @@
       let trainings = [];
       let ovrHistory = [];
       let avatarPhoto = "";
+      let isAvatarLoading = false;
       let firebaseEnabled = false;
       let weightsRef = null;
       let trainingsRef = null;
@@ -3275,8 +3277,8 @@
         const portraitShine = avatarPhoto
           ? `<span class="fifa-card-portrait-shine" aria-hidden="true"><img src="${escapeHtml(avatarPhoto)}" alt=""></span>`
           : "";
-        const shouldPlayEntry = isPrimaryCardEntryReady && !hasPlayedPrimaryCardEntry;
-        const entryClass = !isPrimaryCardEntryReady
+        const shouldPlayEntry = isPrimaryCardEntryReady && !isAvatarLoading && !hasPlayedPrimaryCardEntry;
+        const entryClass = !isPrimaryCardEntryReady || isAvatarLoading || shouldPlayEntry
           ? " is-entry-pending"
           : shouldPlayEntry ? "" : " no-entry-animation";
         $("#player-card").innerHTML = `
@@ -3304,7 +3306,17 @@
               </svg>
             </section>
           </div>`;
-        if (shouldPlayEntry) hasPlayedPrimaryCardEntry = true;
+        if (shouldPlayEntry) {
+          const stage = $("#player-card .fifa-card-stage");
+          const images = Array.from(stage.querySelectorAll("img"));
+          Promise.all(images.map(image => image.decode().catch(() => {
+            image.style.visibility = "hidden";
+          }))).then(() => {
+            if (!stage.isConnected) return;
+            hasPlayedPrimaryCardEntry = true;
+            stage.classList.remove("is-entry-pending");
+          });
+        }
         $("#profile-avatar").outerHTML = avatarMarkup(tier).replace(
           '<div class="player-detail-avatar',
           '<div id="profile-avatar" class="player-detail-avatar'
@@ -4419,13 +4431,19 @@
       }
 
       async function loadAvatar(db) {
-        avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY));
+        avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY)) || avatarPhoto;
         if (avatarPhoto) return;
         try {
           const snapshot = await db.ref(`stamina-tactics-data-v1/values/${TACTICS_PLAYERS_KEY}`).once("value");
           const record = snapshot.val();
           avatarPhoto = parseTymekPhoto(typeof record === "string" ? record : record?.value);
-        } catch {}
+          if (avatarPhoto) {
+            try { localStorage.setItem(AVATAR_CACHE_KEY, avatarPhoto); } catch {}
+          }
+        } catch {} finally {
+          isAvatarLoading = false;
+          if (isPrimaryCardEntryReady) renderCard();
+        }
       }
 
       function persistWeights() {
@@ -4480,14 +4498,16 @@
             [WEIGHTS_KEY, TRAININGS_KEY, OVR_KEY, MITO_KEY].forEach(key => localStorage.removeItem(key));
           }
           loadLocal();
-          isPrimaryCardEntryReady = true;
-          hasPlayedPrimaryCardEntry = true;
+          avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY))
+            || localStorage.getItem(AVATAR_CACHE_KEY) || "";
+          isPrimaryCardEntryReady = false;
+          hasPlayedPrimaryCardEntry = false;
           renderAll();
 
           if (isTestMode) {
             firebaseEnabled = false;
             $("#sync-state").textContent = "Test • start 29.07 05:00";
-            avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY));
+            avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY)) || avatarPhoto;
             isPrimaryCardEntryReady = true;
             hasPlayedPrimaryCardEntry = false;
             renderAll();
@@ -4502,6 +4522,7 @@
           if (window.firebase?.database) {
             const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
             db = app.database();
+            isAvatarLoading = !avatarPhoto;
             avatarPromise = withDeadline(loadAvatar(db), 2500).catch(() => {});
             const root = db.ref("champion-stamina-v2");
             weightsRef = root.child("weights");
@@ -4530,13 +4551,10 @@
           trainings = normalizeTrainings(remoteTrainings || trainings);
           ovrHistory = normalizeOvr(remoteOvr || ovrHistory);
           saveLocal();
+          await avatarPromise;
           isPrimaryCardEntryReady = true;
           $("#sync-state").textContent = "Synchronizacja online";
           renderAll();
-          await avatarPromise;
-          hasPlayedPrimaryCardEntry = false;
-          renderCard();
-          renderProfileMetrics();
 
           if (firebaseEnabled) {
             weightsRef.on("value", snapshot => {
@@ -4574,7 +4592,7 @@
           firebaseEnabled = false;
           mitoRemoteReady = false;
           $("#sync-state").textContent = "Tryb lokalny";
-          avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY));
+          avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY)) || avatarPhoto;
           isPrimaryCardEntryReady = true;
           hasPlayedPrimaryCardEntry = false;
           renderAll();
