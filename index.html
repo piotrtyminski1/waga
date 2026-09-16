@@ -1127,6 +1127,57 @@
     .training-entry-form .save-button,
     .training-entry-form .form-note { grid-column: span 3; }
 
+    .pace-field {
+      display: grid;
+      align-content: start;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .pace-field-head {
+      min-height: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 5px;
+    }
+
+    .pace-field-head label { display: block; min-width: 0; }
+
+    .pace-unit-switch {
+      flex: 0 0 auto;
+      display: inline-flex;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--panel-2);
+    }
+
+    .pace-unit-button {
+      min-height: 18px;
+      padding: 0 5px;
+      border: 0;
+      background: transparent;
+      color: var(--muted-2);
+      font-size: 6px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .pace-unit-button + .pace-unit-button { border-left: 1px solid var(--line); }
+    .pace-unit-button.is-active { background: var(--accent); color: #fff; }
+    .pace-unit-button:focus-visible { position: relative; outline: 2px solid #ffd83d; outline-offset: -2px; }
+
+    .pace-conversion-preview {
+      min-height: 10px;
+      color: var(--muted-2);
+      font-family: "Roboto Mono", monospace;
+      font-size: 7px;
+      line-height: 10px;
+      text-transform: none;
+    }
+
     .training-zone-details {
       grid-column: span 3;
       border: 1px solid var(--line);
@@ -2101,7 +2152,7 @@
         </div>
         <div class="profile-metrics">
           <div class="profile-metric"><strong id="profile-weight">—</strong><span>Waga · śr. 7d</span></div>
-          <div class="profile-metric"><strong id="profile-pace">—</strong><span>Tempo · ostatnie</span></div>
+          <div class="profile-metric"><strong id="profile-pace">—</strong><span>Tempo · śr. 5 biegów</span></div>
           <div class="profile-metric"><strong id="profile-discipline">0%</strong><span>Dyscyplina · 14d</span></div>
         </div>
       </section>
@@ -2154,7 +2205,7 @@
 
       <section class="mode-panel" id="mode-training">
         <div class="mode-metrics two">
-          <div class="metric-card"><strong id="training-pace">6,0</strong><span>Tempo · km/h</span></div>
+          <div class="metric-card"><strong id="training-pace">6,0</strong><span>Śr. 5 biegów · km/h</span></div>
           <div class="metric-card"><strong id="training-bpm">—</strong><span>Średnia BPM</span></div>
         </div>
 
@@ -2171,7 +2222,17 @@
                 <span class="training-kind-switch-track" aria-hidden="true"></span>
               </span>
             </label>
-            <label class="training-field" id="pace-field">Tempo [km/h]<input id="pace-input" type="number" inputmode="decimal" min="1" max="30" step="0.1" placeholder="6,0" required></label>
+            <div class="training-field pace-field" id="pace-field">
+              <div class="pace-field-head">
+                <label id="pace-input-label" for="pace-input">Prędkość</label>
+                <div class="pace-unit-switch" role="group" aria-label="Jednostka tempa treningu">
+                  <button class="pace-unit-button is-active" type="button" data-pace-unit="speed" aria-pressed="true">km/h</button>
+                  <button class="pace-unit-button" type="button" data-pace-unit="pace" aria-pressed="false">min/km</button>
+                </div>
+              </div>
+              <input id="pace-input" type="text" inputmode="decimal" autocomplete="off" placeholder="6,0" required aria-describedby="pace-conversion-preview">
+              <small class="pace-conversion-preview" id="pace-conversion-preview"></small>
+            </div>
             <label class="training-field" id="distance-field" hidden>Dystans [km]<input id="distance-input" type="text" inputmode="decimal" autocomplete="off" placeholder="np. 4,77 lub 4.77"></label>
             <label>Średnia BPM<input id="bpm-input" type="number" inputmode="numeric" min="40" max="230" step="1" placeholder="145" required></label>
             <label>Czas [min]<input id="minutes-input" type="number" inputmode="numeric" min="1" max="600" step="1" placeholder="60" required></label>
@@ -2248,8 +2309,8 @@
       <details class="scale-panel">
         <summary>Skala karty i liczenie OVR <span>+</span></summary>
         <div class="scale-content">
-          <p><strong>OVR = 60% WAGA + 30% TEMPO + 10% DYSCYPLINA.</strong> Waga 94 kg i tempo 6,0 km/h zaczynają od 40 pkt. Waga 82 kg oraz tempo 8,5 km/h dają po 100 pkt. Wynik pomiędzy nimi rośnie liniowo.</p>
-          <p>Dyscyplinę zbierasz przez ruchome 14 dni: maks. 2,86 pkt dziennie za kalorie, 2,14 pkt za dzień bez FFood/sweets oraz 3,75 pkt za punktowany trening (maks. 1 dziennie i 4 w każdym tygodniu). Trening piłkarski liczy się także bez podania BPM, dystansu i czasu. Limit dnia to 1700 kcal + 7,5 kcal za każdą wpisaną minutę treningu (450 kcal za godzinę). Niewpisane kalorie nie przyznają punktów, a przekroczenie limitu stopniowo zmniejsza wynik do zera przy +500 kcal.</p>
+          <p><strong>OVR = 60% WAGA + 30% TEMPO + 10% DYSCYPLINA.</strong> Waga 94 kg i tempo 6,0 km/h zaczynają od 40 pkt. Waga 82 kg oraz tempo 8,5 km/h dają po 100 pkt. Wynik pomiędzy nimi rośnie liniowo. TEMPO jest średnią prędkości z 5 ostatnich treningów biegowych; treningi piłkarskie są w tym wyliczeniu pomijane.</p>
+          <p>Dyscyplinę zbierasz przez ruchome 14 dni: maks. 2,86 pkt dziennie za kalorie, 2,14 pkt za dzień bez FFood/sweets oraz 3,75 pkt za punktowany trening (maks. 1 dziennie i 4 w każdym tygodniu). Trening piłkarski liczy się także bez podania BPM, dystansu i czasu. Limit dnia to 1700 kcal + 7,5 kcal za każdą wpisaną minutę treningu (450 kcal za godzinę). Niewpisane kalorie nie przyznają punktów. Nadwyżki i zapasy kcal z wpisanych dni rozliczają się wspólnie w całym okresie: zapas może odrobić wcześniejszą nadwyżkę, ale ujemny bilans nie daje punktów ponad zwykłe maksimum. Każde nieodrobione +500 kcal odbiera równowartość punktów za jeden dzień.</p>
           <div class="tier-list">
             <div class="tier-chip common">Czarna<br>0–49</div>
             <div class="tier-chip bronze">Brązowa<br>50–69</div>
@@ -2865,9 +2926,11 @@
       const GOAL_WEIGHT = 82;
       const BASE_PACE = 6;
       const GOAL_PACE = 8.5;
+      const RECENT_PACE_SAMPLE_SIZE = 5;
       const REST_KCAL = 1700;
       const KCAL_PER_TRAINING_MINUTE = 450 / 60;
       const CALORIE_POINTS_PER_DAY = 40 / 14;
+      const CALORIE_SURPLUS_FOR_DAILY_POINT_LOSS = 500;
       const CLEAN_POINTS_PER_DAY = 30 / 14;
       const TRAINING_POINTS_PER_SESSION = 30 / 8;
       const DAY_MS = 86400000;
@@ -3135,11 +3198,12 @@
         return average(values);
       }
 
-      function latestPace(endDate = activeStatDateKey()) {
-        const latest = latestTrainingRows()
+      function averageRecentPace(endDate = activeStatDateKey()) {
+        const recentPaces = latestTrainingRows()
           .filter(entry => entry.date <= endDate && entry.type !== "football" && Number.isFinite(entry.pace))
-          .at(-1);
-        return latest?.pace ?? null;
+          .slice(-RECENT_PACE_SAMPLE_SIZE)
+          .map(entry => entry.pace);
+        return average(recentPaces);
       }
 
       function latestBpm(endDate = activeStatDateKey()) {
@@ -3163,12 +3227,17 @@
         const start = shiftDateKey(endDate, -13);
         const kcalEntries = latestWeightRows()
           .filter(entry => entry.date >= start && entry.date <= endDate && Number.isFinite(entry.kcal));
-        const consumed = kcalEntries.reduce((sum, entry) => sum + entry.kcal, 0);
-        const baseNeed = kcalEntries.length * REST_KCAL;
-        const trainingBurn = trainings
-          .filter(entry => entry.date >= start && entry.date <= endDate)
-          .reduce((sum, entry) => sum + (Number.isFinite(entry.minutes) ? entry.minutes : 0) * KCAL_PER_TRAINING_MINUTE, 0);
-        return Math.round(consumed - baseNeed - trainingBurn);
+        return Math.round(kcalEntries.reduce(
+          (sum, entry) => sum + entry.kcal - kcalLimitForDay(entry.date),
+          0
+        ));
+      }
+
+      function calorieScoreForBalance(enteredCalorieDays, balance) {
+        const maximumScore = enteredCalorieDays * CALORIE_POINTS_PER_DAY;
+        const remainingSurplus = Math.max(0, balance);
+        const penalty = (remainingSurplus / CALORIE_SURPLUS_FOR_DAILY_POINT_LOSS) * CALORIE_POINTS_PER_DAY;
+        return clamp(maximumScore - penalty, 0, maximumScore);
       }
 
       function disciplineBreakdown(endDate = activeStatDateKey()) {
@@ -3182,7 +3251,6 @@
         const balance = kcalBalance14(endDate);
         let enteredCalorieDays = 0;
         let fastFoodDays = 0;
-        let calorieScore = 0;
         let cleanScore = 0;
 
         days.forEach(date => {
@@ -3191,9 +3259,6 @@
 
           if (Number.isFinite(entry?.kcal)) {
             enteredCalorieDays += 1;
-            const surplus = entry.kcal - kcalLimitForDay(date);
-            const calorieQuality = clamp(1 - Math.max(0, surplus) / 500, 0, 1);
-            calorieScore += CALORIE_POINTS_PER_DAY * calorieQuality;
           }
 
           if (entry?.fastFood) {
@@ -3215,6 +3280,7 @@
         const secondWeekSessions = creditedTrainingDays(days[7], days[13]);
         const sessions = firstWeekSessions + secondWeekSessions;
         const trainingScore = sessions * TRAINING_POINTS_PER_SESSION;
+        const calorieScore = calorieScoreForBalance(enteredCalorieDays, balance);
 
         return {
           enteredCalorieDays,
@@ -3235,14 +3301,14 @@
         return clamp(Math.round(40 + ((BASE_WEIGHT - measured) / (BASE_WEIGHT - GOAL_WEIGHT)) * 60), 0, 100);
       }
 
-      function paceScore(pace = latestPace()) {
+      function paceScore(pace = averageRecentPace()) {
         const measured = Number.isFinite(pace) ? pace : BASE_PACE;
         return clamp(Math.round(40 + ((measured - BASE_PACE) / (GOAL_PACE - BASE_PACE)) * 60), 0, 100);
       }
 
       function currentScore(endDate = activeStatDateKey()) {
         const weight = weightAverage7(endDate);
-        const pace = latestPace(endDate);
+        const pace = averageRecentPace(endDate);
         const discipline = disciplineBreakdown(endDate).total;
         const weightPoints = weightScore(weight);
         const pacePoints = paceScore(pace);
@@ -4190,7 +4256,7 @@
         $("#training-table").innerHTML = rows.length ? `
           <table class="training-table">
             <colgroup><col style="width:7%"><col style="width:16%"><col style="width:16%"><col style="width:20%"><col style="width:15%"><col style="width:17%"><col style="width:9%"></colgroup>
-            <thead><tr><th>#</th><th>Data</th><th>Typ</th><th>Tempo/km</th><th>BPM</th><th>Czas</th><th>X</th></tr></thead>
+            <thead><tr><th>#</th><th>Data</th><th>Typ</th><th>Tempo km/h</th><th>BPM</th><th>Czas</th><th>X</th></tr></thead>
             <tbody>${rows.map((entry, index) => `<tr>
               <td>${index + 1}</td>
               <td class="date-cell">${formatDate(entry.date)}</td>
@@ -4211,7 +4277,7 @@
         $("#kcal-balance").textContent = `${balance > 0 ? "+" : ""}${Math.round(balance)}`;
         $("#kcal-balance").className = balance < 0 ? "good" : balance > 0 ? "bad" : "";
         $("#weight-to-go").textContent = formatWeight(remaining);
-        $("#training-pace").textContent = format1(latestPace());
+        $("#training-pace").textContent = format1(averageRecentPace());
         $("#training-bpm").textContent = Number.isFinite(latestBpm()) ? String(Math.round(latestBpm())) : "—";
       }
 
@@ -4644,6 +4710,72 @@
         return raw === "" ? null : Number(raw);
       }
 
+      function parseTrainingPaceValue(rawValue, unit) {
+        const normalized = String(rawValue || "").trim().replace(",", ".");
+        if (!normalized) return null;
+
+        if (unit === "pace") {
+          let minutesPerKm;
+          if (normalized.includes(":")) {
+            const parts = normalized.split(":");
+            if (parts.length !== 2 || !/^\d+$/.test(parts[0]) || !/^\d{1,2}$/.test(parts[1])) return null;
+            const minutes = Number(parts[0]);
+            const seconds = Number(parts[1]);
+            if (seconds >= 60) return null;
+            minutesPerKm = minutes + seconds / 60;
+          } else {
+            minutesPerKm = Number(normalized);
+          }
+          const speed = 60 / minutesPerKm;
+          return Number.isFinite(speed) && speed >= 1 && speed <= 30 ? speed : null;
+        }
+
+        const speed = Number(normalized);
+        return Number.isFinite(speed) && speed >= 1 && speed <= 30 ? speed : null;
+      }
+
+      function pacePerKmLabel(speed) {
+        if (!Number.isFinite(speed) || speed <= 0) return "—";
+        const totalSeconds = Math.round(3600 / speed);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = String(totalSeconds % 60).padStart(2, "0");
+        return `${minutes}:${seconds}`;
+      }
+
+      function currentPaceInputUnit() {
+        return $(".pace-unit-button.is-active")?.dataset.paceUnit || "speed";
+      }
+
+      function renderPaceConversionPreview() {
+        const unit = currentPaceInputUnit();
+        const speed = parseTrainingPaceValue($("#pace-input").value, unit);
+        $("#pace-conversion-preview").textContent = Number.isFinite(speed)
+          ? unit === "pace"
+            ? `= ${format1(speed)} km/h`
+            : `= ${pacePerKmLabel(speed)} min/km`
+          : "";
+      }
+
+      function setPaceInputUnit(unit) {
+        const input = $("#pace-input");
+        const previousUnit = currentPaceInputUnit();
+        const currentSpeed = parseTrainingPaceValue(input.value, previousUnit);
+        $$(".pace-unit-button").forEach(button => {
+          const isActive = button.dataset.paceUnit === unit;
+          button.classList.toggle("is-active", isActive);
+          button.setAttribute("aria-pressed", String(isActive));
+        });
+        $("#pace-input-label").textContent = unit === "pace" ? "Tempo" : "Prędkość";
+        input.placeholder = unit === "pace" ? "np. 5:30" : "6,0";
+        input.setAttribute("inputmode", unit === "pace" ? "text" : "decimal");
+        if (Number.isFinite(currentSpeed) && previousUnit !== unit) {
+          input.value = unit === "pace"
+            ? pacePerKmLabel(currentSpeed)
+            : String(Number(currentSpeed.toFixed(2))).replace(".", ",");
+        }
+        renderPaceConversionPreview();
+      }
+
       function syncTrainingKindForm() {
         const isFootball = $("#football-training-input").checked;
         $("#pace-field").hidden = isFootball;
@@ -4659,13 +4791,19 @@
       }
 
       $("#football-training-input").addEventListener("change", syncTrainingKindForm);
+      $$(".pace-unit-button").forEach(button => {
+        button.addEventListener("click", () => setPaceInputUnit(button.dataset.paceUnit));
+      });
+      $("#pace-input").addEventListener("input", renderPaceConversionPreview);
+      setPaceInputUnit("speed");
       syncTrainingKindForm();
 
       $("#training-form").addEventListener("submit", async event => {
         event.preventDefault();
         const date = todayKey();
         const isFootball = $("#football-training-input").checked;
-        const pace = optionalTrainingNumber("#pace-input");
+        const paceInputUnit = currentPaceInputUnit();
+        const pace = isFootball ? null : parseTrainingPaceValue($("#pace-input").value, paceInputUnit);
         const bpm = optionalTrainingNumber("#bpm-input");
         const rawMinutes = optionalTrainingNumber("#minutes-input");
         const zoneMinutes = [1, 2, 3, 4, 5].map(zone => optionalTrainingNumber(`#zone${zone}-input`));
@@ -4676,7 +4814,9 @@
         const distance = optionalTrainingNumber("#distance-input");
         const distanceProvided = $("#distance-input").value.trim() !== "";
         if (!isFootball && (!Number.isFinite(pace) || !Number.isFinite(bpm) || !Number.isFinite(minutes) || minutes <= 0)) {
-          $("#training-form-note").textContent = "Podaj tempo, średnie BPM i czas.";
+          $("#training-form-note").textContent = paceInputUnit === "pace"
+            ? "Podaj tempo, np. 5:30 min/km, średnie BPM i czas."
+            : "Podaj prędkość od 1 do 30 km/h, średnie BPM i czas.";
           return;
         }
         if (isFootball && distanceProvided && (!Number.isFinite(distance) || distance <= 0 || distance > 100)) {
@@ -4701,8 +4841,9 @@
           zone5Minutes: Number.isFinite(zoneMinutes[4]) ? Math.round(Math.max(0, zoneMinutes[4])) : null,
           recordedAt: new Date().toISOString()
         });
-        $("#training-form-note").textContent = `${isFootball ? "Trening piłkarski" : "Trening"} zapisany jako ${formatDate(date)}. Limit dnia: ${kcalLimitForDay(date)} kcal.`;
+        $("#training-form-note").textContent = `${isFootball ? "Trening piłkarski" : `Trening · ${format1(pace)} km/h`} zapisany jako ${formatDate(date)}. Limit dnia: ${kcalLimitForDay(date)} kcal.`;
         $("#pace-input").value = "";
+        renderPaceConversionPreview();
         $("#bpm-input").value = "";
         $("#minutes-input").value = "";
         $("#distance-input").value = "";
