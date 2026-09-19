@@ -2281,7 +2281,7 @@
         <div class="mode-metrics mito-metrics">
           <div class="metric-card"><strong id="mito-change-28">0,0</strong><span>DELTA_28D</span></div>
           <div class="metric-card"><strong id="mito-workouts-28">0</strong><span>SESSIONS_28D</span></div>
-          <div class="metric-card"><strong id="mito-active-weeks">0/4</strong><span>ACTIVE_WEEKS</span></div>
+          <div class="metric-card" title="Liczba tygodni poniedziałek–niedziela z co najmniej jednym treningiem biegowym w całej historii"><strong id="mito-active-weeks">0</strong><span>ACTIVE_WEEKS</span></div>
         </div>
 
         <section class="mito-timeline-panel">
@@ -2749,162 +2749,315 @@
       return particles;
     }
   
-    function createRenderer(canvas, seed) {
-      const context = canvas.getContext("2d", { alpha: false });
-      const particles = buildParticles(seed);
-      const reduceMotion = Boolean(global.matchMedia && global.matchMedia("(prefers-reduced-motion: reduce)").matches);
-      let state = mapScore(DEFAULT_SCORE, 0);
-      let frame = null;
-      let idleFrame = null;
-      let lastIdleDraw = 0;
-      let isVisible = true;
-      let animationToken = 0;
-  
-      function stopIdleMotion() {
-        if (idleFrame !== null) global.cancelAnimationFrame(idleFrame);
+  function createRenderer(canvas, seed) {
+    const context = canvas.getContext("2d", { alpha: false });
+    const particles = buildParticles(seed);
+    // The microscope uses the exact positions from the underlying particle field.
+    const lensCanvas = document.createElement("canvas");
+    const lensContext = lensCanvas.getContext("2d");
+    const spriteCache = new Map();
+    const SPRITE_LEVELS = 8;
+    const SPRITE_SIZE = 80;
+    const SPRITE_SCALE = 2;
+    let lensIllumination = null;
+    let lensAperture = null;
+    const smoothstep = (a, b, value) => {
+      const t = clamp((value - a) / (b - a), 0, 1);
+      return t * t * (3 - 2 * t);
+    };
+    const reduceMotion = Boolean(global.matchMedia && global.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    let state = mapScore(DEFAULT_SCORE, 0);
+    let frame = null;
+    let idleFrame = null;
+    let lastIdleDraw = 0;
+    let isVisible = true;
+    let animationToken = 0;
+
+    function stopIdleMotion() {
+      if (idleFrame !== null) global.cancelAnimationFrame(idleFrame);
+      idleFrame = null;
+    }
+
+    function idleTick(now) {
+      if (!isVisible || reduceMotion || frame !== null) {
         idleFrame = null;
+        return;
       }
-  
-      function idleTick(now) {
-        if (!isVisible || reduceMotion || frame !== null) {
-          idleFrame = null;
-          return;
-        }
-        if (now - lastIdleDraw >= 32) {
-          draw(state, now);
-          lastIdleDraw = now;
-        }
+      if (now - lastIdleDraw >= 32) {
+        draw(state, now);
+        lastIdleDraw = now;
+      }
+      idleFrame = global.requestAnimationFrame(idleTick);
+    }
+
+    function startIdleMotion() {
+      if (idleFrame === null && frame === null && isVisible && !reduceMotion) {
         idleFrame = global.requestAnimationFrame(idleTick);
       }
-  
-      function startIdleMotion() {
-        if (idleFrame === null && frame === null && isVisible && !reduceMotion) {
-          idleFrame = global.requestAnimationFrame(idleTick);
-        }
+    }
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      const ratio = Math.min(2, global.devicePixelRatio || 1);
+      const width = Math.max(1, Math.round(rect.width * ratio));
+      const height = Math.max(1, Math.round(rect.height * ratio));
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
       }
-  
-      function resize() {
-        const rect = canvas.getBoundingClientRect();
-        const ratio = Math.min(2, global.devicePixelRatio || 1);
-        const width = Math.max(1, Math.round(rect.width * ratio));
-        const height = Math.max(1, Math.round(rect.height * ratio));
-        if (canvas.width !== width || canvas.height !== height) {
-          canvas.width = width;
-          canvas.height = height;
-        }
-        draw(state, global.performance.now());
-        startIdleMotion();
+      draw(state, global.performance.now());
+      startIdleMotion();
+    }
+
+    function draw(nextState, now) {
+      const width = canvas.width;
+      const height = canvas.height;
+      context.fillStyle = "#000";
+      context.fillRect(0, 0, width, height);
+      const scale = Math.min(width * 0.26, height * 0.34);
+      const centerX = width * 0.5;
+      const centerY = height * 0.5;
+      const density = clamp(nextState.visualDensity, 0, 1);
+      const complexity = clamp(nextState.internalComplexity, 0, 1);
+      const cristae = clamp(nextState.cristaeDensity, 0, 1);
+      const coherence = clamp(nextState.coherence, 0, 1);
+      const decay = clamp(nextState.decayLevel || 0, 0, 1);
+      const motionTime = now / 2000;
+      const motionAmplitude = Math.max(11, width / 32);
+      const breathing = 1 + Math.sin(motionTime * 0.43) * 0.032;
+      const visibleParticles = [];
+      particles.forEach(particle => {
+        const activation = clamp((density - particle.activationThreshold) * 18 + 0.5, 0, 1);
+        if (activation <= 0.01) return;
+        let groupOpacity = 1;
+        if (particle.group === "cristae") groupOpacity = 0.16 + cristae * 0.64;
+        if (particle.group === "interior") groupOpacity = 0.22 + complexity * 0.62;
+        if (particle.group === "membrane") groupOpacity = 0.35 + coherence * 0.45;
+        if (particle.group === "field") groupOpacity = 0.24 + density * 0.66;
+        const depth = 0.72 + (particle.z + 1) * 0.14;
+        const driftPhase = particle.phase + motionTime * particle.motionSpeed;
+        const secondaryPhase = particle.phaseSecondary + motionTime * (particle.motionSpeed * 0.63 + 0.11);
+        const motionFreedom = particle.group === "field" ? 2.18 : particle.group === "membrane" ? 1.42 : particle.group === "cristae" ? 1.08 : 0.92;
+        const loopX = (Math.sin(driftPhase) * particle.motionX + Math.sin(secondaryPhase * 1.7) * 0.32)
+          * motionAmplitude * motionFreedom;
+        const loopY = (Math.cos(driftPhase * 0.83) * particle.motionY + Math.cos(secondaryPhase * 1.43) * 0.3)
+          * motionAmplitude * motionFreedom;
+        const flowX = Math.sin(motionTime * 0.5 + particle.y * 5.7 + particle.z * 1.4) * motionAmplitude * 0.58;
+        const flowY = Math.cos(motionTime * 0.41 + particle.x * 4.9 - particle.z * 1.2) * motionAmplitude * 0.5;
+        const particleAngle = Math.atan2(particle.y, particle.x);
+        const shapeFreedom = particle.group === "field" ? 1.45 : particle.group === "membrane" ? 1 : particle.group === "cristae" ? 0.72 : 0.54;
+        const organicBulge = Math.sin(motionTime * 0.38 + particleAngle * 3.2 + particle.z * 0.55)
+          * motionAmplitude * shapeFreedom;
+        const flicker = 0.92 + Math.sin(secondaryPhase * 1.18) * 0.08;
+        const alpha = clamp(particle.opacity * activation * groupOpacity * depth * flicker * (1 - decay * 0.12), 0, 0.78);
+        const x = centerX + particle.x * scale * breathing + flowX
+          + Math.cos(particleAngle) * organicBulge
+          + loopX * depth;
+        const y = centerY + particle.y * scale / breathing + flowY
+          + Math.sin(particleAngle) * organicBulge * 0.72
+          + loopY * depth;
+        const size = particle.size * (0.78 + depth * 0.34) * Math.max(1, width / 420);
+        context.fillStyle = `rgba(${particle.tone},${particle.tone},${particle.tone},${alpha.toFixed(3)})`;
+        context.beginPath();
+        context.arc(x, y, size, 0, Math.PI * 2);
+        context.fill();
+        visibleParticles.push({ particle, x, y, size, alpha, secondaryPhase });
+      });
+      drawMicroscope(visibleParticles, width, height, centerX, centerY);
+    }
+
+    // Small reusable textures: filters and Bézier paths run only on cache misses.
+    function microscopeSprite(shape, level, channel) {
+      const key = shape * 100 + level * 3 + channel;
+      if (spriteCache.has(key)) return spriteCache.get(key);
+      const sprite = document.createElement("canvas");
+      sprite.width = sprite.height = SPRITE_SIZE;
+      const ctx = sprite.getContext("2d");
+      ctx.translate(SPRITE_SIZE / 2, SPRITE_SIZE / 2);
+      ctx.scale(SPRITE_SCALE, SPRITE_SCALE);
+      const halfWidth = 1.3;
+      const halfLength = halfWidth * (2.55 + shape * .18);
+      const bend = (shape - 1) * .55;
+      const blur = level / SPRITE_LEVELS * 3.6;
+      ctx.filter = blur > 0 ? `blur(${blur * SPRITE_SCALE}px)` : "none";
+      ctx.beginPath();
+      ctx.moveTo(-halfLength, -halfWidth);
+      ctx.bezierCurveTo(-halfLength * .3, -halfWidth + bend, halfLength * .3, -halfWidth + bend, halfLength, -halfWidth);
+      ctx.bezierCurveTo(halfLength + halfWidth * 1.3, -halfWidth, halfLength + halfWidth * 1.3, halfWidth, halfLength, halfWidth);
+      ctx.bezierCurveTo(halfLength * .3, halfWidth + bend, -halfLength * .3, halfWidth + bend, -halfLength, halfWidth);
+      ctx.bezierCurveTo(-halfLength - halfWidth * 1.3, halfWidth, -halfLength - halfWidth * 1.3, -halfWidth, -halfLength, -halfWidth);
+      ctx.closePath();
+      ctx.fillStyle = ["rgb(112,137,163)", "rgb(104,133,186)", "rgb(77,157,214)"][channel];
+      ctx.fill();
+      if (channel === 0) {
+        ctx.strokeStyle = "rgb(140,162,185)";
+        ctx.lineWidth = .55;
+        ctx.stroke();
       }
-  
-      function draw(nextState, now) {
-        const width = canvas.width;
-        const height = canvas.height;
-        context.fillStyle = "#000";
-        context.fillRect(0, 0, width, height);
-        const scale = Math.min(width * 0.26, height * 0.34);
-        const centerX = width * 0.5;
-        const centerY = height * 0.5;
-        const density = clamp(nextState.visualDensity, 0, 1);
-        const complexity = clamp(nextState.internalComplexity, 0, 1);
-        const cristae = clamp(nextState.cristaeDensity, 0, 1);
-        const coherence = clamp(nextState.coherence, 0, 1);
-        const decay = clamp(nextState.decayLevel || 0, 0, 1);
-        const motionTime = now / 2000;
-        const motionAmplitude = Math.max(11, width / 32);
-        const breathing = 1 + Math.sin(motionTime * 0.43) * 0.032;
-        particles.forEach(particle => {
-          const activation = clamp((density - particle.activationThreshold) * 18 + 0.5, 0, 1);
-          if (activation <= 0.01) return;
-          let groupOpacity = 1;
-          if (particle.group === "cristae") groupOpacity = 0.16 + cristae * 0.64;
-          if (particle.group === "interior") groupOpacity = 0.22 + complexity * 0.62;
-          if (particle.group === "membrane") groupOpacity = 0.35 + coherence * 0.45;
-          if (particle.group === "field") groupOpacity = 0.24 + density * 0.66;
-          const depth = 0.72 + (particle.z + 1) * 0.14;
-          const driftPhase = particle.phase + motionTime * particle.motionSpeed;
-          const secondaryPhase = particle.phaseSecondary + motionTime * (particle.motionSpeed * 0.63 + 0.11);
-          const motionFreedom = particle.group === "field" ? 2.18 : particle.group === "membrane" ? 1.42 : particle.group === "cristae" ? 1.08 : 0.92;
-          const loopX = (Math.sin(driftPhase) * particle.motionX + Math.sin(secondaryPhase * 1.7) * 0.32)
-            * motionAmplitude * motionFreedom;
-          const loopY = (Math.cos(driftPhase * 0.83) * particle.motionY + Math.cos(secondaryPhase * 1.43) * 0.3)
-            * motionAmplitude * motionFreedom;
-          const flowX = Math.sin(motionTime * 0.5 + particle.y * 5.7 + particle.z * 1.4) * motionAmplitude * 0.58;
-          const flowY = Math.cos(motionTime * 0.41 + particle.x * 4.9 - particle.z * 1.2) * motionAmplitude * 0.5;
-          const particleAngle = Math.atan2(particle.y, particle.x);
-          const shapeFreedom = particle.group === "field" ? 1.45 : particle.group === "membrane" ? 1 : particle.group === "cristae" ? 0.72 : 0.54;
-          const organicBulge = Math.sin(motionTime * 0.38 + particleAngle * 3.2 + particle.z * 0.55)
-            * motionAmplitude * shapeFreedom;
-          const flicker = 0.92 + Math.sin(secondaryPhase * 1.18) * 0.08;
-          const alpha = clamp(particle.opacity * activation * groupOpacity * depth * flicker * (1 - decay * 0.12), 0, 0.78);
-          const x = centerX + particle.x * scale * breathing + flowX
-            + Math.cos(particleAngle) * organicBulge
-            + loopX * depth;
-          const y = centerY + particle.y * scale / breathing + flowY
-            + Math.sin(particleAngle) * organicBulge * 0.72
-            + loopY * depth;
-          const size = particle.size * (0.78 + depth * 0.34) * Math.max(1, width / 420);
-          context.fillStyle = `rgba(${particle.tone},${particle.tone},${particle.tone},${alpha.toFixed(3)})`;
-          context.beginPath();
-          context.arc(x, y, size, 0, Math.PI * 2);
-          context.fill();
-        });
-      }
-  
-      function setState(nextState, options) {
-        const target = { ...state, ...nextState };
-        const duration = reduceMotion ? 0 : Math.max(0, Number(options && options.duration) || 0);
-        animationToken += 1;
-        const token = animationToken;
-        stopIdleMotion();
-        if (frame !== null) global.cancelAnimationFrame(frame);
-        if (!duration) {
-          state = target;
-          frame = null;
-          draw(state, global.performance.now());
-          startIdleMotion();
-          return;
+      spriteCache.set(key, sprite);
+      return sprite;
+    }
+
+    function drawMicroscope(visibleParticles, width, height, centerX, centerY) {
+      const radius = Math.min(width, height) * .405;
+      const zoom = 2.8;
+      const unit = width / 414;
+      const diameter = Math.ceil(radius * 2);
+      const ctx = lensContext;
+      const middle = diameter / 2;
+      if (lensCanvas.width !== diameter || lensCanvas.height !== diameter || !lensIllumination) {
+        lensCanvas.width = diameter;
+        lensCanvas.height = diameter;
+        // Static optical field and uneven feathering are calculated only on resize.
+        lensIllumination = document.createElement("canvas");
+        lensAperture = document.createElement("canvas");
+        lensIllumination.width = lensAperture.width = diameter;
+        lensIllumination.height = lensAperture.height = diameter;
+        const lightContext = lensIllumination.getContext("2d");
+        const maskContext = lensAperture.getContext("2d");
+        const light = lightContext.createImageData(diameter, diameter);
+        const mask = maskContext.createImageData(diameter, diameter);
+        for (let py = 0; py < diameter; py += 1) {
+          for (let px = 0; px < diameter; px += 1) {
+            const nx = (px - middle) / radius;
+            const ny = (py - middle) / radius;
+            const r = Math.hypot(nx, ny);
+            const a = Math.atan2(ny, nx);
+            const uneven = Math.sin(a * 3 + .7) * .026 + Math.sin(a * 7 - .8) * .015;
+            const feather = 1 - smoothstep(.57 + uneven, .99 + uneven * .3, r);
+            const haze = Math.exp(-Math.pow((r - .72) / .22, 2))
+              * (.5 + .3 * Math.sin(a * 3 + 1.4) + .2 * Math.cos(a * 5 - .6));
+            const index = (py * diameter + px) * 4;
+            light.data[index] = 11 + haze * 8;
+            light.data[index + 1] = 20 + haze * 13;
+            light.data[index + 2] = 31 + haze * 21;
+            light.data[index + 3] = 255;
+            mask.data[index + 3] = Math.round(feather * 255);
+          }
         }
-        const startState = { ...state };
-        const start = global.performance.now();
-        const tick = now => {
-          if (token !== animationToken) return;
-          const progress = clamp((now - start) / duration, 0, 1);
-          const eased = 1 - Math.pow(1 - progress, 3);
-          state = interpolateSnapshot(startState, target, eased);
-          draw(state, now);
-          if (progress < 1) frame = global.requestAnimationFrame(tick);
-          else {
-            frame = null;
-            startIdleMotion();
+        lightContext.putImageData(light, 0, 0);
+        maskContext.putImageData(mask, 0, 0);
+      }
+      ctx.clearRect(0, 0, diameter, diameter);
+      ctx.drawImage(lensIllumination, 0, 0);
+
+      for (const { particle, x, y, size, alpha, secondaryPhase, orientation } of visibleParticles) {
+        const dx = (x - centerX) * zoom;
+        const dy = (y - centerY) * zoom;
+        const distance = Math.hypot(dx, dy);
+        const radial = distance / radius;
+        if (radial > 1.13) continue;
+        const azimuth = Math.atan2(dy, dx);
+        const opticalPatch = .5 + .28 * Math.sin(azimuth * 3 + radial * 5 + .7)
+          + .22 * Math.cos(azimuth * 5 - radial * 3);
+        const edge = smoothstep(.25, 1, radial);
+        const fringe = smoothstep(.48, 1, radial);
+        const halfWidth = Math.max(.85 * unit, size * 1.5);
+        const spriteScale = halfWidth / 1.3 / SPRITE_SCALE;
+        const spriteSide = SPRITE_SIZE * spriteScale;
+        // Account for sprite scaling so blur stays proportional to lens radius.
+        const unevenBlur = edge * edge * (.65 + opticalPatch * 1.05)
+          + smoothstep(.3, .65, radial) * opticalPatch * .10;
+        const blurPosition = clamp(unevenBlur * unit / (halfWidth / 1.3), 0, 1) * SPRITE_LEVELS;
+        const lower = Math.floor(blurPosition);
+        const upper = Math.min(SPRITE_LEVELS, lower + 1);
+        const blend = blurPosition - lower;
+        const shape = particle.id % 3;
+        const angle = orientation ?? (particle.phase + Math.sin(secondaryPhase * .35) * .18);
+        const opacity = clamp(alpha * 1.8 + .035, 0, .8);
+        const shift = fringe * 2.2 * unit;
+        const shiftX = dx / Math.max(1, distance) * shift;
+        const shiftY = dy / Math.max(1, distance) * shift;
+        const cosine = Math.cos(angle);
+        const sine = Math.sin(angle);
+        // Radial stretching gives the soft peripheral marks an optical smear.
+        const rx = dx / Math.max(1, distance);
+        const ry = dy / Math.max(1, distance);
+        const stretch = edge * (.18 + opticalPatch * .65);
+        const xx = 1 + stretch * rx * rx;
+        const xy = stretch * rx * ry;
+        const yy = 1 + stretch * ry * ry;
+
+        const stamp = (channel, offset, strength) => {
+          ctx.setTransform(xx * cosine + xy * sine, xy * cosine + yy * sine,
+            -xx * sine + xy * cosine, -xy * sine + yy * cosine,
+            middle + dx + shiftX * offset, middle + dy + shiftY * offset);
+          ctx.globalAlpha = strength * (1 - blend);
+          ctx.drawImage(microscopeSprite(shape, lower, channel), -spriteSide / 2, -spriteSide / 2, spriteSide, spriteSide);
+          if (blend > .001) {
+            ctx.globalAlpha = strength * blend;
+            ctx.drawImage(microscopeSprite(shape, upper, channel), -spriteSide / 2, -spriteSide / 2, spriteSide, spriteSide);
           }
         };
-        frame = global.requestAnimationFrame(tick);
+        if (fringe > .01) {
+          stamp(1, 1, opacity * fringe * .65);
+          stamp(2, -1, opacity * fringe * .65);
+        }
+        stamp(0, 0, opacity);
       }
-  
-      const resizeObserver = global.ResizeObserver ? new ResizeObserver(resize) : null;
-      const intersectionObserver = global.IntersectionObserver ? new IntersectionObserver(entries => {
-        isVisible = Boolean(entries[0] && entries[0].isIntersecting);
-        if (isVisible) startIdleMotion();
-        else stopIdleMotion();
-      }, { rootMargin: "80px" }) : null;
-      if (resizeObserver) resizeObserver.observe(canvas);
-      else global.addEventListener("resize", resize);
-      if (intersectionObserver) intersectionObserver.observe(canvas);
-      resize();
-      return {
-        particles,
-        resize,
-        setState,
-        destroy() {
-          animationToken += 1;
-          if (frame !== null) global.cancelAnimationFrame(frame);
-          stopIdleMotion();
-          if (resizeObserver) resizeObserver.disconnect();
-          else global.removeEventListener("resize", resize);
-          if (intersectionObserver) intersectionObserver.disconnect();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "destination-in";
+      ctx.drawImage(lensAperture, 0, 0);
+      ctx.globalCompositeOperation = "source-over";
+      context.drawImage(lensCanvas, centerX - middle, centerY - middle);
+    }
+
+    function setState(nextState, options) {
+      const target = { ...state, ...nextState };
+      const duration = reduceMotion ? 0 : Math.max(0, Number(options && options.duration) || 0);
+      animationToken += 1;
+      const token = animationToken;
+      stopIdleMotion();
+      if (frame !== null) global.cancelAnimationFrame(frame);
+      if (!duration) {
+        state = target;
+        frame = null;
+        draw(state, global.performance.now());
+        startIdleMotion();
+        return;
+      }
+      const startState = { ...state };
+      const start = global.performance.now();
+      const tick = now => {
+        if (token !== animationToken) return;
+        const progress = clamp((now - start) / duration, 0, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        state = interpolateSnapshot(startState, target, eased);
+        draw(state, now);
+        if (progress < 1) frame = global.requestAnimationFrame(tick);
+        else {
+          frame = null;
+          startIdleMotion();
         }
       };
+      frame = global.requestAnimationFrame(tick);
     }
+
+    const resizeObserver = global.ResizeObserver ? new ResizeObserver(resize) : null;
+    const intersectionObserver = global.IntersectionObserver ? new IntersectionObserver(entries => {
+      isVisible = Boolean(entries[0] && entries[0].isIntersecting);
+      if (isVisible) startIdleMotion();
+      else stopIdleMotion();
+    }, { rootMargin: "80px" }) : null;
+    if (resizeObserver) resizeObserver.observe(canvas);
+    else global.addEventListener("resize", resize);
+    if (intersectionObserver) intersectionObserver.observe(canvas);
+    resize();
+    return {
+      particles,
+      resize,
+      setState,
+      destroy() {
+        animationToken += 1;
+        if (frame !== null) global.cancelAnimationFrame(frame);
+        stopIdleMotion();
+        if (resizeObserver) resizeObserver.disconnect();
+        else global.removeEventListener("resize", resize);
+        if (intersectionObserver) intersectionObserver.disconnect();
+      }
+    };
+  }
   
     global.MitoDensity = {
       constants: { DEFAULT_SCORE, BASELINE_FLOOR, MIN_PARTICLES, MAX_PARTICLES },
@@ -4406,6 +4559,20 @@
         $("#mito-today-button").onclick = () => showPosition(snapshots.length - 1);
       }
 
+      function countAerobicTrainingWeeks(rows, atDate) {
+        const endDay = calendarDayNumber(atDate);
+        const weeks = new Set();
+        rows.forEach(training => {
+          if (training.type === "football" || !(Number(training.minutes) > 0)) return;
+          const day = calendarDayNumber(training.date);
+          if (!Number.isFinite(day) || day > endDay) return;
+          // Unix day zero was a Thursday; subtract days since Monday.
+          const monday = day - ((day + 3) % 7 + 7) % 7;
+          weeks.add(monday);
+        });
+        return weeks.size;
+      }
+
       function renderMitoFeature() {
         if (!window.MitoDensity?.replay || !window.MitoDensity?.createRenderer) {
           $("#mito-score").textContent = "—";
@@ -4425,7 +4592,7 @@
         $("#mito-change-28").textContent = `${change > 0 ? "+" : ""}${format1(change)}`;
         $("#mito-change-28").className = change > .01 ? "good" : change < -.01 ? "bad" : "";
         $("#mito-workouts-28").textContent = String(current.workoutsLast28Days || 0);
-        $("#mito-active-weeks").textContent = `${current.activeWeeksLast28Days || 0}/4`;
+        $("#mito-active-weeks").textContent = String(countAerobicTrainingWeeks(trainings, todayKey()));
         $("#mito-zone2-low").value = replay.config.zone2Low;
         $("#mito-zone2-high").value = replay.config.zone2High;
         const lastGain = replay.lastGain;
