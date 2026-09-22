@@ -1633,6 +1633,12 @@
       min-width: 0;
     }
 
+    .week-kcal-summary-stats {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
     .week-kcal-summary-value {
       font-family: "Roboto Mono", monospace;
       font-size: 7px;
@@ -4312,13 +4318,17 @@
           const kcalBalance = kcalDeltas.length
             ? kcalDeltas.reduce((sum, value) => sum + value, 0)
             : null;
+          const dailyKcalBalance = Number.isFinite(kcalBalance)
+            ? Math.round(kcalBalance / weekRows.length)
+            : null;
           weeks.push({
             start,
             length: weekRows.length,
             number: Math.floor(start / 7) + 1,
             averageWeight,
             difference,
-            kcalBalance
+            kcalBalance,
+            dailyKcalBalance
           });
           if (Number.isFinite(averageWeight)) comparisonAverage = averageWeight;
         }
@@ -4357,7 +4367,7 @@
               ].filter(Boolean).join(" ");
               const weekSummaryColspan = index > rollingWindowStart ? 9 : 10;
               const weekSummary = week
-                ? `<tr class="week-kcal-summary-row"><td colspan="${weekSummaryColspan}"><div class="week-kcal-summary-bar"><span>Tydzień ${week.number}</span><span>Łączny bilans kcal: <strong class="week-kcal-summary-value ${rowTone(week.kcalBalance)}">${Number.isFinite(week.kcalBalance) ? `${week.kcalBalance > 0 ? "+" : ""}${week.kcalBalance} kcal` : "brak danych"}</strong></span></div></td></tr>`
+                ? `<tr class="week-kcal-summary-row"><td colspan="${weekSummaryColspan}"><div class="week-kcal-summary-bar"><span>Tydzień ${week.number}</span><span class="week-kcal-summary-stats"><span>Łączny bilans kcal: <strong class="week-kcal-summary-value ${rowTone(week.kcalBalance)}">${Number.isFinite(week.kcalBalance) ? `${week.kcalBalance > 0 ? "+" : ""}${week.kcalBalance} kcal` : "brak danych"}</strong></span><span>Dziennie: <strong class="week-kcal-summary-value ${rowTone(week.dailyKcalBalance)}">${Number.isFinite(week.dailyKcalBalance) ? `${week.dailyKcalBalance > 0 ? "+" : ""}${week.dailyKcalBalance} kcal` : "brak danych"}</strong></span></span></div></td></tr>`
                 : "";
               return `${weekSummary}<tr${rowClasses ? ` class="${rowClasses}"` : ""}>
                 ${index < rollingWindowStart ? '<td class="rolling-window-spacer"></td>' : ""}
