@@ -1026,6 +1026,248 @@
     .mode-panel { display: none; }
     .mode-panel.is-active { display: block; }
 
+    .training-subnav, .strength-day-nav {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 5px;
+      margin-top: 12px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--bg);
+    }
+
+    .training-subnav button, .strength-day-nav button {
+      min-height: 34px;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .training-subnav button.is-active, .strength-day-nav button.is-active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .training-subpanel { display: none; }
+    .training-subpanel.is-active { display: block; }
+
+    .strength-exercises {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+      padding: 11px;
+    }
+
+    .strength-exercise {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto 38px;
+      align-content: space-between;
+      gap: 9px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--panel-2);
+    }
+
+    .strength-exercise-name {
+      color: var(--text);
+      font-size: 9px;
+      line-height: 12px;
+      font-weight: 800;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .strength-exercise-value {
+      width: 100%;
+      min-width: 0;
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 0 6px;
+      border: 1px solid rgba(255, 255, 255, .16);
+      border-radius: 4px;
+      background: var(--panel-3);
+      color: var(--text);
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: .02em;
+      text-align: center;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .strength-exercise-value:hover, .strength-exercise-value:focus-visible {
+      border-color: var(--accent);
+      outline: none;
+    }
+
+    .strength-exercise-value.is-empty::before {
+      content: "+";
+      color: var(--accent);
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .strength-exercise-value small { color: var(--muted); font-size: 8px; }
+    .strength-exercise-value strong {
+      color: var(--text);
+      font-family: "Roboto Mono", monospace;
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: none;
+    }
+    .strength-actions { padding: 0 11px 11px; }
+    .strength-actions .save-button { width: 100%; }
+    .strength-summary-hint { margin: 0 0 8px; color: var(--muted-2); font-size: 8px; }
+    .strength-note { min-height: 14px; margin: 8px 0 0; color: var(--muted-2); font-size: 9px; }
+
+    .strength-dialog {
+      width: min(calc(100vw - 24px), 406px);
+      max-height: min(82dvh, 560px);
+      padding: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--text);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, .55);
+    }
+
+    .strength-dialog::backdrop { background: rgba(0, 10, 15, .86); }
+    .strength-dialog form { margin: 0; }
+    .strength-dialog-head {
+      padding: 12px 14px 11px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-3);
+    }
+
+    .strength-dialog-eyebrow {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--accent);
+      font-size: 7px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .strength-dialog h3 {
+      margin: 0;
+      font-size: 13px;
+      line-height: 17px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .strength-dialog-body { padding: 12px 14px 14px; }
+    .strength-sets-heading, .strength-set-row {
+      display: grid;
+      grid-template-columns: 56px minmax(0, 1fr) minmax(0, 1fr) 28px 28px;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .strength-sets-heading {
+      margin-bottom: 6px;
+      color: var(--muted-2);
+      font-size: 7px;
+      line-height: 10px;
+      font-weight: 800;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    #strength-sets { max-height: min(42dvh, 260px); overflow-y: auto; }
+    .strength-set-row { margin-bottom: 6px; }
+    .strength-set-row:last-child { margin-bottom: 0; }
+    .strength-set-index {
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-left: 2px solid var(--accent);
+      border-radius: 4px;
+      background: var(--panel-2);
+      color: var(--muted);
+      font-family: "Roboto Mono", monospace;
+      font-size: 8px;
+      font-weight: 700;
+    }
+
+    .strength-set-row input {
+      width: 100%;
+      min-width: 0;
+      height: 34px;
+      padding: 0 5px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      outline: none;
+      background: var(--panel-3);
+      color: var(--text);
+      font-family: "Roboto Mono", monospace;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .strength-set-row input:focus-visible { border-color: var(--accent); }
+    .strength-set-row button {
+      width: 28px;
+      height: 34px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--panel-3);
+      color: var(--muted);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .strength-set-row button:hover, .strength-set-row button:focus-visible {
+      border-color: var(--accent);
+      color: var(--text);
+      outline: none;
+    }
+
+    .strength-add-set { color: var(--accent) !important; font-size: 18px !important; }
+    .strength-dialog-error { min-height: 11px; margin: 7px 0 0; color: var(--bad); font-size: 8px; line-height: 11px; }
+    .strength-dialog-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 10px 14px 13px;
+      border-top: 1px solid var(--line);
+      background: var(--panel-3);
+    }
+
+    .strength-dialog-actions button {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: var(--panel-2);
+      color: var(--text);
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .strength-dialog-actions button[type="submit"] { border-color: var(--accent); background: var(--accent); color: #fff; }
+    .strength-dialog-actions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .strength-history-row { display: flex; align-items: center; gap: 8px; padding: 8px 11px; border-top: 1px solid var(--line); font-size: 9px; }
+    .strength-history-row:first-child { border-top: 0; }
+    .strength-history-row strong { flex: 0 0 auto; min-width: 72px; }
+    .strength-history-row span { flex: 1 1 auto; min-width: 0; color: var(--muted-2); line-height: 1.4; overflow-wrap: anywhere; }
+    .strength-history-row button { flex: 0 0 auto; min-width: 24px; height: 24px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+
     .mode-metrics {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -1123,7 +1365,7 @@
     }
 
     .training-entry-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .training-entry-form .training-kind-switch { grid-column: span 3; }
+    .training-entry-form .training-kind-field { grid-column: span 3; }
     .training-entry-form .save-button,
     .training-entry-form .form-note { grid-column: span 3; }
 
@@ -1177,38 +1419,6 @@
       line-height: 10px;
       text-transform: none;
     }
-
-    .training-zone-details {
-      grid-column: span 3;
-      border: 1px solid var(--line);
-      border-radius: 5px;
-      background: var(--panel-3);
-    }
-
-    .training-zone-details summary {
-      padding: 11px 10px;
-      color: var(--muted);
-      font-size: 7px;
-      font-weight: 800;
-      letter-spacing: .02em;
-      list-style: none;
-      text-transform: uppercase;
-      cursor: pointer;
-    }
-
-    .training-zone-details summary::-webkit-details-marker { display: none; }
-    .training-zone-details summary::after { content: "+"; float: right; color: var(--text); }
-    .training-zone-details[open] summary::after { content: "−"; }
-
-    .training-zone-grid {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 5px;
-      padding: 0 8px 9px;
-    }
-
-    .training-zone-grid label { text-align: center; }
-    .training-zone-grid input { padding: 0 3px !important; text-align: center; }
 
     .mito-feature {
       margin-top: 12px;
@@ -1509,60 +1719,20 @@
       .app { transition-duration: .01ms; }
     }
 
-    .training-kind-switch {
-      min-height: 44px;
-      display: flex !important;
-      flex-direction: row !important;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px !important;
-      padding: 0 10px;
+    .training-kind-field select {
+      width: 100%;
+      height: 38px;
+      padding: 0 9px;
       border: 1px solid var(--line);
       border-radius: 5px;
       background: var(--panel-3);
-      color: var(--text) !important;
+      color: var(--text);
+      font-size: 14px;
+      text-transform: none;
       cursor: pointer;
     }
 
-    .training-kind-switch-control {
-      position: relative;
-      width: 42px;
-      height: 24px;
-      flex: 0 0 auto;
-    }
-
-    .training-kind-switch-control input {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      opacity: 0;
-    }
-
-    .training-kind-switch-track {
-      position: absolute;
-      inset: 0;
-      border-radius: 999px;
-      background: var(--panel-2);
-      box-shadow: inset 0 0 0 1px var(--line);
-      transition: background .18s ease;
-    }
-
-    .training-kind-switch-track::after {
-      content: "";
-      position: absolute;
-      top: 3px;
-      left: 3px;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: #fff;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, .35);
-      transition: transform .18s ease;
-    }
-
-    .training-kind-switch-control input:checked + .training-kind-switch-track { background: #c99f00; }
-    .training-kind-switch-control input:checked + .training-kind-switch-track::after { transform: translateX(18px); }
-    .training-kind-switch-control input:focus-visible + .training-kind-switch-track { outline: 2px solid #ffd83d; outline-offset: 2px; }
+    .training-kind-field select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     .training-field[hidden] { display: none; }
 
     .table-wrap {
@@ -1798,27 +1968,41 @@
 
     .kcal-value { font-size: 8.3px; font-weight: 800; }
 
-    .ovr-cell { position: relative; }
+    .ovr-cell { white-space: nowrap; }
+
+    .ovr-content, .training-markers {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ovr-content { gap: 2px; }
+    .training-markers { gap: 3px; }
+    .training-markers:empty { display: none; }
 
     .training-day-dot {
-      position: absolute;
-      top: 50%;
-      left: calc(50% - 18px);
+      position: relative;
+      display: block;
+      flex: 0 0 3px;
       width: 3px;
       height: 3px;
       border-radius: 50%;
       background: var(--green);
       pointer-events: none;
-      transform: translate(-50%, -50%);
     }
 
-    .training-day-dot.is-football::after {
+    .training-day-dot.is-strength { background: #4aa9ff; }
+
+    .training-day-dot.is-football::after,
+    .training-day-dot.is-lt2::after {
       content: "";
       position: absolute;
       inset: -2px;
       border: 1px solid rgba(225, 184, 74, .78);
       border-radius: 50%;
     }
+
+    .training-day-dot.is-lt2::after { border-color: var(--green); }
 
     .ovr-pill {
       min-width: 26px;
@@ -2158,7 +2342,7 @@
         </div>
         <div class="profile-metrics">
           <div class="profile-metric"><strong id="profile-weight">—</strong><span>Waga · śr. 7d</span></div>
-          <div class="profile-metric"><strong id="profile-pace">—</strong><span>Tempo · śr. 5 biegów</span></div>
+          <div class="profile-metric"><strong id="profile-pace">—</strong><span>Tempo · śr. 6 biegów</span></div>
           <div class="profile-metric"><strong id="profile-discipline">0%</strong><span>Dyscyplina · 14d</span></div>
         </div>
       </section>
@@ -2210,8 +2394,13 @@
       </section>
 
       <section class="mode-panel" id="mode-training">
+        <nav class="training-subnav" aria-label="Rodzaj treningu">
+          <button type="button" class="is-active" data-training-tab="run" aria-current="page">Bieg</button>
+          <button type="button" data-training-tab="strength">Siła</button>
+        </nav>
+        <div class="training-subpanel is-active" id="training-run-panel">
         <div class="mode-metrics two">
-          <div class="metric-card"><strong id="training-pace">6,0</strong><span>Śr. 5 biegów · km/h</span></div>
+          <div class="metric-card"><strong id="training-pace">6,0</strong><span>Śr. 6 biegów · km/h</span></div>
           <div class="metric-card"><strong id="training-bpm">—</strong><span>Średnia BPM</span></div>
         </div>
 
@@ -2221,12 +2410,12 @@
             <small>cel: 4 treningi / tydzień</small>
           </div>
           <form class="entry-form training-entry-form" id="training-form">
-            <label class="training-kind-switch">
-              <span>Trening piłkarski</span>
-              <span class="training-kind-switch-control">
-                <input id="football-training-input" type="checkbox" role="switch" aria-label="Trening piłkarski">
-                <span class="training-kind-switch-track" aria-hidden="true"></span>
-              </span>
+            <label class="training-kind-field">Rodzaj treningu
+              <select id="training-kind-input">
+                <option value="running">Bieg LT1</option>
+                <option value="running_lt2">Bieg LT2</option>
+                <option value="football">Trening piłkarski</option>
+              </select>
             </label>
             <div class="training-field pace-field" id="pace-field">
               <div class="pace-field-head">
@@ -2239,19 +2428,9 @@
               <input id="pace-input" type="text" inputmode="decimal" autocomplete="off" placeholder="6,0" required aria-describedby="pace-conversion-preview">
               <small class="pace-conversion-preview" id="pace-conversion-preview"></small>
             </div>
-            <label class="training-field" id="distance-field" hidden>Dystans [km]<input id="distance-input" type="text" inputmode="decimal" autocomplete="off" placeholder="np. 4,77 lub 4.77"></label>
+            <label class="training-field" id="distance-field" hidden>Dystans [km]<input id="distance-input" type="text" inputmode="decimal" autocomplete="off"></label>
             <label>Średnia BPM<input id="bpm-input" type="number" inputmode="numeric" min="40" max="230" step="1" placeholder="145" required></label>
             <label>Czas [min]<input id="minutes-input" type="number" inputmode="numeric" min="1" max="600" step="1" placeholder="60" required></label>
-            <details class="training-zone-details">
-              <summary>Minuty w strefach tętna · opcjonalnie</summary>
-              <div class="training-zone-grid">
-                <label>Z1<input id="zone1-input" type="number" inputmode="numeric" min="0" max="600" step="1" placeholder="0"></label>
-                <label>Z2<input id="zone2-input" type="number" inputmode="numeric" min="0" max="600" step="1" placeholder="0"></label>
-                <label>Z3<input id="zone3-input" type="number" inputmode="numeric" min="0" max="600" step="1" placeholder="0"></label>
-                <label>Z4<input id="zone4-input" type="number" inputmode="numeric" min="0" max="600" step="1" placeholder="0"></label>
-                <label>Z5<input id="zone5-input" type="number" inputmode="numeric" min="0" max="600" step="1" placeholder="0"></label>
-              </div>
-            </details>
             <button class="save-button" type="submit">Zapisz trening</button>
             <p class="form-note" id="training-form-note"></p>
           </form>
@@ -2264,6 +2443,27 @@
           </div>
           <div class="table-wrap" id="training-table"></div>
         </section>
+        </div>
+
+        <div class="training-subpanel" id="training-strength-panel">
+          <nav class="strength-day-nav" aria-label="Dzień siłowy">
+            <button type="button" class="is-active" data-strength-day="A" aria-current="page">Dzień A</button>
+            <button type="button" data-strength-day="B">Dzień B</button>
+          </nav>
+          <section class="panel">
+            <div class="panel-head"><strong id="strength-day-title">Dzień A</strong><small>5 treningów / tydzień od 05.10</small></div>
+            <div class="strength-exercises" id="strength-exercises"></div>
+            <div class="strength-actions">
+              <p class="strength-summary-hint">Podsumowanie pokazuje liczbę serii i najwyższy ciężar.</p>
+              <button class="save-button" id="strength-save" type="button">Zapisz trening siłowy</button>
+              <p class="strength-note" id="strength-note"></p>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><strong>Historia siły</strong></div>
+            <div class="table-wrap" id="strength-table"></div>
+          </section>
+        </div>
       </section>
 
       <section class="mode-panel" id="mode-mito">
@@ -2315,8 +2515,8 @@
       <details class="scale-panel">
         <summary>Skala karty i liczenie OVR <span>+</span></summary>
         <div class="scale-content">
-          <p><strong>OVR = 60% WAGA + 30% TEMPO + 10% DYSCYPLINA.</strong> Waga 94 kg i tempo 6,0 km/h zaczynają od 40 pkt. Waga 82 kg oraz tempo 8,5 km/h dają po 100 pkt. Wynik pomiędzy nimi rośnie liniowo. TEMPO jest średnią prędkości z 5 ostatnich treningów biegowych; treningi piłkarskie są w tym wyliczeniu pomijane.</p>
-          <p>Dyscyplinę zbierasz przez ruchome 14 dni: maks. 2,86 pkt dziennie za kalorie, 2,14 pkt za dzień bez FFood/sweets oraz 3,75 pkt za punktowany trening (maks. 1 dziennie i 4 w każdym tygodniu). Trening piłkarski liczy się także bez podania BPM, dystansu i czasu. Limit dnia to 1700 kcal + 7,5 kcal za każdą wpisaną minutę treningu (450 kcal za godzinę). Niewpisane kalorie nie przyznają punktów. Nadwyżki i zapasy kcal z wpisanych dni rozliczają się wspólnie w całym okresie: zapas może odrobić wcześniejszą nadwyżkę, ale ujemny bilans nie daje punktów ponad zwykłe maksimum. Każde nieodrobione +500 kcal odbiera równowartość punktów za jeden dzień.</p>
+          <p><strong>OVR = 60% WAGA + 30% TEMPO + 10% DYSCYPLINA.</strong> Waga 94 kg i tempo 6,0 km/h zaczynają od 40 pkt. Waga 82 kg oraz tempo 8,5 km/h dają po 100 pkt. Wynik pomiędzy nimi rośnie liniowo. TEMPO jest średnią prędkości z 6 ostatnich treningów biegowych; treningi piłkarskie są w tym wyliczeniu pomijane.</p>
+          <p>Dyscyplinę zbierasz przez ruchome 14 dni: maks. 2,86 pkt dziennie za kalorie i 2,14 pkt za dzień bez FFood/sweets. Do 4 października treningi biegowe i piłkarskie dają do 30 pkt (maks. 1 dziennie i 4 w każdym 7-dniowym okresie). Od 5 października dają do 15 pkt, a treningi siłowe kolejne 15 pkt (maks. 2 dziennie i 5 w każdym 7-dniowym okresie). Trening piłkarski liczy się także bez podania BPM, dystansu i czasu. Limit dnia to 1700 kcal + 7,5 kcal za każdą wpisaną minutę treningu (450 kcal za godzinę). Niewpisane kalorie nie przyznają punktów. Nadwyżki i zapasy kcal z wpisanych dni rozliczają się wspólnie w całym okresie: zapas może odrobić wcześniejszą nadwyżkę, ale ujemny bilans nie daje punktów ponad zwykłe maksimum. Każde nieodrobione +500 kcal odbiera równowartość punktów za jeden dzień.</p>
           <div class="tier-list">
             <div class="tier-chip common">Czarna<br>0–49</div>
             <div class="tier-chip bronze">Brązowa<br>50–69</div>
@@ -2328,6 +2528,24 @@
 
     </main>
   </div>
+
+  <dialog class="strength-dialog" id="strength-dialog" aria-labelledby="strength-dialog-title">
+    <form id="strength-sets-form">
+      <div class="strength-dialog-head">
+        <span class="strength-dialog-eyebrow" id="strength-dialog-context">Trening siłowy · Dzień A</span>
+        <h3 id="strength-dialog-title">Ćwiczenie</h3>
+      </div>
+      <div class="strength-dialog-body">
+        <div class="strength-sets-heading" aria-hidden="true"><span>Seria</span><span>Powt.</span><span>Kg</span><span></span><span></span></div>
+        <div id="strength-sets"></div>
+        <p class="strength-dialog-error" id="strength-dialog-error" role="alert"></p>
+      </div>
+      <div class="strength-dialog-actions">
+        <button type="button" id="strength-cancel">Anuluj</button>
+        <button type="submit">OK</button>
+      </div>
+    </form>
+  </dialog>
 
   <div class="card-update-overlay" id="card-update-overlay" aria-hidden="true">
     <button class="card-update-backdrop" id="card-update-backdrop" type="button" aria-label="Zamknij prezentację karty"></button>
@@ -3085,13 +3303,20 @@
       const GOAL_WEIGHT = 82;
       const BASE_PACE = 6;
       const GOAL_PACE = 8.5;
-      const RECENT_PACE_SAMPLE_SIZE = 5;
+      const RECENT_PACE_SAMPLE_SIZE = 6;
       const REST_KCAL = 1700;
       const KCAL_PER_TRAINING_MINUTE = 450 / 60;
       const CALORIE_POINTS_PER_DAY = 40 / 14;
       const CALORIE_SURPLUS_FOR_DAILY_POINT_LOSS = 500;
       const CLEAN_POINTS_PER_DAY = 30 / 14;
-      const TRAINING_POINTS_PER_SESSION = 30 / 8;
+      const CARDIO_POINTS_BEFORE_STRENGTH = 30 / 8;
+      const CARDIO_POINTS_WITH_STRENGTH = 15 / 8;
+      const STRENGTH_POINTS_PER_SESSION = 15 / 10;
+      const STRENGTH_START_DATE_KEY = "2026-10-05";
+      const STRENGTH_EXERCISES = {
+        A: [{ id: "pullups", label: "Podciąganie" }, { id: "abs", label: "ABS" }],
+        B: [{ id: "pushups", label: "Pompki" }, { id: "neck", label: "Szyja" }, { id: "shrugs", label: "Shrugs" }, { id: "shoulders", label: "Barki" }]
+      };
       const DAY_MS = 86400000;
       const DAY_START_HOUR = 5;
       const START_AT = new Date(2026, 6, 29, 5, 0, 0, 0);
@@ -3100,6 +3325,7 @@
       const isTestMode = Date.now() < START_AT.getTime();
       const WEIGHTS_KEY = isTestMode ? "champion-stamina-test-weights-v2" : "champion-stamina-weights-v2";
       const TRAININGS_KEY = isTestMode ? "champion-stamina-test-trainings-v2" : "champion-stamina-trainings-v2";
+      const STRENGTH_KEY = isTestMode ? "champion-stamina-test-strength-v1" : "champion-stamina-strength-v1";
       const OVR_KEY = isTestMode ? "champion-stamina-test-ovr-v2" : "champion-stamina-ovr-history-v2";
       const MITO_KEY = isTestMode ? "champion-stamina-test-mito-v1" : "champion-stamina-mito-v1";
       const TACTICS_PLAYERS_KEY = "stamina-tactics-universal-players-v1";
@@ -3119,12 +3345,18 @@
 
       let weights = [];
       let trainings = [];
+      let strengthTrainings = [];
+      let strengthDay = "A";
+      let trainingTab = "run";
+      let strengthDrafts = { A: {}, B: {} };
+      let activeStrengthExercise = null;
       let ovrHistory = [];
       let avatarPhoto = "";
       let isAvatarLoading = false;
       let firebaseEnabled = false;
       let weightsRef = null;
       let trainingsRef = null;
+      let strengthTrainingsRef = null;
       let ovrRef = null;
       let mitoRef = null;
       let mitoState = { config: null, history: [], historicalMaxMitoScore: 12, historicalMaxDate: "" };
@@ -3234,7 +3466,7 @@
       function normalizeTrainings(source) {
         return (Array.isArray(source) ? source : Object.values(source || {}))
           .map(entry => {
-            const type = entry.type === "football" ? "football" : "running";
+            const type = entry.type === "football" ? "football" : entry.type === "running_lt2" ? "running_lt2" : "running";
             const pace = Number(entry.pace);
             const bpm = Number(entry.bpm);
             const minutes = Number(entry.minutes);
@@ -3263,6 +3495,29 @@
             entry.type === "football"
             || (Number.isFinite(entry.pace) && Number.isFinite(entry.bpm) && Number.isFinite(entry.minutes))
           ))
+          .sort((a, b) => a.date.localeCompare(b.date) || a.recordedAt.localeCompare(b.recordedAt));
+      }
+
+      function normalizeStrengthTrainings(source) {
+        return (Array.isArray(source) ? source : Object.values(source || {}))
+          .map(entry => {
+            const day = entry.day === "B" ? "B" : "A";
+            const exercises = Object.fromEntries(STRENGTH_EXERCISES[day].map(exercise => [
+              exercise.id,
+              (Array.isArray(entry.exercises?.[exercise.id]) ? entry.exercises[exercise.id] : [])
+                .map(set => ({ reps: Number(set.reps), kg: Number(set.kg) }))
+                .filter(set => Number.isInteger(set.reps) && set.reps > 0 && set.reps <= 1000
+                  && Number.isFinite(set.kg) && set.kg >= 0 && set.kg <= 1000)
+            ]));
+            return {
+              id: String(entry.id || uid("s")),
+              date: String(entry.date || ""),
+              day,
+              exercises,
+              recordedAt: String(entry.recordedAt || new Date().toISOString())
+            };
+          })
+          .filter(entry => entry.date && STRENGTH_EXERCISES[entry.day].every(exercise => entry.exercises[exercise.id].length))
           .sort((a, b) => a.date.localeCompare(b.date) || a.recordedAt.localeCompare(b.recordedAt));
       }
 
@@ -3304,6 +3559,7 @@
       function loadLocal() {
         try { weights = normalizeWeights(JSON.parse(localStorage.getItem(WEIGHTS_KEY) || "[]")); } catch { weights = []; }
         try { trainings = normalizeTrainings(JSON.parse(localStorage.getItem(TRAININGS_KEY) || "[]")); } catch { trainings = []; }
+        try { strengthTrainings = normalizeStrengthTrainings(JSON.parse(localStorage.getItem(STRENGTH_KEY) || "[]")); } catch { strengthTrainings = []; }
         try { ovrHistory = normalizeOvr(JSON.parse(localStorage.getItem(OVR_KEY) || "[]")); } catch { ovrHistory = []; }
         try { mitoState = normalizeMitoState(JSON.parse(localStorage.getItem(MITO_KEY) || "{}")); } catch { mitoState = normalizeMitoState({}); }
       }
@@ -3311,6 +3567,7 @@
       function saveLocal() {
         localStorage.setItem(WEIGHTS_KEY, JSON.stringify(weights));
         localStorage.setItem(TRAININGS_KEY, JSON.stringify(trainings));
+        localStorage.setItem(STRENGTH_KEY, JSON.stringify(strengthTrainings));
         localStorage.setItem(OVR_KEY, JSON.stringify(ovrHistory));
         localStorage.setItem(MITO_KEY, JSON.stringify(mitoState));
       }
@@ -3323,6 +3580,12 @@
 
       function latestTrainingRows() {
         return [...trainings].sort((a, b) => a.date.localeCompare(b.date) || a.recordedAt.localeCompare(b.recordedAt));
+      }
+
+      function strengthSessionCountsByDate() {
+        const counts = new Map();
+        strengthTrainings.forEach(entry => counts.set(entry.date, (counts.get(entry.date) || 0) + 1));
+        return counts;
       }
 
       function activeStatDateKey() {
@@ -3427,18 +3690,32 @@
           }
         });
 
-        const creditedTrainingDays = (from, to) => Math.min(
-          4,
+        const creditedTrainingDays = (entries, from, to, weeklyLimit, earliestDate = "") => Math.min(
+          weeklyLimit,
           new Set(
-            trainings
-              .filter(entry => elapsedDates.has(entry.date) && entry.date >= from && entry.date <= to)
+            entries
+              .filter(entry => elapsedDates.has(entry.date) && entry.date >= from && entry.date <= to && entry.date >= earliestDate)
               .map(entry => entry.date)
           ).size
         );
-        const firstWeekSessions = creditedTrainingDays(days[0], days[6]);
-        const secondWeekSessions = creditedTrainingDays(days[7], days[13]);
+        const firstWeekSessions = creditedTrainingDays(trainings, days[0], days[6], 4);
+        const secondWeekSessions = creditedTrainingDays(trainings, days[7], days[13], 4);
         const sessions = firstWeekSessions + secondWeekSessions;
-        const trainingScore = sessions * TRAINING_POINTS_PER_SESSION;
+        const strengthCounts = endDate >= STRENGTH_START_DATE_KEY;
+        const strengthByDate = strengthSessionCountsByDate();
+        const creditedStrengthSessions = (from, to) => Math.min(5,
+          [...strengthByDate.entries()]
+            .filter(([date]) => elapsedDates.has(date) && date >= from && date <= to && date >= STRENGTH_START_DATE_KEY)
+            .reduce((sum, [, count]) => sum + Math.min(2, count), 0)
+        );
+        const firstWeekStrengthSessions = strengthCounts
+          ? creditedStrengthSessions(days[0], days[6]) : 0;
+        const secondWeekStrengthSessions = strengthCounts
+          ? creditedStrengthSessions(days[7], days[13]) : 0;
+        const strengthSessions = firstWeekStrengthSessions + secondWeekStrengthSessions;
+        const cardioScore = sessions * (strengthCounts ? CARDIO_POINTS_WITH_STRENGTH : CARDIO_POINTS_BEFORE_STRENGTH);
+        const strengthScore = strengthSessions * STRENGTH_POINTS_PER_SESSION;
+        const trainingScore = cardioScore + strengthScore;
         const calorieScore = calorieScoreForBalance(enteredCalorieDays, balance);
 
         return {
@@ -3446,6 +3723,11 @@
           sessions,
           firstWeekSessions,
           secondWeekSessions,
+          strengthSessions,
+          firstWeekStrengthSessions,
+          secondWeekStrengthSessions,
+          cardioScore,
+          strengthScore,
           fastFoodDays,
           kcalBalance: balance,
           calorieScore,
@@ -3984,7 +4266,7 @@
             return {
               date: entry.date,
               label: formatDate(entry.date),
-              fullLabel: `${formatDate(entry.date)} · ${isFootball ? "trening piłkarski" : "trening biegowy"}${details.length ? ` · ${details.join(" · ")}` : ""}`,
+              fullLabel: `${formatDate(entry.date)} · ${isFootball ? "trening piłkarski" : entry.type === "running_lt2" ? "Bieg LT2" : "Bieg LT1"}${details.length ? ` · ${details.join(" · ")}` : ""}`,
               value: isFootball ? lastPace : entry.pace,
               kind: isFootball ? "football" : "pace",
               isFootball
@@ -4300,11 +4582,13 @@
         const fullColorWindowStart = Math.max(0, rows.length - 14);
         const trainingsByDate = new Map();
         latestTrainingRows().forEach(entry => {
-          const day = trainingsByDate.get(entry.date) || { hasTraining: false, hasFootball: false };
+          const day = trainingsByDate.get(entry.date) || { hasTraining: false, hasFootball: false, hasLt2: false };
           day.hasTraining = true;
           if (entry.type === "football") day.hasFootball = true;
+          if (entry.type === "running_lt2") day.hasLt2 = true;
           trainingsByDate.set(entry.date, day);
         });
+        const strengthByDate = strengthSessionCountsByDate();
         let comparisonAverage = BASE_WEIGHT;
         for (let start = 0; start < rows.length; start += 7) {
           const weekRows = rows.slice(start, start + 7);
@@ -4336,8 +4620,8 @@
         $("#weight-table").innerHTML = `
           <table class="weight-history-table${tableColorsEnabled ? " show-all-colors" : ""}">
             <colgroup>
-              <col style="width:2%"><col style="width:5%"><col style="width:10%"><col style="width:9%"><col style="width:19%"><col style="width:12%">
-              <col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:7%">
+              <col style="width:2%"><col style="width:5%"><col style="width:9%"><col style="width:16%"><col style="width:17%"><col style="width:12%">
+              <col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:6%">
             </colgroup>
             <thead><tr><th class="rolling-window-col" aria-label="Ostatnie 7 dni"></th><th>#</th><th>Data</th><th>OVR</th><th>Kcal</th><th>Waga</th><th>Różnica</th><th>Śr. tyg.</th><th>Roz. tyg.</th><th>FF/S</th></tr></thead>
             <tbody>${rows.map((entry, index) => {
@@ -4350,7 +4634,20 @@
               const dailyTier = tierFor(dailyScore.overall);
               const trainingDay = trainingsByDate.get(entry.date);
               const hasTraining = Boolean(trainingDay?.hasTraining);
+              const strengthCount = Math.min(2, strengthByDate.get(entry.date) || 0);
               const hasFootball = Boolean(trainingDay?.hasFootball);
+              const hasLt2 = Boolean(trainingDay?.hasLt2);
+              const trainingDayLabel = hasFootball ? "Trening piłkarski" : hasLt2 ? "Bieg LT2" : "Bieg LT1";
+              const markers = [
+                ...Array.from({ length: strengthCount }, (_, markerIndex) => ({
+                  className: "is-strength", label: `Trening siłowy ${markerIndex + 1}`
+                })),
+                ...(hasTraining ? [{
+                  className: `is-cardio${hasFootball ? " is-football" : hasLt2 ? " is-lt2" : ""}`,
+                  label: trainingDayLabel
+                }] : [])
+              ];
+              const trainingMarkers = markers.map(marker => `<span class="training-day-dot ${marker.className}" role="img" aria-label="${marker.label}" title="${marker.label}"></span>`).join("");
               const kcalLimit = kcalLimitForDay(entry.date);
               const kcalDelta = Number.isFinite(entry.kcal) ? Math.round(entry.kcal - kcalLimit) : null;
               const kcalClass = Number.isFinite(kcalDelta) ? (kcalDelta <= 0 ? "good" : "bad") : "muted";
@@ -4374,7 +4671,7 @@
                 ${index === rollingWindowStart ? `<td class="rolling-window-cell" rowspan="${rollingWindowRowspan}"><svg viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true"><line class="rolling-window-line" x1="5" y1="0" x2="5" y2="100"></line></svg></td>` : ""}
                 <td>${index + 1}</td>
                 <td class="date-cell">${formatDate(entry.date)}</td>
-                <td class="ovr-cell">${hasTraining ? `<span class="training-day-dot${hasFootball ? " is-football" : ""}" role="img" aria-label="${hasFootball ? "Trening piłkarski" : "Dzień treningowy"}" title="${hasFootball ? "Trening piłkarski" : "Dzień treningowy"}"></span>` : ""}<span class="ovr-pill ${dailyTier.className}" title="${dailyTier.label} karta · OVR ${dailyScore.overall}">${dailyScore.overall}</span></td>
+                <td class="ovr-cell"><span class="ovr-content"><span class="training-markers">${trainingMarkers}</span><span class="ovr-pill ${dailyTier.className}" title="${dailyTier.label} karta · OVR ${dailyScore.overall}">${dailyScore.overall}</span></span></td>
                 <td class="editable-cell ${kcalClass}" data-edit-cell title="${Number.isFinite(entry.kcal) ? `Wpisano: ${entry.kcal} kcal · ` : ""}Limit: ${kcalLimit} kcal (${trainingMinutesForDay(entry.date)} min treningu)">
                   <span class="cell-display">${kcalDisplay}</span>
                   <input class="table-input" data-day-field="kcal" data-date="${entry.date}" type="text" inputmode="numeric" value="${Number.isFinite(entry.kcal) ? entry.kcal : ""}" aria-label="Kalorie ${formatDate(entry.date)}">
@@ -4423,13 +4720,49 @@
             <tbody>${rows.map((entry, index) => `<tr>
               <td>${index + 1}</td>
               <td class="date-cell">${formatDate(entry.date)}</td>
-              <td>${entry.type === "football" ? "Piłka" : "Bieg"}</td>
+              <td>${entry.type === "football" ? "Piłka" : entry.type === "running_lt2" ? "Bieg LT2" : "Bieg LT1"}</td>
               <td>${entry.type === "football" ? (Number.isFinite(entry.distance) ? `${format2(entry.distance)} km` : "—") : format1(entry.pace)}</td>
               <td><span class="training-bpm-value">${Number.isFinite(entry.bpm) ? Math.round(entry.bpm) : "—"}${hasConsistencyStar(index) ? consistencyStarMarkup : ""}</span></td>
               <td>${Number.isFinite(entry.minutes) ? `${entry.minutes} min` : "—"}</td>
               <td><button class="delete-button" type="button" data-delete-training="${escapeHtml(entry.id)}" aria-label="Usuń trening">X</button></td>
             </tr>`).join("")}</tbody>
           </table>` : '<div class="chart-empty" style="min-height:72px">Brak treningów</div>';
+      }
+
+      function formatStrengthKg(value) {
+        return String(Number(value.toFixed(2))).replace(".", ",");
+      }
+
+      function strengthExerciseSummary(sets) {
+        if (!sets?.length) return "Dodaj serie";
+        const maxKg = Math.max(...sets.map(set => set.kg));
+        return `${sets.length} × ${formatStrengthKg(maxKg)} kg`;
+      }
+
+      function renderStrengthExercises() {
+        $("#strength-day-title").textContent = `Dzień ${strengthDay}`;
+        $$("[data-strength-day]").forEach(button => {
+          const active = button.dataset.strengthDay === strengthDay;
+          button.classList.toggle("is-active", active);
+          if (active) button.setAttribute("aria-current", "page");
+          else button.removeAttribute("aria-current");
+        });
+        $("#strength-exercises").innerHTML = STRENGTH_EXERCISES[strengthDay].map(exercise => {
+          const sets = strengthDrafts[strengthDay][exercise.id] || [];
+          const summary = strengthExerciseSummary(sets);
+          const details = sets.map((set, index) => `Seria ${index + 1}: ${set.reps} powt., ${formatStrengthKg(set.kg)} kg`).join("; ");
+          return `<div class="strength-exercise"><span class="strength-exercise-name">${exercise.label}</span><button class="strength-exercise-value${sets.length ? "" : " is-empty"}" type="button" data-strength-exercise="${exercise.id}" aria-label="${exercise.label}: ${summary}" title="${details || "Dodaj serie"}">${sets.length ? `<small>${sets.length} ×</small><strong>${formatStrengthKg(Math.max(...sets.map(set => set.kg)))} kg</strong>` : "Dodaj serie"}</button></div>`;
+        }).join("");
+      }
+
+      function renderStrengthTable() {
+        const rows = [...strengthTrainings].sort((a, b) => b.date.localeCompare(a.date) || b.recordedAt.localeCompare(a.recordedAt));
+        $("#strength-table").innerHTML = rows.length ? rows.map(entry => {
+          const summaries = STRENGTH_EXERCISES[entry.day]
+            .map(exercise => `${exercise.label}: ${strengthExerciseSummary(entry.exercises[exercise.id])}`)
+            .join(" · ");
+          return `<div class="strength-history-row"><strong>${formatDate(entry.date)} · ${entry.day}</strong><span>${summaries}</span><button type="button" data-delete-strength="${escapeHtml(entry.id)}" aria-label="Usuń trening siłowy ${formatDate(entry.date)}">X</button></div>`;
+        }).join("") : '<div class="chart-empty" style="min-height:72px">Brak treningów siłowych</div>';
       }
 
       function renderModeMetrics() {
@@ -4657,6 +4990,8 @@
         renderMetricChart();
         renderWeightTable();
         renderTrainingTable();
+        renderStrengthExercises();
+        renderStrengthTable();
         renderModeMetrics();
         renderMitoFeature();
         storeOvrSnapshot();
@@ -4703,6 +5038,13 @@
         return trainingsRef.set(Object.fromEntries(trainings.map(entry => [entry.id, entry])));
       }
 
+      function persistStrengthTrainings() {
+        strengthTrainings = normalizeStrengthTrainings(strengthTrainings);
+        saveLocal();
+        if (!firebaseEnabled || !strengthTrainingsRef) return Promise.resolve();
+        return strengthTrainingsRef.set(Object.fromEntries(strengthTrainings.map(entry => [entry.id, entry])));
+      }
+
       function withDeadline(promise, milliseconds) {
         return new Promise((resolve, reject) => {
           const timer = setTimeout(() => reject(new Error("Przekroczono czas pobierania danych")), milliseconds);
@@ -4732,13 +5074,13 @@
           if (!response.ok) throw new Error(`Błąd danych ${path}: ${response.status}`);
           return response.json();
         };
-        return Promise.all([load("weights"), load("trainings"), load("ovr-history")]);
+        return Promise.all([load("weights"), load("trainings"), load("ovr-history"), load("strength-trainings")]);
       }
 
       async function initializeStorage() {
         try {
           if (repairStorageRequested) {
-            [WEIGHTS_KEY, TRAININGS_KEY, OVR_KEY, MITO_KEY].forEach(key => localStorage.removeItem(key));
+            [WEIGHTS_KEY, TRAININGS_KEY, STRENGTH_KEY, OVR_KEY, MITO_KEY].forEach(key => localStorage.removeItem(key));
           }
           loadLocal();
           avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY))
@@ -4770,6 +5112,7 @@
             const root = db.ref("champion-stamina-v2");
             weightsRef = root.child("weights");
             trainingsRef = root.child("trainings");
+            strengthTrainingsRef = root.child("strength-trainings");
             ovrRef = root.child("ovr-history");
             mitoRef = root.child("mitochondrial-density");
             firebaseEnabled = true;
@@ -4777,11 +5120,13 @@
             coreSources.push(withDeadline(Promise.all([
               weightsRef.once("value"),
               trainingsRef.once("value"),
-              ovrRef.once("value")
-            ]).then(([weightSnapshot, trainingSnapshot, ovrSnapshot]) => [
+              ovrRef.once("value"),
+              strengthTrainingsRef.once("value")
+            ]).then(([weightSnapshot, trainingSnapshot, ovrSnapshot, strengthSnapshot]) => [
               weightSnapshot.val(),
               trainingSnapshot.val(),
-              ovrSnapshot.val()
+              ovrSnapshot.val(),
+              strengthSnapshot.val()
             ]), 7000));
           } else {
             firebaseEnabled = false;
@@ -4789,10 +5134,11 @@
 
           mitoRemoteReady = false;
           $("#sync-state").textContent = "Pobieranie danych";
-          const [remoteWeights, remoteTrainings, remoteOvr] = await firstSuccessful(coreSources);
+          const [remoteWeights, remoteTrainings, remoteOvr, remoteStrength] = await firstSuccessful(coreSources);
           weights = normalizeWeights(remoteWeights || weights);
           trainings = normalizeTrainings(remoteTrainings || trainings);
           ovrHistory = normalizeOvr(remoteOvr || ovrHistory);
+          strengthTrainings = normalizeStrengthTrainings(remoteStrength || strengthTrainings);
           saveLocal();
           await avatarPromise;
           isPrimaryCardEntryReady = true;
@@ -4811,6 +5157,13 @@
               const nextTrainings = normalizeTrainings(snapshot.val());
               if (JSON.stringify(nextTrainings) === JSON.stringify(trainings)) return;
               trainings = nextTrainings;
+              saveLocal();
+              renderAll();
+            });
+            strengthTrainingsRef.on("value", snapshot => {
+              const nextStrengthTrainings = normalizeStrengthTrainings(snapshot.val());
+              if (JSON.stringify(nextStrengthTrainings) === JSON.stringify(strengthTrainings)) return;
+              strengthTrainings = nextStrengthTrainings;
               saveLocal();
               renderAll();
             });
@@ -4849,7 +5202,7 @@
         document.body.classList.toggle("mito-mode", isMitoMode);
         $(".topbar span").textContent = isMitoMode ? "MITO SYSTEM" : "Champion Stamina";
         $(".topbar h1").textContent = isMitoMode ? "DENSITY MONITOR" : "Profil zawodnika";
-        $("#metric-chart-panel").hidden = isMitoMode;
+        $("#metric-chart-panel").hidden = isMitoMode || (mode === "training" && trainingTab === "strength");
         if (!isMitoMode) renderMetricChart();
         if (isMitoMode) {
           renderMitoFeature();
@@ -4880,6 +5233,136 @@
 
       $$(".mode-button").forEach(button => {
         button.addEventListener("click", () => activateMode(button.dataset.mode));
+      });
+
+      function activateTrainingTab(tab) {
+        trainingTab = tab === "strength" ? "strength" : "run";
+        $$("[data-training-tab]").forEach(button => {
+          const active = button.dataset.trainingTab === trainingTab;
+          button.classList.toggle("is-active", active);
+          if (active) button.setAttribute("aria-current", "page");
+          else button.removeAttribute("aria-current");
+        });
+        $$(".training-subpanel").forEach(panel => {
+          panel.classList.toggle("is-active", panel.id === `training-${trainingTab}-panel`);
+        });
+        const mode = $(".mode-button.is-active")?.dataset.mode;
+        $("#metric-chart-panel").hidden = mode === "mito" || (mode === "training" && trainingTab === "strength");
+      }
+
+      $$("[data-training-tab]").forEach(button => {
+        button.addEventListener("click", () => activateTrainingTab(button.dataset.trainingTab));
+      });
+
+      $$("[data-strength-day]").forEach(button => {
+        button.addEventListener("click", () => {
+          strengthDay = button.dataset.strengthDay;
+          renderStrengthExercises();
+          $("#strength-note").textContent = "";
+        });
+      });
+
+      const strengthDialog = $("#strength-dialog");
+
+      function strengthSetRowValues() {
+        return $$(".strength-set-row").map(row => ({
+          reps: row.querySelector("[data-strength-reps]").value.trim(),
+          kg: row.querySelector("[data-strength-kg]").value.trim()
+        }));
+      }
+
+      function renderStrengthSetRows(rows) {
+        $("#strength-sets").innerHTML = rows.map((set, index) => `
+          <div class="strength-set-row">
+            <strong class="strength-set-index">Seria ${index + 1}</strong>
+            <input data-strength-reps type="number" inputmode="numeric" min="1" max="1000" step="1" value="${escapeHtml(set.reps)}" aria-label="Powtórzenia w serii ${index + 1}">
+            <input data-strength-kg type="text" inputmode="decimal" value="${escapeHtml(set.kg)}" aria-label="Kilogramy w serii ${index + 1}">
+            <button type="button" data-remove-strength-set="${index}" aria-label="Usuń serię ${index + 1}">×</button>
+            ${index === rows.length - 1 ? '<button class="strength-add-set" type="button" data-add-strength-set aria-label="Dodaj serię">+</button>' : '<span></span>'}
+          </div>`).join("");
+      }
+
+      $("#strength-exercises").addEventListener("click", event => {
+        const button = event.target.closest("[data-strength-exercise]");
+        if (!button) return;
+        activeStrengthExercise = button.dataset.strengthExercise;
+        const exercise = STRENGTH_EXERCISES[strengthDay].find(item => item.id === activeStrengthExercise);
+        $("#strength-dialog-context").textContent = `Trening siłowy · Dzień ${strengthDay}`;
+        $("#strength-dialog-title").textContent = exercise.label;
+        $("#strength-dialog-error").textContent = "";
+        renderStrengthSetRows((strengthDrafts[strengthDay][activeStrengthExercise] || [{ reps: "", kg: "" }])
+          .map(set => ({ reps: String(set.reps), kg: String(set.kg).replace(".", ",") })));
+        strengthDialog.showModal();
+      });
+
+      $("#strength-sets").addEventListener("click", event => {
+        if (event.target.closest("[data-add-strength-set]")) {
+          renderStrengthSetRows([...strengthSetRowValues(), { reps: "", kg: "" }]);
+          return;
+        }
+        const button = event.target.closest("[data-remove-strength-set]");
+        if (!button) return;
+        const rows = strengthSetRowValues();
+        rows.splice(Number(button.dataset.removeStrengthSet), 1);
+        renderStrengthSetRows(rows.length ? rows : [{ reps: "", kg: "" }]);
+      });
+
+      $("#strength-cancel").addEventListener("click", () => strengthDialog.close());
+
+      $("#strength-sets-form").addEventListener("submit", event => {
+        event.preventDefault();
+        const rawRows = strengthSetRowValues().filter(set => set.reps !== "" || set.kg !== "");
+        const sets = rawRows.map(set => ({ reps: Number(set.reps), kg: Number(set.kg.replace(",", ".")) }));
+        if (!rawRows.length || rawRows.some(set => set.reps === "" || set.kg === "")
+          || sets.some(set => !Number.isInteger(set.reps) || set.reps < 1 || set.reps > 1000
+            || !Number.isFinite(set.kg) || set.kg < 0 || set.kg > 1000)) {
+          $("#strength-dialog-error").textContent = "W każdej serii podaj liczbę powtórzeń i ciężar w kg (może być 0).";
+          return;
+        }
+        strengthDrafts[strengthDay][activeStrengthExercise] = sets;
+        strengthDialog.close();
+        renderStrengthExercises();
+      });
+
+      $("#strength-save").addEventListener("click", async () => {
+        const exercises = strengthDrafts[strengthDay];
+        const missing = STRENGTH_EXERCISES[strengthDay].find(exercise => !exercises[exercise.id]?.length);
+        if (missing) {
+          $("#strength-note").textContent = `Uzupełnij ćwiczenie: ${missing.label}.`;
+          return;
+        }
+        const date = todayKey();
+        if ((strengthSessionCountsByDate().get(date) || 0) >= 2) {
+          $("#strength-note").textContent = "W tym dniu zapisano już dwa treningi siłowe.";
+          return;
+        }
+        const beforeScore = currentScore();
+        strengthTrainings.push({
+          id: uid("s"), date, day: strengthDay,
+          exercises: Object.fromEntries(STRENGTH_EXERCISES[strengthDay].map(exercise => [
+            exercise.id, exercises[exercise.id].map(set => ({ ...set }))
+          ])),
+          recordedAt: new Date().toISOString()
+        });
+        strengthDrafts[strengthDay] = {};
+        const persistPromise = persistStrengthTrainings().catch(() => { $("#sync-state").textContent = "Zapis lokalny"; });
+        renderAll();
+        $("#strength-note").textContent = date < STRENGTH_START_DATE_KEY
+          ? `Dzień ${strengthDay} zapisany. Do dyscypliny liczymy treningi od 05.10.`
+          : `Dzień ${strengthDay} zapisany jako ${formatDate(date)}.`;
+        showCardUpdatePresentation(beforeScore, currentScore());
+        await persistPromise;
+      });
+
+      $("#strength-table").addEventListener("click", async event => {
+        const button = event.target.closest("[data-delete-strength]");
+        if (!button) return;
+        const beforeScore = currentScore();
+        strengthTrainings = strengthTrainings.filter(entry => entry.id !== button.dataset.deleteStrength);
+        const persistPromise = persistStrengthTrainings().catch(() => { $("#sync-state").textContent = "Zapis lokalny"; });
+        renderAll();
+        showCardUpdatePresentation(beforeScore, currentScore());
+        await persistPromise;
       });
 
       function optionalTrainingNumber(selector) {
@@ -4954,40 +5437,38 @@
       }
 
       function syncTrainingKindForm() {
-        const isFootball = $("#football-training-input").checked;
+        const isFootball = $("#training-kind-input").value === "football";
         $("#pace-field").hidden = isFootball;
         $("#distance-field").hidden = !isFootball;
         $("#pace-input").required = !isFootball;
         $("#bpm-input").required = !isFootball;
         $("#minutes-input").required = !isFootball;
-        $("#bpm-input").placeholder = isFootball ? "opcjonalnie" : "145";
-        $("#minutes-input").placeholder = isFootball ? "opcjonalnie" : "60";
+        $("#bpm-input").placeholder = isFootball ? "" : "145";
+        $("#minutes-input").placeholder = isFootball ? "" : "60";
         $("#training-form-note").textContent = isFootball
           ? "BPM, dystans i czas są opcjonalne. Trening zawsze liczy się do dyscypliny."
           : "";
       }
 
-      $("#football-training-input").addEventListener("change", syncTrainingKindForm);
+      $("#training-kind-input").addEventListener("change", syncTrainingKindForm);
       $$(".pace-unit-button").forEach(button => {
         button.addEventListener("click", () => setPaceInputUnit(button.dataset.paceUnit));
       });
       $("#pace-input").addEventListener("input", renderPaceConversionPreview);
       setPaceInputUnit("speed");
+      $("#training-kind-input").value = "running";
       syncTrainingKindForm();
 
       $("#training-form").addEventListener("submit", async event => {
         event.preventDefault();
         const date = todayKey();
-        const isFootball = $("#football-training-input").checked;
+        const trainingKind = $("#training-kind-input").value;
+        const isFootball = trainingKind === "football";
         const paceInputUnit = currentPaceInputUnit();
         const pace = isFootball ? null : parseTrainingPaceValue($("#pace-input").value, paceInputUnit);
         const bpm = optionalTrainingNumber("#bpm-input");
         const rawMinutes = optionalTrainingNumber("#minutes-input");
-        const zoneMinutes = [1, 2, 3, 4, 5].map(zone => optionalTrainingNumber(`#zone${zone}-input`));
-        const enteredZoneMinutes = zoneMinutes.filter(Number.isFinite).reduce((sum, value) => sum + Math.max(0, value), 0);
-        const minutes = Number.isFinite(rawMinutes)
-          ? Math.round(rawMinutes)
-          : enteredZoneMinutes > 0 ? Math.round(enteredZoneMinutes) : null;
+        const minutes = Number.isFinite(rawMinutes) ? Math.round(rawMinutes) : null;
         const distance = optionalTrainingNumber("#distance-input");
         const distanceProvided = $("#distance-input").value.trim() !== "";
         if (!isFootball && (!Number.isFinite(pace) || !Number.isFinite(bpm) || !Number.isFinite(minutes) || minutes <= 0)) {
@@ -5006,25 +5487,21 @@
         trainings.push({
           id: uid("t"),
           date,
-          type: isFootball ? "football" : "running",
+          type: trainingKind,
           pace: isFootball ? null : pace,
           bpm: Number.isFinite(bpm) ? Math.round(bpm) : null,
           minutes,
           distance: isFootball && Number.isFinite(distance) ? distance : null,
-          zone1Minutes: Number.isFinite(zoneMinutes[0]) ? Math.round(Math.max(0, zoneMinutes[0])) : null,
-          zone2Minutes: Number.isFinite(zoneMinutes[1]) ? Math.round(Math.max(0, zoneMinutes[1])) : null,
-          zone3Minutes: Number.isFinite(zoneMinutes[2]) ? Math.round(Math.max(0, zoneMinutes[2])) : null,
-          zone4Minutes: Number.isFinite(zoneMinutes[3]) ? Math.round(Math.max(0, zoneMinutes[3])) : null,
-          zone5Minutes: Number.isFinite(zoneMinutes[4]) ? Math.round(Math.max(0, zoneMinutes[4])) : null,
           recordedAt: new Date().toISOString()
         });
-        $("#training-form-note").textContent = `${isFootball ? "Trening piłkarski" : `Trening · ${format1(pace)} km/h`} zapisany jako ${formatDate(date)}. Limit dnia: ${kcalLimitForDay(date)} kcal.`;
         $("#pace-input").value = "";
         renderPaceConversionPreview();
         $("#bpm-input").value = "";
         $("#minutes-input").value = "";
         $("#distance-input").value = "";
-        [1, 2, 3, 4, 5].forEach(zone => { $(`#zone${zone}-input`).value = ""; });
+        $("#training-kind-input").value = "running";
+        syncTrainingKindForm();
+        $("#training-form-note").textContent = `${isFootball ? "Trening piłkarski" : `${trainingKind === "running_lt2" ? "Bieg LT2" : "Bieg LT1"} · ${format1(pace)} km/h`} zapisany jako ${formatDate(date)}. Limit dnia: ${kcalLimitForDay(date)} kcal.`;
         const persistPromise = persistTrainings().catch(() => { $("#sync-state").textContent = "Zapis lokalny"; });
         if (Number.isFinite(beforeMito)) mitoAnimationFrom = beforeMito;
         renderAll();
