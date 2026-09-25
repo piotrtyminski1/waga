@@ -66,6 +66,7 @@
       --accent: #ff0046;
       --accent-dark: #c80037;
       --green: #00c968;
+      --l4-accent: #4aa9ff;
       --gold: #e1b84a;
       --bad: #ff7699;
       --radius: 8px;
@@ -1740,6 +1741,40 @@
       overflow: hidden;
     }
 
+    #weight-table { position: relative; }
+    .l4-swipe-bar {
+      position: absolute;
+      z-index: 5;
+      right: 0;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 5px 0 11px;
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--l4-accent);
+      background: linear-gradient(90deg, #0b3850, #145779);
+      color: var(--text);
+      box-shadow: -5px 2px 12px rgba(0, 0, 0, .4);
+      transform: translateX(101%);
+      transition: transform .28s cubic-bezier(.2, .8, .2, 1), opacity .28s ease;
+    }
+    .l4-swipe-bar.is-visible { transform: translateX(0); }
+    .l4-swipe-bar strong { color: #c8eaff; font-size: 9px; font-weight: 900; letter-spacing: .06em; }
+    .l4-swipe-bar button {
+      min-height: 24px;
+      padding: 0 9px;
+      border: 1px solid rgba(138, 207, 241, .5);
+      border-radius: 4px;
+      background: var(--panel-2);
+      color: var(--text);
+      font-size: 8px;
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .l4-swipe-bar button:focus-visible { outline: 2px solid var(--l4-accent); outline-offset: 2px; }
+
     table {
       width: 100%;
       border: 0;
@@ -1968,17 +2003,37 @@
 
     .kcal-value { font-size: 8.3px; font-weight: 800; }
 
-    .ovr-cell { white-space: nowrap; }
+    .ovr-cell, .markers-cell { white-space: nowrap; }
+    .markers-cell { padding: 0 1px; vertical-align: middle; }
 
-    .ovr-content, .training-markers {
-      display: inline-flex;
+    .training-markers {
+      display: flex;
       align-items: center;
       justify-content: center;
+      width: 100%;
+      height: 23px;
+      gap: 3px;
     }
 
-    .ovr-content { gap: 2px; }
-    .training-markers { gap: 3px; }
     .training-markers:empty { display: none; }
+
+    .l4-cross {
+      display: inline-block;
+      flex: 0 0 7px;
+      width: 7px;
+      height: 7px;
+      background: #ff304f;
+      clip-path: polygon(3px 0, 4px 0, 4px 3px, 7px 3px, 7px 4px, 4px 4px, 4px 7px, 3px 7px, 3px 4px, 0 4px, 0 3px, 3px 3px);
+      vertical-align: middle;
+      pointer-events: none;
+    }
+    .l4-cross.is-strength { background: var(--l4-accent); }
+    .kcal-l4-cell .kcal-l4-cross { position: absolute; left: 2px; top: 50%; transform: translateY(-50%); }
+    .kcal-l4-cell .cell-display { padding-left: 7px; }
+    .kcal-l4-cell.is-editing .kcal-l4-cross { display: none; }
+    .food-cell.is-l4 { position: relative; }
+    .food-cell.is-l4 .l4-cross { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+    .weight-history-table tbody tr[data-l4-date] { touch-action: pan-y; }
 
     .training-day-dot {
       position: relative;
@@ -2018,6 +2073,46 @@
       line-height: 18px;
       font-weight: 900;
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 2px 5px rgba(0, 0, 0, .24);
+    }
+
+    .l4-dialog {
+      width: min(calc(100vw - 24px), 406px);
+      max-height: min(82dvh, 560px);
+      padding: 0;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--text);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, .55);
+    }
+    .l4-dialog[open] { animation: l4-dialog-in .24s ease both; }
+    .l4-dialog::backdrop { background: rgba(0, 10, 15, .86); animation: l4-backdrop-in .24s ease both; }
+    @keyframes l4-dialog-in { from { opacity: 0; transform: translateY(12px) scale(.96); } to { opacity: 1; transform: none; } }
+    @keyframes l4-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+    .l4-dialog form { margin: 0; }
+    .l4-dialog-head { padding: 12px 14px 11px; border-bottom: 1px solid var(--line); background: var(--panel-3); }
+    .l4-dialog-head span { display: block; margin-bottom: 3px; color: var(--l4-accent); font-size: 7px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .l4-dialog-head h3 { margin: 0; font-size: 13px; line-height: 17px; font-weight: 800; text-transform: uppercase; }
+    .l4-dialog-body { display: grid; gap: 12px; padding: 12px 14px 14px; }
+    .l4-date-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .l4-date-fields label { display: grid; gap: 5px; color: var(--muted-2); font-size: 7px; line-height: 10px; font-weight: 800; text-transform: uppercase; }
+    .l4-date-fields input { width: 100%; min-width: 0; height: 38px; padding: 0 9px; border: 1px solid var(--line); border-radius: 5px; outline: 0; background: var(--panel-3); color: var(--text); font-size: 16px; }
+    .l4-date-fields input:focus-visible { border-color: var(--l4-accent); }
+    .l4-categories { display: grid; gap: 6px; }
+    .l4-categories strong { margin-bottom: 1px; color: var(--muted-2); font-size: 7px; line-height: 10px; text-transform: uppercase; }
+    .l4-categories label { display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 9px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-3); color: var(--text); font-size: 9px; font-weight: 800; text-transform: uppercase; cursor: pointer; }
+    .l4-categories label:has(input:checked) { border-color: rgba(74, 169, 255, .55); background: var(--panel-2); }
+    .l4-categories input { width: 14px; height: 14px; margin: 0; accent-color: var(--l4-accent); }
+    .l4-dialog-error { min-height: 11px; margin: 0; color: var(--bad); font-size: 8px; line-height: 11px; }
+    .l4-dialog-actions { display: flex; gap: 8px; padding: 10px 14px 13px; border-top: 1px solid var(--line); background: var(--panel-3); }
+    .l4-dialog-actions button { min-height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel-2); color: var(--text); font-size: 9px; font-weight: 800; text-transform: uppercase; cursor: pointer; }
+    .l4-dialog-actions button[type="submit"] { flex: 1; border-color: #367baf; background: #205f8f; color: #fff; }
+    .l4-dialog-actions button.is-remove { margin-right: auto; border-color: rgba(255, 118, 153, .32); background: var(--panel-2); color: var(--bad); }
+    .l4-dialog-actions button:focus-visible { outline: 2px solid var(--l4-accent); outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) {
+      .l4-swipe-bar { transition-duration: .01ms; }
+      .l4-dialog[open], .l4-dialog::backdrop { animation-duration: .01ms; }
     }
 
     .ovr-pill.is-common {
@@ -2063,6 +2158,7 @@
 
     .good { color: var(--green); }
     .bad { color: var(--bad); }
+    .kcal-l4-cell.neutral { color: var(--text); }
     .gold { color: var(--gold); }
     .muted { color: var(--muted-2); }
 
@@ -2516,7 +2612,7 @@
         <summary>Skala karty i liczenie OVR <span>+</span></summary>
         <div class="scale-content">
           <p><strong>OVR = 60% WAGA + 30% TEMPO + 10% DYSCYPLINA.</strong> Waga 94 kg i tempo 6,0 km/h zaczynają od 40 pkt. Waga 82 kg oraz tempo 8,5 km/h dają po 100 pkt. Wynik pomiędzy nimi rośnie liniowo. TEMPO jest średnią prędkości z 6 ostatnich treningów biegowych; treningi piłkarskie są w tym wyliczeniu pomijane.</p>
-          <p>Dyscyplinę zbierasz przez ruchome 14 dni: maks. 2,86 pkt dziennie za kalorie i 2,14 pkt za dzień bez FFood/sweets. Do 4 października treningi biegowe i piłkarskie dają do 30 pkt (maks. 1 dziennie i 4 w każdym 7-dniowym okresie). Od 5 października dają do 15 pkt, a treningi siłowe kolejne 15 pkt (maks. 2 dziennie i 5 w każdym 7-dniowym okresie). Trening piłkarski liczy się także bez podania BPM, dystansu i czasu. Limit dnia to 1700 kcal + 7,5 kcal za każdą wpisaną minutę treningu (450 kcal za godzinę). Niewpisane kalorie nie przyznają punktów. Nadwyżki i zapasy kcal z wpisanych dni rozliczają się wspólnie w całym okresie: zapas może odrobić wcześniejszą nadwyżkę, ale ujemny bilans nie daje punktów ponad zwykłe maksimum. Każde nieodrobione +500 kcal odbiera równowartość punktów za jeden dzień.</p>
+          <p>Dyscyplinę zbierasz przez ruchome 14 możliwych dni osobno dla każdej kategorii: maks. 2,86 pkt dziennie za kalorie i 2,14 pkt za dzień bez FFood/sweets. Przesunięcie dnia w tabeli w lewo włącza L4 dla wszystkich kategorii; w opcjach możesz wybrać kategorie i zakres dat, również wstecz. Dni L4 nie obniżają wyniku danej kategorii — w ich miejsce liczą się wcześniejsze możliwe dni. Do 4 października treningi biegowe i piłkarskie dają do 30 pkt (maks. 1 dziennie i 4 w każdym 7-dniowym okresie). Od 5 października dają do 15 pkt, a treningi siłowe kolejne 15 pkt (maks. 2 dziennie i 5 w każdym 7-dniowym okresie). Trening piłkarski liczy się także bez podania BPM, dystansu i czasu. Limit dnia to 1700 kcal + 7,5 kcal za każdą wpisaną minutę treningu (450 kcal za godzinę). Niewpisane kalorie nie przyznają punktów. Nadwyżki i zapasy kcal z wpisanych dni rozliczają się wspólnie w całym okresie: zapas może odrobić wcześniejszą nadwyżkę, ale ujemny bilans nie daje punktów ponad zwykłe maksimum. Każde nieodrobione +500 kcal odbiera równowartość punktów za jeden dzień.</p>
           <div class="tier-list">
             <div class="tier-chip common">Czarna<br>0–49</div>
             <div class="tier-chip bronze">Brązowa<br>50–69</div>
@@ -2543,6 +2639,31 @@
       <div class="strength-dialog-actions">
         <button type="button" id="strength-cancel">Anuluj</button>
         <button type="submit">OK</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="l4-dialog" id="l4-dialog" aria-labelledby="l4-dialog-title">
+    <form id="l4-form">
+      <div class="l4-dialog-head"><span>Dyspensa od dyscypliny</span><h3 id="l4-dialog-title">Ustaw L4</h3></div>
+      <div class="l4-dialog-body">
+        <div class="l4-date-fields">
+          <label>Od kiedy<input id="l4-start" type="date" required></label>
+          <label>Do kiedy<input id="l4-end" type="date" required></label>
+        </div>
+        <div class="l4-categories" role="group" aria-label="Kategorie L4">
+          <strong>Dyspensa na</strong>
+          <label><input type="checkbox" name="l4-category" value="food">FF/Sweets</label>
+          <label><input type="checkbox" name="l4-category" value="cardio">Trening biegowy</label>
+          <label><input type="checkbox" name="l4-category" value="strength">Trening siłowy</label>
+          <label><input type="checkbox" name="l4-category" value="calories">Kalorie</label>
+        </div>
+        <p class="l4-dialog-error" id="l4-dialog-error" role="alert"></p>
+      </div>
+      <div class="l4-dialog-actions">
+        <button type="button" class="is-remove" id="l4-remove" hidden>Usuń L4</button>
+        <button type="button" id="l4-cancel">Anuluj</button>
+        <button type="submit">Zapisz</button>
       </div>
     </form>
   </dialog>
@@ -3328,10 +3449,25 @@
       const STRENGTH_KEY = isTestMode ? "champion-stamina-test-strength-v1" : "champion-stamina-strength-v1";
       const OVR_KEY = isTestMode ? "champion-stamina-test-ovr-v2" : "champion-stamina-ovr-history-v2";
       const MITO_KEY = isTestMode ? "champion-stamina-test-mito-v1" : "champion-stamina-mito-v1";
+      const L4_KEY = isTestMode ? "champion-stamina-test-l4-v1" : "champion-stamina-l4-v1";
+      const L4_CATEGORIES = ["food", "cardio", "strength", "calories"];
+      const L4_LABELS = { food: "FF/Sweets", cardio: "Trening biegowy", strength: "Trening siłowy", calories: "Kalorie" };
       const TACTICS_PLAYERS_KEY = "stamina-tactics-universal-players-v1";
       const AVATAR_CACHE_KEY = "champion-stamina-avatar-v1";
       const TABLE_COLORS_KEY = "champion-stamina-table-colors-v1";
       const repairStorageRequested = new URLSearchParams(location.search).get("repair") === "1";
+
+      function storageGet(key) {
+        try { return localStorage.getItem(key); } catch { return null; }
+      }
+
+      function storageSet(key, value) {
+        try { localStorage.setItem(key, value); } catch {}
+      }
+
+      function storageRemove(key) {
+        try { localStorage.removeItem(key); } catch {}
+      }
 
       const firebaseConfig = {
         apiKey: "AIzaSyA7JqE7bNPU6FHqJSad5lKwjm-c8ozY9rg",
@@ -3351,6 +3487,7 @@
       let strengthDrafts = { A: {}, B: {} };
       let activeStrengthExercise = null;
       let ovrHistory = [];
+      let l4Entries = [];
       let avatarPhoto = "";
       let isAvatarLoading = false;
       let firebaseEnabled = false;
@@ -3359,6 +3496,11 @@
       let strengthTrainingsRef = null;
       let ovrRef = null;
       let mitoRef = null;
+      let l4Ref = null;
+      let l4EditingId = null;
+      let l4SwipeTimer = null;
+      let l4CommitTimer = null;
+      let l4SwipeDate = "";
       let mitoState = { config: null, history: [], historicalMaxMitoScore: 12, historicalMaxDate: "" };
       let mitoRenderer = null;
       let mitoRendererSeed = "";
@@ -3388,11 +3530,7 @@
       const CARD_COUNTER_FIELDS = ["overall", "weightPoints", "pacePoints", "discipline"];
 
       function loadTableColorsEnabled() {
-        try {
-          return localStorage.getItem(TABLE_COLORS_KEY) === "1";
-        } catch {
-          return false;
-        }
+        return storageGet(TABLE_COLORS_KEY) === "1";
       }
 
       const todayKey = () => {
@@ -3535,6 +3673,40 @@
           .sort((a, b) => a.date.localeCompare(b.date));
       }
 
+      function isValidDateKey(key) {
+        return /^\d{4}-\d{2}-\d{2}$/.test(String(key)) && localDateKey(dateFromKey(key)) === key;
+      }
+
+      function normalizeL4(source) {
+        return (Array.isArray(source) ? source : Object.values(source || {}))
+          .filter(entry => entry && typeof entry === "object")
+          .map(entry => ({
+            id: String(entry.id || uid("l4")),
+            startDate: String(entry.startDate || ""),
+            endDate: String(entry.endDate || ""),
+            categories: L4_CATEGORIES.filter(category => Array.isArray(entry.categories) && entry.categories.includes(category))
+          }))
+          .filter(entry => isValidDateKey(entry.startDate) && isValidDateKey(entry.endDate)
+            && entry.startDate <= entry.endDate && entry.categories.length)
+          .sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id));
+      }
+
+      function l4CategoriesForDate(date) {
+        const categories = new Set();
+        l4Entries.forEach(entry => {
+          if (date >= entry.startDate && date <= entry.endDate) entry.categories.forEach(category => categories.add(category));
+        });
+        return categories;
+      }
+
+      function eligibleDisciplineDays(category, endDate) {
+        const days = [];
+        for (let date = endDate; date >= START_DATE_KEY && days.length < 14; date = shiftDateKey(date, -1)) {
+          if (!l4CategoriesForDate(date).has(category)) days.push(date);
+        }
+        return days.reverse();
+      }
+
       function normalizeMitoState(source) {
         const raw = source && typeof source === "object" ? source : {};
         const rawConfig = raw.config || raw;
@@ -3557,19 +3729,21 @@
       }
 
       function loadLocal() {
-        try { weights = normalizeWeights(JSON.parse(localStorage.getItem(WEIGHTS_KEY) || "[]")); } catch { weights = []; }
-        try { trainings = normalizeTrainings(JSON.parse(localStorage.getItem(TRAININGS_KEY) || "[]")); } catch { trainings = []; }
-        try { strengthTrainings = normalizeStrengthTrainings(JSON.parse(localStorage.getItem(STRENGTH_KEY) || "[]")); } catch { strengthTrainings = []; }
-        try { ovrHistory = normalizeOvr(JSON.parse(localStorage.getItem(OVR_KEY) || "[]")); } catch { ovrHistory = []; }
-        try { mitoState = normalizeMitoState(JSON.parse(localStorage.getItem(MITO_KEY) || "{}")); } catch { mitoState = normalizeMitoState({}); }
+        try { weights = normalizeWeights(JSON.parse(storageGet(WEIGHTS_KEY) || "[]")); } catch { weights = []; }
+        try { trainings = normalizeTrainings(JSON.parse(storageGet(TRAININGS_KEY) || "[]")); } catch { trainings = []; }
+        try { strengthTrainings = normalizeStrengthTrainings(JSON.parse(storageGet(STRENGTH_KEY) || "[]")); } catch { strengthTrainings = []; }
+        try { ovrHistory = normalizeOvr(JSON.parse(storageGet(OVR_KEY) || "[]")); } catch { ovrHistory = []; }
+        try { l4Entries = normalizeL4(JSON.parse(storageGet(L4_KEY) || "[]")); } catch { l4Entries = []; }
+        try { mitoState = normalizeMitoState(JSON.parse(storageGet(MITO_KEY) || "{}")); } catch { mitoState = normalizeMitoState({}); }
       }
 
       function saveLocal() {
-        localStorage.setItem(WEIGHTS_KEY, JSON.stringify(weights));
-        localStorage.setItem(TRAININGS_KEY, JSON.stringify(trainings));
-        localStorage.setItem(STRENGTH_KEY, JSON.stringify(strengthTrainings));
-        localStorage.setItem(OVR_KEY, JSON.stringify(ovrHistory));
-        localStorage.setItem(MITO_KEY, JSON.stringify(mitoState));
+        storageSet(WEIGHTS_KEY, JSON.stringify(weights));
+        storageSet(TRAININGS_KEY, JSON.stringify(trainings));
+        storageSet(STRENGTH_KEY, JSON.stringify(strengthTrainings));
+        storageSet(OVR_KEY, JSON.stringify(ovrHistory));
+        storageSet(L4_KEY, JSON.stringify(l4Entries));
+        storageSet(MITO_KEY, JSON.stringify(mitoState));
       }
 
       function latestWeightRows() {
@@ -3646,9 +3820,9 @@
       }
 
       function kcalBalance14(endDate = activeStatDateKey()) {
-        const start = shiftDateKey(endDate, -13);
+        const eligibleDates = new Set(eligibleDisciplineDays("calories", endDate));
         const kcalEntries = latestWeightRows()
-          .filter(entry => entry.date >= start && entry.date <= endDate && Number.isFinite(entry.kcal));
+          .filter(entry => eligibleDates.has(entry.date) && Number.isFinite(entry.kcal));
         return Math.round(kcalEntries.reduce(
           (sum, entry) => sum + entry.kcal - kcalLimitForDay(entry.date),
           0
@@ -3663,26 +3837,22 @@
       }
 
       function disciplineBreakdown(endDate = activeStatDateKey()) {
-        const days = Array.from({ length: 14 }, (_, index) => shiftDateKey(endDate, index - 13));
+        const calorieDays = eligibleDisciplineDays("calories", endDate);
+        const foodDays = eligibleDisciplineDays("food", endDate);
+        const cardioDays = eligibleDisciplineDays("cardio", endDate);
+        const strengthDays = eligibleDisciplineDays("strength", endDate);
         const rowByDate = new Map(latestWeightRows().map(entry => [entry.date, entry]));
-        const elapsedDates = new Set(
-          challengeRows()
-            .filter(row => row.date >= days[0] && row.date <= days[13])
-            .map(row => row.date)
-        );
         const balance = kcalBalance14(endDate);
         let enteredCalorieDays = 0;
         let fastFoodDays = 0;
         let cleanScore = 0;
 
-        days.forEach(date => {
-          if (!elapsedDates.has(date)) return;
+        calorieDays.forEach(date => {
           const entry = rowByDate.get(date);
-
-          if (Number.isFinite(entry?.kcal)) {
-            enteredCalorieDays += 1;
-          }
-
+          if (Number.isFinite(entry?.kcal)) enteredCalorieDays += 1;
+        });
+        foodDays.forEach(date => {
+          const entry = rowByDate.get(date);
           if (entry?.fastFood) {
             fastFoodDays += 1;
           } else {
@@ -3690,28 +3860,22 @@
           }
         });
 
-        const creditedTrainingDays = (entries, from, to, weeklyLimit, earliestDate = "") => Math.min(
-          weeklyLimit,
-          new Set(
-            entries
-              .filter(entry => elapsedDates.has(entry.date) && entry.date >= from && entry.date <= to && entry.date >= earliestDate)
-              .map(entry => entry.date)
-          ).size
-        );
-        const firstWeekSessions = creditedTrainingDays(trainings, days[0], days[6], 4);
-        const secondWeekSessions = creditedTrainingDays(trainings, days[7], days[13], 4);
+        const creditedTrainingDays = (entries, dates, weeklyLimit) => {
+          const eligibleDates = new Set(dates);
+          return Math.min(weeklyLimit, new Set(entries.filter(entry => eligibleDates.has(entry.date)).map(entry => entry.date)).size);
+        };
+        const firstWeekSessions = creditedTrainingDays(trainings, cardioDays.slice(0, 7), 4);
+        const secondWeekSessions = creditedTrainingDays(trainings, cardioDays.slice(7), 4);
         const sessions = firstWeekSessions + secondWeekSessions;
         const strengthCounts = endDate >= STRENGTH_START_DATE_KEY;
         const strengthByDate = strengthSessionCountsByDate();
-        const creditedStrengthSessions = (from, to) => Math.min(5,
-          [...strengthByDate.entries()]
-            .filter(([date]) => elapsedDates.has(date) && date >= from && date <= to && date >= STRENGTH_START_DATE_KEY)
-            .reduce((sum, [, count]) => sum + Math.min(2, count), 0)
-        );
+        const creditedStrengthSessions = dates => Math.min(5,
+          dates.filter(date => date >= STRENGTH_START_DATE_KEY)
+            .reduce((sum, date) => sum + Math.min(2, strengthByDate.get(date) || 0), 0));
         const firstWeekStrengthSessions = strengthCounts
-          ? creditedStrengthSessions(days[0], days[6]) : 0;
+          ? creditedStrengthSessions(strengthDays.slice(0, 7)) : 0;
         const secondWeekStrengthSessions = strengthCounts
-          ? creditedStrengthSessions(days[7], days[13]) : 0;
+          ? creditedStrengthSessions(strengthDays.slice(7)) : 0;
         const strengthSessions = firstWeekStrengthSessions + secondWeekStrengthSessions;
         const cardioScore = sessions * (strengthCounts ? CARDIO_POINTS_WITH_STRENGTH : CARDIO_POINTS_BEFORE_STRENGTH);
         const strengthScore = strengthSessions * STRENGTH_POINTS_PER_SESSION;
@@ -4544,7 +4708,12 @@
         const score = currentScore();
         const activeDate = activeStatDateKey();
         const rows = normalizeOvr([
-          ...ovrHistory.filter(entry => entry.date < activeDate),
+          ...ovrHistory.filter(entry => entry.date < activeDate).map(entry => {
+            if (!l4Entries.some(l4 => l4.startDate <= entry.date)) return entry;
+            const historicalScore = currentScore(entry.date);
+            return { ...entry, overall: historicalScore.overall, weightScore: historicalScore.weightPoints,
+              paceScore: historicalScore.pacePoints, disciplineScore: historicalScore.discipline };
+          }),
           { id: activeDate, date: activeDate, overall: score.overall, weightScore: score.weightPoints, paceScore: score.pacePoints, disciplineScore: score.discipline }
         ]);
         $("#overall-chart").innerHTML = overallHistoryMarkup(
@@ -4559,7 +4728,13 @@
         return value < 0 ? "good" : "bad";
       }
 
+      function l4CrossMarkup(category, extraClass = "") {
+        const label = `L4 · ${L4_LABELS[category]}`;
+        return `<span class="l4-cross${extraClass ? ` ${extraClass}` : ""}" role="img" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"></span>`;
+      }
+
       function renderWeightTable() {
+        closeL4Swipe();
         const rows = challengeRows();
         const colorToggle = $("#table-color-toggle");
         if (colorToggle) colorToggle.checked = tableColorsEnabled;
@@ -4620,10 +4795,10 @@
         $("#weight-table").innerHTML = `
           <table class="weight-history-table${tableColorsEnabled ? " show-all-colors" : ""}">
             <colgroup>
-              <col style="width:2%"><col style="width:5%"><col style="width:9%"><col style="width:16%"><col style="width:17%"><col style="width:12%">
+              <col style="width:2%"><col style="width:5%"><col style="width:9%"><col style="width:6%"><col style="width:10%"><col style="width:17%"><col style="width:12%">
               <col style="width:11%"><col style="width:11%"><col style="width:11%"><col style="width:6%">
             </colgroup>
-            <thead><tr><th class="rolling-window-col" aria-label="Ostatnie 7 dni"></th><th>#</th><th>Data</th><th>OVR</th><th>Kcal</th><th>Waga</th><th>Różnica</th><th>Śr. tyg.</th><th>Roz. tyg.</th><th>FF/S</th></tr></thead>
+            <thead><tr><th class="rolling-window-col" aria-label="Ostatnie 7 dni"></th><th>#</th><th>Data</th><th aria-label="Status dnia"></th><th>OVR</th><th>Kcal</th><th>Waga</th><th>Różnica</th><th>Śr. tyg.</th><th>Roz. tyg.</th><th>FF/S</th></tr></thead>
             <tbody>${rows.map((entry, index) => {
               const previousWeight = index > 0 ? rows[index - 1].weight : null;
               const delta = Number.isFinite(entry.weight) && Number.isFinite(previousWeight) ? entry.weight - previousWeight : null;
@@ -4637,20 +4812,29 @@
               const strengthCount = Math.min(2, strengthByDate.get(entry.date) || 0);
               const hasFootball = Boolean(trainingDay?.hasFootball);
               const hasLt2 = Boolean(trainingDay?.hasLt2);
+              const l4Categories = l4CategoriesForDate(entry.date);
+              const hasFoodL4 = l4Categories.has("food");
+              const hasCardioL4 = l4Categories.has("cardio");
+              const hasStrengthL4 = l4Categories.has("strength");
+              const hasCaloriesL4 = l4Categories.has("calories");
+              const l4Title = l4Categories.size ? `L4: ${[...l4Categories].map(category => L4_LABELS[category]).join(", ")}` : "";
               const trainingDayLabel = hasFootball ? "Trening piłkarski" : hasLt2 ? "Bieg LT2" : "Bieg LT1";
-              const markers = [
-                ...Array.from({ length: strengthCount }, (_, markerIndex) => ({
-                  className: "is-strength", label: `Trening siłowy ${markerIndex + 1}`
-                })),
-                ...(hasTraining ? [{
-                  className: `is-cardio${hasFootball ? " is-football" : hasLt2 ? " is-lt2" : ""}`,
-                  label: trainingDayLabel
-                }] : [])
-              ];
-              const trainingMarkers = markers.map(marker => `<span class="training-day-dot ${marker.className}" role="img" aria-label="${marker.label}" title="${marker.label}"></span>`).join("");
+              const cardioMarker = hasCardioL4
+                ? l4CrossMarkup("cardio")
+                : hasTraining
+                  ? `<span class="training-day-dot is-cardio${hasFootball ? " is-football" : hasLt2 ? " is-lt2" : ""}" role="img" aria-label="${trainingDayLabel}" title="${trainingDayLabel}"></span>`
+                  : "";
+              const strengthMarkers = hasStrengthL4
+                ? l4CrossMarkup("strength", "is-strength")
+                : Array.from({ length: strengthCount }, (_, markerIndex) =>
+                    `<span class="training-day-dot is-strength" role="img" aria-label="Trening siłowy ${markerIndex + 1}" title="Trening siłowy ${markerIndex + 1}"></span>`
+                  ).join("");
+              const trainingMarkers = cardioMarker + strengthMarkers;
               const kcalLimit = kcalLimitForDay(entry.date);
               const kcalDelta = Number.isFinite(entry.kcal) ? Math.round(entry.kcal - kcalLimit) : null;
-              const kcalClass = Number.isFinite(kcalDelta) ? (kcalDelta <= 0 ? "good" : "bad") : "muted";
+              const kcalClass = Number.isFinite(kcalDelta)
+                ? (kcalDelta <= 0 ? "good" : hasCaloriesL4 ? "neutral" : "bad")
+                : "muted";
               const kcalEquivalentMinutes = Number.isFinite(kcalDelta)
                 ? Math.round(Math.abs(kcalDelta) / KCAL_PER_TRAINING_MINUTE)
                 : null;
@@ -4662,17 +4846,19 @@
                 index > 0 && index % 7 === 0 ? "week-start" : "",
                 index < fullColorWindowStart ? "is-older-than-14-days" : ""
               ].filter(Boolean).join(" ");
-              const weekSummaryColspan = index > rollingWindowStart ? 9 : 10;
+              const weekSummaryColspan = index > rollingWindowStart ? 10 : 11;
               const weekSummary = week
                 ? `<tr class="week-kcal-summary-row"><td colspan="${weekSummaryColspan}"><div class="week-kcal-summary-bar"><span>Tydzień ${week.number}</span><span class="week-kcal-summary-stats"><span>Łączny bilans kcal: <strong class="week-kcal-summary-value ${rowTone(week.kcalBalance)}">${Number.isFinite(week.kcalBalance) ? `${week.kcalBalance > 0 ? "+" : ""}${week.kcalBalance} kcal` : "brak danych"}</strong></span><span>Dziennie: <strong class="week-kcal-summary-value ${rowTone(week.dailyKcalBalance)}">${Number.isFinite(week.dailyKcalBalance) ? `${week.dailyKcalBalance > 0 ? "+" : ""}${week.dailyKcalBalance} kcal` : "brak danych"}</strong></span></span></div></td></tr>`
                 : "";
-              return `${weekSummary}<tr${rowClasses ? ` class="${rowClasses}"` : ""}>
+              return `${weekSummary}<tr data-l4-date="${entry.date}"${rowClasses ? ` class="${rowClasses}"` : ""}>
                 ${index < rollingWindowStart ? '<td class="rolling-window-spacer"></td>' : ""}
                 ${index === rollingWindowStart ? `<td class="rolling-window-cell" rowspan="${rollingWindowRowspan}"><svg viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true"><line class="rolling-window-line" x1="5" y1="0" x2="5" y2="100"></line></svg></td>` : ""}
                 <td>${index + 1}</td>
-                <td class="date-cell">${formatDate(entry.date)}</td>
-                <td class="ovr-cell"><span class="ovr-content"><span class="training-markers">${trainingMarkers}</span><span class="ovr-pill ${dailyTier.className}" title="${dailyTier.label} karta · OVR ${dailyScore.overall}">${dailyScore.overall}</span></span></td>
-                <td class="editable-cell ${kcalClass}" data-edit-cell title="${Number.isFinite(entry.kcal) ? `Wpisano: ${entry.kcal} kcal · ` : ""}Limit: ${kcalLimit} kcal (${trainingMinutesForDay(entry.date)} min treningu)">
+                <td class="date-cell"${l4Title ? ` title="${escapeHtml(l4Title)}"` : ""}>${formatDate(entry.date)}</td>
+                <td class="markers-cell"><span class="training-markers">${trainingMarkers}</span></td>
+                <td class="ovr-cell"><span class="ovr-pill ${dailyTier.className}" title="${dailyTier.label} karta · OVR ${dailyScore.overall}">${dailyScore.overall}</span></td>
+                <td class="editable-cell ${kcalClass}${hasCaloriesL4 ? " kcal-l4-cell" : ""}" data-edit-cell title="${Number.isFinite(entry.kcal) ? `Wpisano: ${entry.kcal} kcal · ` : ""}Limit: ${kcalLimit} kcal (${trainingMinutesForDay(entry.date)} min treningu)">
+                  ${hasCaloriesL4 ? l4CrossMarkup("calories", "kcal-l4-cross") : ""}
                   <span class="cell-display">${kcalDisplay}</span>
                   <input class="table-input" data-day-field="kcal" data-date="${entry.date}" type="text" inputmode="numeric" value="${Number.isFinite(entry.kcal) ? entry.kcal : ""}" aria-label="Kalorie ${formatDate(entry.date)}">
                 </td>
@@ -4683,10 +4869,80 @@
                 <td class="${rowTone(delta)}">${Number.isFinite(delta) ? `${delta > 0 ? "+" : ""}${format2(delta)}` : "—"}</td>
                 ${week ? `<td class="week-cell" rowspan="${week.length}">${formatWeight(week.averageWeight)}</td>` : ""}
                 ${week ? `<td class="week-cell weekly-difference-cell ${rowTone(week.difference)}" rowspan="${week.length}">${Number.isFinite(week.difference) ? `${week.difference > 0 ? "+" : ""}${format2(week.difference)}` : "—"}</td>` : ""}
-                <td class="food-cell ${entry.fastFood ? "bad" : "good"}"><input class="food-check" type="checkbox" data-food-date="${entry.date}" aria-label="Fast food lub słodycze ${formatDate(entry.date)}" ${entry.fastFood ? "checked" : ""}></td>
+                <td class="food-cell${hasFoodL4 ? " is-l4" : entry.fastFood ? " bad" : " good"}">${hasFoodL4
+                  ? l4CrossMarkup("food")
+                  : `<input class="food-check" type="checkbox" data-food-date="${entry.date}" aria-label="Fast food lub słodycze ${formatDate(entry.date)}" ${entry.fastFood ? "checked" : ""}>`}</td>
               </tr>`;
             }).join("")}</tbody>
           </table>`;
+      }
+
+      function closeL4Swipe() {
+        clearTimeout(l4SwipeTimer);
+        clearTimeout(l4CommitTimer);
+        l4SwipeTimer = null;
+        l4CommitTimer = null;
+        l4SwipeDate = "";
+        $("#weight-table .l4-swipe-bar")?.remove();
+      }
+
+      function applyL4Change(nextEntries) {
+        l4Entries = normalizeL4(nextEntries);
+        persistL4().catch(error => {
+          console.error("Nie udało się zapisać L4 w Firebase:", error);
+          $("#sync-state").textContent = "Zapis lokalny L4";
+        });
+        renderAll();
+      }
+
+      function applyL4ForOneDay(date) {
+        if (L4_CATEGORIES.every(category => l4CategoriesForDate(date).has(category))) return;
+        const existing = l4Entries.find(entry => entry.startDate === date && entry.endDate === date);
+        if (existing) {
+          applyL4Change(l4Entries.map(entry => entry.id === existing.id
+            ? { ...entry, categories: L4_CATEGORIES.slice() } : entry));
+        } else {
+          applyL4Change([...l4Entries, { id: uid("l4"), startDate: date, endDate: date, categories: L4_CATEGORIES.slice() }]);
+        }
+      }
+
+      function showL4Swipe(date, row) {
+        closeL4Swipe();
+        const host = $("#weight-table");
+        const hostRect = host.getBoundingClientRect();
+        const rowRect = row.getBoundingClientRect();
+        const bar = document.createElement("div");
+        bar.className = "l4-swipe-bar";
+        bar.style.top = `${rowRect.top - hostRect.top}px`;
+        bar.style.height = `${rowRect.height}px`;
+        bar.innerHTML = `<strong>L4</strong><button type="button" data-l4-options="${date}" aria-label="Opcje L4 dla ${formatDate(date)}">Opcje</button>`;
+        host.appendChild(bar);
+        l4SwipeDate = date;
+        requestAnimationFrame(() => bar.classList.add("is-visible"));
+        l4SwipeTimer = setTimeout(() => {
+          bar.classList.remove("is-visible");
+          bar.style.pointerEvents = "none";
+          l4CommitTimer = setTimeout(() => {
+            if (l4SwipeDate !== date) return;
+            closeL4Swipe();
+            applyL4ForOneDay(date);
+          }, 280);
+        }, 2000);
+      }
+
+      function openL4Dialog(date) {
+        closeL4Swipe();
+        const existing = l4Entries.find(entry => entry.startDate <= date && entry.endDate >= date) || null;
+        l4EditingId = existing?.id || null;
+        $("#l4-dialog-title").textContent = existing ? "Edytuj L4" : "Ustaw L4";
+        $("#l4-start").value = existing?.startDate || date;
+        $("#l4-end").value = existing?.endDate || date;
+        $("#l4-remove").hidden = !existing;
+        $("#l4-dialog-error").textContent = "";
+        $$("#l4-form [name='l4-category']").forEach(input => {
+          input.checked = existing ? existing.categories.includes(input.value) : true;
+        });
+        $("#l4-dialog").showModal();
       }
 
       function renderTrainingTable() {
@@ -4801,7 +5057,7 @@
         const signature = JSON.stringify(mitoState);
         if (signature === mitoPersistSignature) return;
         mitoPersistSignature = signature;
-        try { localStorage.setItem(MITO_KEY, signature); } catch {}
+        storageSet(MITO_KEY, signature);
         if (firebaseEnabled && mitoRef && mitoRemoteReady) mitoRef.set(mitoState).catch(() => {});
       }
 
@@ -5009,14 +5265,14 @@
       }
 
       async function loadAvatar(db) {
-        avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY)) || avatarPhoto;
+        avatarPhoto = parseTymekPhoto(storageGet(TACTICS_PLAYERS_KEY)) || avatarPhoto;
         if (avatarPhoto) return;
         try {
           const snapshot = await db.ref(`stamina-tactics-data-v1/values/${TACTICS_PLAYERS_KEY}`).once("value");
           const record = snapshot.val();
           avatarPhoto = parseTymekPhoto(typeof record === "string" ? record : record?.value);
           if (avatarPhoto) {
-            try { localStorage.setItem(AVATAR_CACHE_KEY, avatarPhoto); } catch {}
+            storageSet(AVATAR_CACHE_KEY, avatarPhoto);
           }
         } catch {} finally {
           isAvatarLoading = false;
@@ -5043,6 +5299,20 @@
         saveLocal();
         if (!firebaseEnabled || !strengthTrainingsRef) return Promise.resolve();
         return strengthTrainingsRef.set(Object.fromEntries(strengthTrainings.map(entry => [entry.id, entry])));
+      }
+
+      async function persistL4() {
+        l4Entries = normalizeL4(l4Entries);
+        saveLocal();
+        if (isTestMode) return;
+        const payload = Object.fromEntries(l4Entries.map(entry => [entry.id, entry]));
+        if (firebaseEnabled && l4Ref) return l4Ref.set(payload);
+        const response = await fetch(`${firebaseConfig.databaseURL}/champion-stamina-v2/l4.json`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!response.ok) throw new Error(`Błąd zapisu L4: ${response.status}`);
       }
 
       function withDeadline(promise, milliseconds) {
@@ -5074,17 +5344,17 @@
           if (!response.ok) throw new Error(`Błąd danych ${path}: ${response.status}`);
           return response.json();
         };
-        return Promise.all([load("weights"), load("trainings"), load("ovr-history"), load("strength-trainings")]);
+        return Promise.all([load("weights"), load("trainings"), load("ovr-history"), load("strength-trainings"), load("l4").catch(() => undefined)]);
       }
 
       async function initializeStorage() {
         try {
           if (repairStorageRequested) {
-            [WEIGHTS_KEY, TRAININGS_KEY, STRENGTH_KEY, OVR_KEY, MITO_KEY].forEach(key => localStorage.removeItem(key));
+            [WEIGHTS_KEY, TRAININGS_KEY, STRENGTH_KEY, OVR_KEY, MITO_KEY, L4_KEY].forEach(storageRemove);
           }
           loadLocal();
-          avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY))
-            || localStorage.getItem(AVATAR_CACHE_KEY) || "";
+          avatarPhoto = parseTymekPhoto(storageGet(TACTICS_PLAYERS_KEY))
+            || storageGet(AVATAR_CACHE_KEY) || "";
           isPrimaryCardEntryReady = false;
           hasPlayedPrimaryCardEntry = false;
           renderAll();
@@ -5092,7 +5362,7 @@
           if (isTestMode) {
             firebaseEnabled = false;
             $("#sync-state").textContent = "Test • start 29.07 05:00";
-            avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY)) || avatarPhoto;
+            avatarPhoto = parseTymekPhoto(storageGet(TACTICS_PLAYERS_KEY)) || avatarPhoto;
             isPrimaryCardEntryReady = true;
             hasPlayedPrimaryCardEntry = false;
             renderAll();
@@ -5114,6 +5384,7 @@
             trainingsRef = root.child("trainings");
             strengthTrainingsRef = root.child("strength-trainings");
             ovrRef = root.child("ovr-history");
+            l4Ref = root.child("l4");
             mitoRef = root.child("mitochondrial-density");
             firebaseEnabled = true;
             mitoSnapshotPromise = mitoRef.once("value").catch(() => null);
@@ -5121,12 +5392,14 @@
               weightsRef.once("value"),
               trainingsRef.once("value"),
               ovrRef.once("value"),
-              strengthTrainingsRef.once("value")
-            ]).then(([weightSnapshot, trainingSnapshot, ovrSnapshot, strengthSnapshot]) => [
+              strengthTrainingsRef.once("value"),
+              l4Ref.once("value").catch(() => undefined)
+            ]).then(([weightSnapshot, trainingSnapshot, ovrSnapshot, strengthSnapshot, l4Snapshot]) => [
               weightSnapshot.val(),
               trainingSnapshot.val(),
               ovrSnapshot.val(),
-              strengthSnapshot.val()
+              strengthSnapshot.val(),
+              l4Snapshot?.val()
             ]), 7000));
           } else {
             firebaseEnabled = false;
@@ -5134,11 +5407,12 @@
 
           mitoRemoteReady = false;
           $("#sync-state").textContent = "Pobieranie danych";
-          const [remoteWeights, remoteTrainings, remoteOvr, remoteStrength] = await firstSuccessful(coreSources);
+          const [remoteWeights, remoteTrainings, remoteOvr, remoteStrength, remoteL4] = await firstSuccessful(coreSources);
           weights = normalizeWeights(remoteWeights || weights);
           trainings = normalizeTrainings(remoteTrainings || trainings);
           ovrHistory = normalizeOvr(remoteOvr || ovrHistory);
           strengthTrainings = normalizeStrengthTrainings(remoteStrength || strengthTrainings);
+          l4Entries = normalizeL4(remoteL4 === undefined ? l4Entries : remoteL4);
           saveLocal();
           await avatarPromise;
           isPrimaryCardEntryReady = true;
@@ -5172,6 +5446,13 @@
               saveLocal();
               renderOverallChart();
             });
+            l4Ref.on("value", snapshot => {
+              const nextL4 = normalizeL4(snapshot.val());
+              if (JSON.stringify(nextL4) === JSON.stringify(l4Entries)) return;
+              l4Entries = nextL4;
+              saveLocal();
+              renderAll();
+            });
           }
 
           const mitoSnapshot = await mitoSnapshotPromise;
@@ -5185,10 +5466,11 @@
             history.replaceState(null, "", repairedUrl);
           }
         } catch (error) {
+          console.error("Nie udało się zainicjalizować synchronizacji Champion Stamina:", error);
           firebaseEnabled = false;
           mitoRemoteReady = false;
           $("#sync-state").textContent = "Tryb lokalny";
-          avatarPhoto = parseTymekPhoto(localStorage.getItem(TACTICS_PLAYERS_KEY)) || avatarPhoto;
+          avatarPhoto = parseTymekPhoto(storageGet(TACTICS_PLAYERS_KEY)) || avatarPhoto;
           isPrimaryCardEntryReady = true;
           hasPlayedPrimaryCardEntry = false;
           renderAll();
@@ -5564,7 +5846,33 @@
         await persistPromise;
       }
 
+      let weightSwipeStart = null;
+      let suppressWeightClickUntil = 0;
+      $("#weight-table").addEventListener("pointerdown", event => {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        if (event.target.closest("input, button, .l4-swipe-bar")) return;
+        const row = event.target.closest("tr[data-l4-date]");
+        weightSwipeStart = row ? { pointerId: event.pointerId, x: event.clientX, y: event.clientY, row } : null;
+      });
+      document.addEventListener("pointerup", event => {
+        if (!weightSwipeStart || event.pointerId !== weightSwipeStart.pointerId) return;
+        const { x, y, row } = weightSwipeStart;
+        weightSwipeStart = null;
+        if (x - event.clientX < 42 || Math.abs(y - event.clientY) > 32) return;
+        suppressWeightClickUntil = performance.now() + 450;
+        event.preventDefault();
+        showL4Swipe(row.dataset.l4Date, row);
+      });
+      document.addEventListener("pointercancel", event => {
+        if (weightSwipeStart?.pointerId === event.pointerId) weightSwipeStart = null;
+      });
+
       $("#weight-table").addEventListener("click", event => {
+        if (event.target.closest("[data-l4-options]")) {
+          openL4Dialog(event.target.closest("[data-l4-options]").dataset.l4Options);
+          return;
+        }
+        if (performance.now() < suppressWeightClickUntil) return;
         if (event.target.matches("[data-food-date]")) return;
         const cell = event.target.closest("[data-edit-cell]");
         if (!cell || cell.classList.contains("is-editing")) return;
@@ -5577,9 +5885,7 @@
 
       $("#table-color-toggle").addEventListener("change", event => {
         tableColorsEnabled = event.target.checked;
-        try {
-          localStorage.setItem(TABLE_COLORS_KEY, tableColorsEnabled ? "1" : "0");
-        } catch {}
+        storageSet(TABLE_COLORS_KEY, tableColorsEnabled ? "1" : "0");
         renderWeightTable();
       });
 
@@ -5606,6 +5912,39 @@
           return;
         }
         saveWeightTableCell(event);
+      });
+
+      $("#l4-cancel").addEventListener("click", () => $("#l4-dialog").close());
+      $("#l4-dialog").addEventListener("click", event => {
+        if (event.target === $("#l4-dialog")) $("#l4-dialog").close();
+      });
+      $("#l4-form").addEventListener("submit", event => {
+        event.preventDefault();
+        const startDate = $("#l4-start").value;
+        const endDate = $("#l4-end").value;
+        const categories = $$("#l4-form [name='l4-category']:checked").map(input => input.value);
+        if (!isValidDateKey(startDate) || !isValidDateKey(endDate) || startDate > endDate) {
+          $("#l4-dialog-error").textContent = "Podaj poprawny zakres dat.";
+          return;
+        }
+        if (!categories.length) {
+          $("#l4-dialog-error").textContent = "Wybierz co najmniej jedną kategorię.";
+          return;
+        }
+        const nextEntry = { id: l4EditingId || uid("l4"), startDate, endDate, categories };
+        const nextEntries = l4EditingId
+          ? l4Entries.map(entry => entry.id === l4EditingId ? nextEntry : entry)
+          : [...l4Entries, nextEntry];
+        $("#l4-dialog").close();
+        l4EditingId = null;
+        applyL4Change(nextEntries);
+      });
+      $("#l4-remove").addEventListener("click", () => {
+        if (!l4EditingId) return;
+        const nextEntries = l4Entries.filter(entry => entry.id !== l4EditingId);
+        $("#l4-dialog").close();
+        l4EditingId = null;
+        applyL4Change(nextEntries);
       });
 
       $("#training-table").addEventListener("click", async event => {
