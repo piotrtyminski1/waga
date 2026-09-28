@@ -796,9 +796,8 @@
     }
 
     .metric-history-cursor-tooltip {
-      --metric-cursor-y: 16px;
       position: absolute;
-      top: var(--metric-cursor-y);
+      top: 5px;
       left: 0;
       z-index: 7;
       width: max-content;
@@ -816,7 +815,7 @@
       white-space: nowrap;
       opacity: 0;
       pointer-events: none;
-      transform: translate(-50%, calc(-100% - 9px));
+      transform: translateX(-50%);
     }
 
     .metric-history-cursor-tooltip strong {
@@ -827,13 +826,19 @@
       font-weight: 350;
     }
 
+    .metric-history-cursor-tooltip small,
+    .overall-history-cursor-tooltip small {
+      display: block;
+      color: var(--muted-2);
+      font-size: 7px;
+      line-height: 10px;
+      font-weight: 600;
+    }
+
     .metric-history-chart.is-inspecting .metric-history-cursor-line,
     .metric-history-chart.is-inspecting .metric-history-cursor-tooltip { opacity: 1; }
-    .metric-history-cursor-tooltip.is-below { transform: translate(-50%, 9px); }
-    .metric-history-cursor-tooltip.is-left-edge { transform: translate(0, calc(-100% - 9px)); }
-    .metric-history-cursor-tooltip.is-left-edge.is-below { transform: translate(0, 9px); }
-    .metric-history-cursor-tooltip.is-right-edge { transform: translate(-100%, calc(-100% - 9px)); }
-    .metric-history-cursor-tooltip.is-right-edge.is-below { transform: translate(-100%, 9px); }
+    .metric-history-cursor-tooltip.is-left-edge { transform: translateX(0); }
+    .metric-history-cursor-tooltip.is-right-edge { transform: translateX(-100%); }
 
     .overall-history {
       margin-top: 12px;
@@ -942,9 +947,8 @@
     }
 
     .overall-history-cursor-tooltip {
-      --history-cursor-y: 20px;
       position: absolute;
-      top: var(--history-cursor-y);
+      top: 5px;
       left: 0;
       z-index: 7;
       width: max-content;
@@ -962,7 +966,7 @@
       white-space: nowrap;
       opacity: 0;
       pointer-events: none;
-      transform: translate(-50%, calc(-100% - 11px));
+      transform: translateX(-50%);
     }
 
     .overall-history-cursor-tooltip strong {
@@ -979,24 +983,12 @@
       opacity: 1;
     }
 
-    .overall-history-cursor-tooltip.is-below {
-      transform: translate(-50%, 11px);
-    }
-
     .overall-history-cursor-tooltip.is-left-edge {
-      transform: translate(0, calc(-100% - 11px));
-    }
-
-    .overall-history-cursor-tooltip.is-left-edge.is-below {
-      transform: translate(0, 11px);
+      transform: translateX(0);
     }
 
     .overall-history-cursor-tooltip.is-right-edge {
-      transform: translate(-100%, calc(-100% - 11px));
-    }
-
-    .overall-history-cursor-tooltip.is-right-edge.is-below {
-      transform: translate(-100%, 11px);
+      transform: translateX(-100%);
     }
 
     .mode-switch {
@@ -1760,6 +1752,13 @@
       transition: transform .28s cubic-bezier(.2, .8, .2, 1), opacity .28s ease;
     }
     .l4-swipe-bar.is-visible { transform: translateX(0); }
+    .l4-swipe-bar.is-dragging { transition: none; pointer-events: none; }
+    .l4-swipe-bar.is-remove {
+      border-left-color: #ff7282;
+      background: linear-gradient(90deg, #57202b, #922b3c);
+    }
+    .l4-swipe-bar.is-remove strong { color: #ffe0e5; }
+    .l4-swipe-bar.is-remove button { border-color: rgba(255, 155, 169, .65); }
     .l4-swipe-bar strong { color: #c8eaff; font-size: 9px; font-weight: 900; letter-spacing: .06em; }
     .l4-swipe-bar button {
       min-height: 24px;
@@ -2547,7 +2546,7 @@
             <button type="button" data-strength-day="B">Dzień B</button>
           </nav>
           <section class="panel">
-            <div class="panel-head"><strong id="strength-day-title">Dzień A</strong><small>5 treningów / tydzień od 05.10</small></div>
+            <div class="panel-head"><strong id="strength-day-title">Dzień A</strong><small>Do 2 treningów dziennie · bez punktów dyscypliny</small></div>
             <div class="strength-exercises" id="strength-exercises"></div>
             <div class="strength-actions">
               <p class="strength-summary-hint">Podsumowanie pokazuje liczbę serii i najwyższy ciężar.</p>
@@ -2612,7 +2611,7 @@
         <summary>Skala karty i liczenie OVR <span>+</span></summary>
         <div class="scale-content">
           <p><strong>OVR = 60% WAGA + 30% TEMPO + 10% DYSCYPLINA.</strong> Waga 94 kg i tempo 6,0 km/h zaczynają od 40 pkt. Waga 82 kg oraz tempo 8,5 km/h dają po 100 pkt. Wynik pomiędzy nimi rośnie liniowo. TEMPO jest średnią prędkości z 6 ostatnich treningów biegowych; treningi piłkarskie są w tym wyliczeniu pomijane.</p>
-          <p>Dyscyplinę zbierasz przez ruchome 14 możliwych dni osobno dla każdej kategorii: maks. 2,86 pkt dziennie za kalorie i 2,14 pkt za dzień bez FFood/sweets. Przesunięcie dnia w tabeli w lewo włącza L4 dla wszystkich kategorii; w opcjach możesz wybrać kategorie i zakres dat, również wstecz. Dni L4 nie obniżają wyniku danej kategorii — w ich miejsce liczą się wcześniejsze możliwe dni. Do 4 października treningi biegowe i piłkarskie dają do 30 pkt (maks. 1 dziennie i 4 w każdym 7-dniowym okresie). Od 5 października dają do 15 pkt, a treningi siłowe kolejne 15 pkt (maks. 2 dziennie i 5 w każdym 7-dniowym okresie). Trening piłkarski liczy się także bez podania BPM, dystansu i czasu. Limit dnia to 1700 kcal + 7,5 kcal za każdą wpisaną minutę treningu (450 kcal za godzinę). Niewpisane kalorie nie przyznają punktów. Nadwyżki i zapasy kcal z wpisanych dni rozliczają się wspólnie w całym okresie: zapas może odrobić wcześniejszą nadwyżkę, ale ujemny bilans nie daje punktów ponad zwykłe maksimum. Każde nieodrobione +500 kcal odbiera równowartość punktów za jeden dzień.</p>
+          <p>Dyscyplinę zbierasz przez ruchome 14 możliwych dni osobno dla każdej kategorii: maks. 2,86 pkt dziennie za kalorie i 2,14 pkt za dzień bez FFood/sweets. Przesunięcie dnia w tabeli w lewo włącza L4 dla wszystkich kategorii; ponowny swipe na dzień z L4 usuwa je z tego dnia. W opcjach możesz wybrać kategorie i zakres dat, również wstecz. Dni L4 nie obniżają wyniku danej kategorii — w ich miejsce liczą się wcześniejsze możliwe dni. Treningi biegowe i piłkarskie dają do 30 pkt (maks. 1 dziennie i 4 w każdym 7-dniowym okresie). Trening siłowy jest zapisywany w zakładce i oznaczany niebieską kropką, ale obecnie nie zwiększa dyscypliny. Trening piłkarski liczy się także bez podania BPM, dystansu i czasu. Limit dnia to 1700 kcal + 7,5 kcal za każdą wpisaną minutę treningu (450 kcal za godzinę). Niewpisane kalorie nie przyznają punktów. Nadwyżki i zapasy kcal z wpisanych dni rozliczają się wspólnie w całym okresie: zapas może odrobić wcześniejszą nadwyżkę, ale ujemny bilans nie daje punktów ponad zwykłe maksimum. Każde nieodrobione +500 kcal odbiera równowartość punktów za jeden dzień.</p>
           <div class="tier-list">
             <div class="tier-chip common">Czarna<br>0–49</div>
             <div class="tier-chip bronze">Brązowa<br>50–69</div>
@@ -2645,7 +2644,7 @@
 
   <dialog class="l4-dialog" id="l4-dialog" aria-labelledby="l4-dialog-title">
     <form id="l4-form">
-      <div class="l4-dialog-head"><span>Dyspensa od dyscypliny</span><h3 id="l4-dialog-title">Ustaw L4</h3></div>
+      <div class="l4-dialog-head"><span>Dyspensa od dyscypliny</span><h3 id="l4-dialog-title" tabindex="-1" autofocus>Ustaw L4</h3></div>
       <div class="l4-dialog-body">
         <div class="l4-date-fields">
           <label>Od kiedy<input id="l4-start" type="date" required></label>
@@ -3433,6 +3432,7 @@
       const CARDIO_POINTS_BEFORE_STRENGTH = 30 / 8;
       const CARDIO_POINTS_WITH_STRENGTH = 15 / 8;
       const STRENGTH_POINTS_PER_SESSION = 15 / 10;
+      const STRENGTH_DISCIPLINE_ENABLED = false;
       const STRENGTH_START_DATE_KEY = "2026-10-05";
       const STRENGTH_EXERCISES = {
         A: [{ id: "pullups", label: "Podciąganie" }, { id: "abs", label: "ABS" }],
@@ -3581,6 +3581,10 @@
       function formatDate(key) {
         const date = dateFromKey(key);
         return `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}`;
+      }
+
+      function formatFullDate(key) {
+        return `${formatDate(key)}.${key.slice(0, 4)}`;
       }
 
       function uid(prefix) {
@@ -3867,7 +3871,7 @@
         const firstWeekSessions = creditedTrainingDays(trainings, cardioDays.slice(0, 7), 4);
         const secondWeekSessions = creditedTrainingDays(trainings, cardioDays.slice(7), 4);
         const sessions = firstWeekSessions + secondWeekSessions;
-        const strengthCounts = endDate >= STRENGTH_START_DATE_KEY;
+        const strengthCounts = STRENGTH_DISCIPLINE_ENABLED && endDate >= STRENGTH_START_DATE_KEY;
         const strengthByDate = strengthSessionCountsByDate();
         const creditedStrengthSessions = dates => Math.min(5,
           dates.filter(date => date >= STRENGTH_START_DATE_KEY)
@@ -4332,8 +4336,8 @@
 
         const interactionPoints = points.map((point, index) => ({
           xPercent: (x(index) / width) * 100,
-          y: y(point.value),
-          valueLabel: options.tooltipFormat(point.value, point)
+          valueLabel: options.tooltipFormat(point.value, point),
+          dateLabel: formatFullDate(point.date)
         }));
 
         return `<div
@@ -4352,6 +4356,7 @@
           <span class="metric-history-cursor-line" data-metric-history-cursor-line aria-hidden="true"></span>
           <span class="metric-history-cursor-tooltip" data-metric-history-cursor-tooltip aria-live="polite">
             <strong data-metric-history-tooltip-value></strong>
+            <small data-metric-history-tooltip-date></small>
           </span>
         </div>`;
       }
@@ -4367,6 +4372,7 @@
         const cursorLine = chart.querySelector("[data-metric-history-cursor-line]");
         const tooltip = chart.querySelector("[data-metric-history-cursor-tooltip]");
         const tooltipValue = chart.querySelector("[data-metric-history-tooltip-value]");
+        const tooltipDate = chart.querySelector("[data-metric-history-tooltip-date]");
         let selectedIndex = points.length - 1;
 
         const showPoint = rawIndex => {
@@ -4375,11 +4381,10 @@
           const left = `${point.xPercent}%`;
           cursorLine.style.left = left;
           tooltip.style.left = left;
-          tooltip.style.setProperty("--metric-cursor-y", `${point.y}px`);
-          tooltip.classList.toggle("is-below", point.y < 55);
           tooltip.classList.toggle("is-left-edge", point.xPercent < 18);
           tooltip.classList.toggle("is-right-edge", point.xPercent > 82);
           tooltipValue.textContent = point.valueLabel;
+          tooltipDate.textContent = point.dateLabel;
           chart.classList.add("is-inspecting");
         };
 
@@ -4554,7 +4559,7 @@
             weightPoints: entry.weightScore,
             pacePoints: entry.paceScore,
             discipline: entry.disciplineScore,
-            dateLabel: point.dateLabel,
+            dateLabel: formatFullDate(entry.date),
             tierLabel: point.tierLabel
           };
         });
@@ -4600,6 +4605,7 @@
             <span class="overall-history-cursor-line" data-overall-history-cursor-line aria-hidden="true"></span>
             <span class="overall-history-cursor-tooltip" data-overall-history-cursor-tooltip aria-live="polite">
               <strong data-overall-history-tooltip-overall></strong>
+              <small data-overall-history-tooltip-date></small>
             </span>
             ${points.filter(point => point.isTransition).map(point => `
               <button
@@ -4625,6 +4631,7 @@
         const cursorLine = chart.querySelector("[data-overall-history-cursor-line]");
         const tooltip = chart.querySelector("[data-overall-history-cursor-tooltip]");
         const tooltipOverall = chart.querySelector("[data-overall-history-tooltip-overall]");
+        const tooltipDate = chart.querySelector("[data-overall-history-tooltip-date]");
         let selectedIndex = points.length - 1;
 
         const showPoint = rawIndex => {
@@ -4633,11 +4640,10 @@
           const left = `${point.xPercent}%`;
           cursorLine.style.left = left;
           tooltip.style.left = left;
-          tooltip.style.setProperty("--history-cursor-y", `${point.y}px`);
-          tooltip.classList.toggle("is-below", point.y < 72);
           tooltip.classList.toggle("is-left-edge", point.xPercent < 15);
           tooltip.classList.toggle("is-right-edge", point.xPercent > 85);
           tooltipOverall.textContent = point.overall;
+          tooltipDate.textContent = point.dateLabel;
           chart.classList.add("is-inspecting");
           previewPrimaryCard(point);
         };
@@ -4883,7 +4889,7 @@
         l4SwipeTimer = null;
         l4CommitTimer = null;
         l4SwipeDate = "";
-        $("#weight-table .l4-swipe-bar")?.remove();
+        $$("#weight-table .l4-swipe-bar").forEach(bar => bar.remove());
       }
 
       function applyL4Change(nextEntries) {
@@ -4906,26 +4912,69 @@
         }
       }
 
-      function showL4Swipe(date, row) {
-        closeL4Swipe();
+      function removeL4ForOneDay(date) {
+        const remaining = [];
+        l4Entries.forEach(entry => {
+          if (date < entry.startDate || date > entry.endDate) {
+            remaining.push(entry);
+            return;
+          }
+          if (entry.startDate < date) {
+            remaining.push({ ...entry, endDate: shiftDateKey(date, -1) });
+          }
+          if (date < entry.endDate) {
+            remaining.push({
+              ...entry,
+              id: entry.startDate < date ? uid("l4") : entry.id,
+              startDate: shiftDateKey(date, 1)
+            });
+          }
+        });
+        applyL4Change(remaining);
+      }
+
+      function createL4SwipeBar(date, row) {
         const host = $("#weight-table");
         const hostRect = host.getBoundingClientRect();
         const rowRect = row.getBoundingClientRect();
         const bar = document.createElement("div");
-        bar.className = "l4-swipe-bar";
+        const removing = l4CategoriesForDate(date).size > 0;
+        bar.className = `l4-swipe-bar${removing ? " is-remove" : ""}`;
+        bar.dataset.action = removing ? "remove" : "add";
         bar.style.top = `${rowRect.top - hostRect.top}px`;
         bar.style.height = `${rowRect.height}px`;
-        bar.innerHTML = `<strong>L4</strong><button type="button" data-l4-options="${date}" aria-label="Opcje L4 dla ${formatDate(date)}">Opcje</button>`;
+        bar.innerHTML = `<strong>${removing ? "USUŃ L4" : "L4"}</strong><button type="button" data-l4-options="${date}" aria-label="Opcje L4 dla ${formatDate(date)}">Opcje</button>`;
         host.appendChild(bar);
+        return bar;
+      }
+
+      function settleL4SwipeBar(bar, visible) {
+        // Keep the last finger position as the start of the release animation.
+        const currentTransform = getComputedStyle(bar).transform;
+        bar.classList.remove("is-dragging");
+        bar.style.transform = currentTransform;
+        void bar.offsetWidth;
+        bar.classList.toggle("is-visible", visible);
+        bar.style.transform = "";
+      }
+
+      function retractL4Swipe(bar) {
+        bar.style.pointerEvents = "none";
+        settleL4SwipeBar(bar, false);
+        l4SwipeTimer = setTimeout(() => bar.remove(), 280);
+      }
+
+      function showL4Swipe(date, bar) {
         l4SwipeDate = date;
-        requestAnimationFrame(() => bar.classList.add("is-visible"));
+        settleL4SwipeBar(bar, true);
         l4SwipeTimer = setTimeout(() => {
           bar.classList.remove("is-visible");
           bar.style.pointerEvents = "none";
           l4CommitTimer = setTimeout(() => {
             if (l4SwipeDate !== date) return;
             closeL4Swipe();
-            applyL4ForOneDay(date);
+            if (bar.dataset.action === "remove") removeL4ForOneDay(date);
+            else applyL4ForOneDay(date);
           }, 280);
         }, 2000);
       }
@@ -4943,6 +4992,7 @@
           input.checked = existing ? existing.categories.includes(input.value) : true;
         });
         $("#l4-dialog").showModal();
+        $("#l4-dialog-title").focus({ preventScroll: true });
       }
 
       function renderTrainingTable() {
@@ -5629,9 +5679,7 @@
         strengthDrafts[strengthDay] = {};
         const persistPromise = persistStrengthTrainings().catch(() => { $("#sync-state").textContent = "Zapis lokalny"; });
         renderAll();
-        $("#strength-note").textContent = date < STRENGTH_START_DATE_KEY
-          ? `Dzień ${strengthDay} zapisany. Do dyscypliny liczymy treningi od 05.10.`
-          : `Dzień ${strengthDay} zapisany jako ${formatDate(date)}.`;
+        $("#strength-note").textContent = `Dzień ${strengthDay} zapisany jako ${formatDate(date)}. Trening siłowy obecnie nie zwiększa dyscypliny.`;
         showCardUpdatePresentation(beforeScore, currentScore());
         await persistPromise;
       });
@@ -5846,33 +5894,74 @@
         await persistPromise;
       }
 
+      const weightTable = $("#weight-table");
       let weightSwipeStart = null;
       let suppressWeightClickUntil = 0;
-      $("#weight-table").addEventListener("pointerdown", event => {
+      weightTable.addEventListener("pointerdown", event => {
+        // A separate tap after the gesture should work immediately.
+        suppressWeightClickUntil = 0;
         if (event.pointerType === "mouse" && event.button !== 0) return;
         if (event.target.closest("input, button, .l4-swipe-bar")) return;
-        const row = event.target.closest("tr[data-l4-date]");
-        weightSwipeStart = row ? { pointerId: event.pointerId, x: event.clientX, y: event.clientY, row } : null;
+        if (!event.target.closest(".weight-history-table tbody")) return;
+        // A rowspan cell belongs to the first day in the DOM, even when touched lower down.
+        const row = Array.from(weightTable.querySelectorAll("tbody tr")).find(candidate => {
+          const rect = candidate.getBoundingClientRect();
+          return event.clientY >= rect.top && event.clientY < rect.bottom;
+        });
+        weightSwipeStart = row?.dataset.l4Date
+          ? { pointerId: event.pointerId, x: event.clientX, y: event.clientY, row, bar: null }
+          : null;
+      });
+      document.addEventListener("pointermove", event => {
+        const swipe = weightSwipeStart;
+        if (!swipe || event.pointerId !== swipe.pointerId) return;
+        const distance = swipe.x - event.clientX;
+        const vertical = Math.abs(swipe.y - event.clientY);
+        if (!swipe.bar) {
+          if (vertical > 8 && vertical > distance) {
+            weightSwipeStart = null;
+            return;
+          }
+          if (distance < 5 || distance <= vertical * 1.2) return;
+          closeL4Swipe();
+          swipe.bar = createL4SwipeBar(swipe.row.dataset.l4Date, swipe.row);
+          swipe.bar.classList.add("is-dragging");
+        }
+        swipe.bar.style.transform = `translateX(calc(100% - ${Math.min(Math.max(distance, 0), weightTable.clientWidth)}px))`;
+        if (event.cancelable) event.preventDefault();
       });
       document.addEventListener("pointerup", event => {
         if (!weightSwipeStart || event.pointerId !== weightSwipeStart.pointerId) return;
-        const { x, y, row } = weightSwipeStart;
+        const { x, y, row, bar } = weightSwipeStart;
         weightSwipeStart = null;
-        if (x - event.clientX < 42 || Math.abs(y - event.clientY) > 32) return;
+        if (!bar) return;
         suppressWeightClickUntil = performance.now() + 450;
-        event.preventDefault();
-        showL4Swipe(row.dataset.l4Date, row);
+        if (event.cancelable) event.preventDefault();
+        const distance = x - event.clientX;
+        const threshold = weightTable.clientWidth / 3;
+        if (distance < threshold || Math.abs(y - event.clientY) > Math.max(32, distance * .6)) {
+          retractL4Swipe(bar);
+          return;
+        }
+        showL4Swipe(row.dataset.l4Date, bar);
       });
       document.addEventListener("pointercancel", event => {
-        if (weightSwipeStart?.pointerId === event.pointerId) weightSwipeStart = null;
+        if (weightSwipeStart?.pointerId === event.pointerId) {
+          if (weightSwipeStart.bar) retractL4Swipe(weightSwipeStart.bar);
+          weightSwipeStart = null;
+        }
       });
 
-      $("#weight-table").addEventListener("click", event => {
+      weightTable.addEventListener("click", event => {
+        // The compatibility click after a swipe can land on the newly revealed Options button.
+        if (performance.now() < suppressWeightClickUntil) {
+          event.preventDefault();
+          return;
+        }
         if (event.target.closest("[data-l4-options]")) {
           openL4Dialog(event.target.closest("[data-l4-options]").dataset.l4Options);
           return;
         }
-        if (performance.now() < suppressWeightClickUntil) return;
         if (event.target.matches("[data-food-date]")) return;
         const cell = event.target.closest("[data-edit-cell]");
         if (!cell || cell.classList.contains("is-editing")) return;
