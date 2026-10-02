@@ -758,10 +758,34 @@
     .chart-label { fill: var(--muted-2); font: 8px LivesportFinderLatin, Arial, sans-serif; }
     .chart-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .chart-line.weight { stroke: #e1b84a; }
+    .chart-line.winner { stroke: #6af5a8; }
+    .chart-dot.winner { fill: #6af5a8; }
+    #metric-chart-panel { perspective: 1000px; }
+    #metric-chart-panel .panel-head { flex-wrap: wrap; }
+    .winner-switch { display: inline-flex; align-items: center; gap: 7px; margin-left: auto; color: var(--muted); font-size: 8px; font-weight: 700; cursor: pointer; }
+    .winner-switch[hidden], .winner-summary[hidden] { display: none; }
+    .winner-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+    .winner-switch-track { position: relative; width: 34px; height: 20px; border: 1px solid var(--line); border-radius: 99px; background: var(--panel-3); transition: background 180ms; }
+    .winner-switch-track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--muted); transition: transform 180ms, background 180ms; }
+    .winner-switch input:checked + .winner-switch-track { background: rgba(106,245,168,.18); border-color: rgba(106,245,168,.55); }
+    .winner-switch input:checked + .winner-switch-track::after { transform: translateX(14px); background: #6af5a8; }
+    .winner-switch input:focus-visible + .winner-switch-track { outline: 2px solid #6af5a8; outline-offset: 3px; }
+    .winner-switch:has(input:disabled) { opacity: .5; cursor: default; }
+    .winner-chart-stage { transform-origin: center; transition: transform 300ms cubic-bezier(.4,0,.2,1); }
+    .winner-chart-stage.flip-out { transform: rotateX(90deg); }
+    .winner-chart-stage.flip-in { transform: rotateX(-90deg); transition: none; }
+    .metric-history-today-line { stroke: rgba(255,255,255,.2); stroke-width: 1; }
+    .metric-history-today-label { fill: var(--muted); font: 8px LivesportFinderLatin, Arial, sans-serif; paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
+    .winner-summary { padding: 12px; border-top: 1px solid var(--line); }
+    .winner-progress-row { display: flex; align-items: flex-start; gap: 14px; }
+    .winner-progress-value { flex: none; color: #6af5a8; font: 350 29px/34px Oswald, "Arial Narrow", sans-serif; }
+    .winner-message { min-width: 0; margin: 0; color: #c9f9de; font-size: 11px; font-weight: 700; line-height: 17px; }
+    @media (prefers-reduced-motion: reduce) { .winner-chart-stage, .winner-switch-track, .winner-switch-track::after { transition: none; } }
     .chart-line.pace { stroke: var(--accent); }
     .chart-line.overall { stroke: var(--accent); }
     .chart-dot { stroke: var(--bg); stroke-width: 1.5; }
     .chart-dot.weight { fill: #e1b84a; }
+    .chart-dot.today { fill: #ffd83d; stroke: #6b5200; stroke-width: 1; }
     .chart-dot.pace { fill: var(--accent); }
     .chart-dot.football { fill: #ffd83d; stroke: #6b5200; stroke-width: 2; }
     .chart-dot.overall { fill: var(--accent); }
@@ -2453,8 +2477,16 @@
         <div class="panel-head">
           <strong id="metric-chart-title">Wykres wagi</strong>
           <small id="metric-chart-note">pełna historia · średnia krocząca 7d</small>
+          <label id="winner-switch-label" class="winner-switch">
+            <span>Tryb zwycięzcy</span>
+            <input id="winner-mode-toggle" type="checkbox" role="switch" aria-label="Tryb zwycięzcy" />
+            <span class="winner-switch-track" aria-hidden="true"></span>
+          </label>
         </div>
-        <div class="chart" id="metric-chart"></div>
+        <div id="winner-chart-stage" class="winner-chart-stage">
+          <div class="chart" id="metric-chart"></div>
+          <div id="winner-summary" class="winner-summary" aria-live="polite" hidden></div>
+        </div>
       </section>
 
       <nav class="mode-switch" aria-label="Tryb danych">
@@ -3455,6 +3487,9 @@
       const TACTICS_PLAYERS_KEY = "stamina-tactics-universal-players-v1";
       const AVATAR_CACHE_KEY = "champion-stamina-avatar-v1";
       const TABLE_COLORS_KEY = "champion-stamina-table-colors-v1";
+      const WINNER_MODE_KEY = "champion-stamina-winner-mode-v1";
+      let winnerMode = storageGet(WINNER_MODE_KEY) === "1";
+      let winnerTransitioning = false;
       const repairStorageRequested = new URLSearchParams(location.search).get("repair") === "1";
 
       function storageGet(key) {
@@ -3823,14 +3858,22 @@
         return Math.round(REST_KCAL + trainingMinutesForDay(date) * KCAL_PER_TRAINING_MINUTE);
       }
 
-      function kcalBalance14(endDate = activeStatDateKey()) {
-        const eligibleDates = new Set(eligibleDisciplineDays("calories", endDate));
+      function kcalBalanceForDates(dates) {
+        const includedDates = new Set(dates);
         const kcalEntries = latestWeightRows()
-          .filter(entry => eligibleDates.has(entry.date) && Number.isFinite(entry.kcal));
+          .filter(entry => includedDates.has(entry.date) && Number.isFinite(entry.kcal));
         return Math.round(kcalEntries.reduce(
           (sum, entry) => sum + entry.kcal - kcalLimitForDay(entry.date),
           0
         ));
+      }
+
+      function kcalBalance14(endDate = activeStatDateKey()) {
+        const dates = [];
+        for (let date = endDate; date >= START_DATE_KEY && dates.length < 14; date = shiftDateKey(date, -1)) {
+          dates.push(date);
+        }
+        return kcalBalanceForDates(dates);
       }
 
       function calorieScoreForBalance(enteredCalorieDays, balance) {
@@ -3846,7 +3889,7 @@
         const cardioDays = eligibleDisciplineDays("cardio", endDate);
         const strengthDays = eligibleDisciplineDays("strength", endDate);
         const rowByDate = new Map(latestWeightRows().map(entry => [entry.date, entry]));
-        const balance = kcalBalance14(endDate);
+        const balance = kcalBalanceForDates(calorieDays);
         let enteredCalorieDays = 0;
         let fastFoodDays = 0;
         let cleanScore = 0;
@@ -4309,7 +4352,7 @@
         const coords = points
           .map((point, index) => Number.isFinite(point.value) ? { x: x(index), y: y(point.value) } : null)
           .filter(Boolean);
-        const pathData = smoothSvgPath(coords);
+        const pathData = options.straightLine ? coords.map((point, index) => `${index ? "L" : "M"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(" ") : smoothSvgPath(coords);
         const weekBands = chartWeekBands(
           points,
           x,
@@ -4333,12 +4376,18 @@
         const dots = points.map((point, index) => Number.isFinite(point.value)
           ? `<circle class="chart-dot ${point.kind || options.kind}" cx="${x(index)}" cy="${y(point.value)}" r="3.5"><title>${escapeHtml(point.fullLabel)}: ${escapeHtml(options.format(point.value))}</title></circle>`
           : "").join("");
+        const todayMarker = Number.isFinite(options.todayMarker?.value) && coords.length
+          ? `<circle class="chart-dot today" data-today-marker data-target-y="${y(options.todayMarker.value)}" cx="${coords.at(-1).x}" cy="${coords.at(-1).y}" r="2.5"><title>${escapeHtml(options.todayMarker.fullLabel)}: ${escapeHtml(options.format(options.todayMarker.value))}</title></circle>`
+          : "";
 
         const interactionPoints = points.map((point, index) => ({
           xPercent: (x(index) / width) * 100,
           valueLabel: options.tooltipFormat(point.value, point),
           dateLabel: formatFullDate(point.date)
         }));
+        const reference = Number.isFinite(options.todayAverage) ? `
+          <line class="metric-history-today-line" x1="${pad.left}" x2="${width - pad.right}" y1="${y(options.todayAverage)}" y2="${y(options.todayAverage)}"></line>
+          <text class="metric-history-today-label" x="${pad.left + 2}" y="${y(options.todayAverage) < pad.top + 18 ? y(options.todayAverage) + 12 : y(options.todayAverage) - 5}" text-anchor="start">Dziś · ${escapeHtml(format2(options.todayAverage))} kg (7d)</text>` : "";
 
         return `<div
           class="metric-history-chart"
@@ -4350,7 +4399,9 @@
             ${weekBands}
             ${grid}
             ${pathData ? `<path class="chart-line ${options.kind}" d="${pathData}"></path>` : ""}
+            ${reference}
             ${dots}
+            ${todayMarker}
             ${labels}
           </svg>
           <span class="metric-history-cursor-line" data-metric-history-cursor-line aria-hidden="true"></span>
@@ -4363,6 +4414,39 @@
 
       function initializeMetricHistoryInteraction(chart) {
         if (!chart) return;
+        const marker = chart.querySelector("[data-today-marker]");
+        const line = chart.querySelector(".chart-line");
+        if (marker && line) {
+          const targetY = Number(marker.dataset.targetY);
+          const length = line.getTotalLength();
+          let previous = line.getPointAtLength(0);
+          let closest = previous;
+          let distance = Math.abs(previous.y - targetY);
+          let crossing = null;
+          const samples = 512;
+          for (let index = 1; index <= samples; index += 1) {
+            const currentLength = length * index / samples;
+            const current = line.getPointAtLength(currentLength);
+            const currentDistance = Math.abs(current.y - targetY);
+            if (currentDistance < distance) { closest = current; distance = currentDistance; }
+            if ((previous.y - targetY) * (current.y - targetY) <= 0) {
+              crossing = [length * (index - 1) / samples, currentLength];
+            }
+            previous = current;
+          }
+          if (crossing) {
+            let [left, right] = crossing;
+            const leftAbove = line.getPointAtLength(left).y <= targetY;
+            for (let index = 0; index < 16; index += 1) {
+              const middle = (left + right) / 2;
+              if ((line.getPointAtLength(middle).y <= targetY) === leftAbove) left = middle;
+              else right = middle;
+            }
+            closest = line.getPointAtLength((left + right) / 2);
+          }
+          marker.setAttribute("cx", closest.x);
+          marker.setAttribute("cy", closest.y);
+        }
         let points = [];
         try {
           points = JSON.parse(chart.dataset.metricHistoryPoints || "[]");
@@ -4422,6 +4506,10 @@
 
       function renderMetricChart() {
         const mode = $(".mode-button.is-active")?.dataset.mode || "weight";
+        $("#winner-switch-label").hidden = mode !== "weight";
+        $("#winner-mode-toggle").checked = winnerMode;
+        $("#winner-mode-toggle").disabled = winnerTransitioning;
+        $("#winner-summary").hidden = mode !== "weight" || !winnerMode;
         if (mode === "training") {
           let lastPace = BASE_PACE;
           const points = latestTrainingRows().map(entry => {
@@ -4470,17 +4558,169 @@
             value
           };
         });
+        const today = todayKey();
+        const todayAverage = weightAverage7(today);
+        const lastAvailablePoint = points.filter(point => point.date <= today).at(-1);
+        const markerValue = Number.isFinite(todayAverage) ? todayAverage : lastAvailablePoint?.value;
+        const todayMarker = Number.isFinite(markerValue) ? {
+          fullLabel: Number.isFinite(todayAverage)
+            ? `${formatDate(today)} · dziś · średnia z 7 dni`
+            : `${formatDate(today)} · ostatnia dostępna średnia z ${formatDate(lastAvailablePoint.date)}`,
+          value: markerValue
+        } : null;
+        if (winnerMode) {
+          const state = buildWinnerState(points);
+          $("#metric-chart-title").textContent = "Historia zwycięstw";
+          $("#metric-chart-note").textContent = "rekordowe minima · średnia 7d";
+          $("#metric-chart").innerHTML = chartMarkup(state.records, {
+            kind: "winner", straightLine: true,
+            ariaLabel: "Rekordowe minima średniej wagi z siedmiu dni. Przesuń wskaźnik lub użyj strzałek, aby sprawdzić wagę i datę.",
+            minSpread: 1, min: state.minimum,
+            max: state.current ? Math.max(state.baseline, state.current.value) : undefined,
+            todayAverage: state.todayAverage,
+            todayMarker,
+            format: value => formatWeight(value), tooltipFormat: value => `${format2(value)} kg`
+          });
+          renderWinnerSummary(state);
+          initializeMetricHistoryInteraction($("#metric-chart [data-metric-history-chart]"));
+          return;
+        }
         $("#metric-chart-title").textContent = "Wykres wagi";
         $("#metric-chart-note").textContent = "pełna historia · średnia krocząca 7d";
         $("#metric-chart").innerHTML = chartMarkup(points, {
           kind: "weight",
           ariaLabel: "Pełna historia pomiarów wagi jako krocząca średnia z siedmiu dni. Przesuń wskaźnik, aby sprawdzić wynik.",
           minSpread: 1,
+          todayMarker,
           format: value => formatWeight(value),
           tooltipFormat: value => formatWeight(value)
         });
         initializeMetricHistoryInteraction($("#metric-chart [data-metric-history-chart]"));
       }
+
+      function getWinnerMessages(atMinimum) {
+        return atMinimum ? [
+          "GRATULACJE, KOLEGO! Minimum zdobyte, forma rośnie. Tak trzymać — idziemy dalej po swoje!",
+          "Nowe minimum weszło na czat. Ty też wchodzisz: cały na zielono. Piękna robota!",
+          "Houston, mamy rekord. Powtarzam: rekord! Gratulacje, dowódco — kurs na kolejne zwycięstwa!",
+          "To jest ten moment, kiedy wykres bije Ci brawo. Minimum jest Twoje. Jedziemy dalej!",
+          "Szefie, melduję wykonanie zadania: minimum osiągnięte. Można przybić piątkę!",
+          "100% drogi do własnego rekordu. Nie przypadek, tylko Twoja robota. Brawo!",
+          "Waga: minimum. Satysfakcja: maksimum. Gratulacje — tak właśnie buduje się historię!",
+          "Rekord odblokowany! W nagrodę: duma z siebie i prawo do triumfalnego spaceru po pokoju.",
+          "Dzisiaj to Ty jesteś finałowym bossem. Minimum pokonane. Brawo, mistrzu konsekwencji!",
+          "Proszę państwa, oto człowiek, który dowiózł. Minimum na liczniku, uśmiech na twarzy!",
+          "Zielony wykres mówi jedno: dobra robota! Masz minimum — łap tę chwilę i buduj dalej.",
+          "Niech ktoś odpali fanfary. Rekord jest tutaj, a jego autorem jesteś Ty!",
+          "Minimum? Jest. Powód do dumy? Ogromny. Kolejny spokojny krok? Przed nami!",
+          "Gratulacje! Twoja cierpliwość właśnie wystawiła paragon za świetną robotę: rekord.",
+          "Wykres zjechał niżej, Ty wskoczyłeś wyżej. Brawo — minimum osiągnięte!",
+          "Achievement unlocked: własne minimum. Ten medal ma Twoje imię. Tak trzymać!",
+          "Elegancko, kolego. Rekord na miejscu, konsekwencja potwierdzona. Jedziemy po swoje!",
+          "Dzisiaj można powiedzieć: ale to siadło! Minimum zdobyte. Gratulacje!",
+          "Twoje minimum właśnie dostało nową wizytówkę. Widnieje na niej: świetna robota!",
+          "Oklaski dla tego zawodnika! 100% drogi do rekordu, a za tym mnóstwo małych decyzji.",
+          "Waga odpaliła tryb nisko. Ty odpal dumę z siebie. Gratulacje, zasłużyłeś!",
+          "Rekord przyjęty, pieczątka przybita. Dział zwycięstw prosi o kontynuację dobrej roboty!",
+          "Taki widok lubimy: minimum i zielono. Pięknie to prowadzisz — trzymaj swój rytm!",
+          "Twój wykres właśnie zrobił ukłon. Minimum osiągnięte. Ukłon należy się Tobie!",
+          "To nie magia wykresu. To Twoja konsekwencja. Gratulacje za minimum!",
+          "Masz minimum! Teraz ceremonialna piątka z samym sobą i lecimy dalej, kolego!",
+          "Rekordowa średnia, rekordowa satysfakcja. Brawo — ta historia pisze się świetnie!",
+          "Dobra wiadomość: minimum. Jeszcze lepsza: zrobiłeś to Ty. Gratulacje!",
+          "Zielono mi! I Tobie też może być — rekord jest Twój. Wspaniała robota!",
+          "GRATULACJE! Właśnie o to chodzi: cierpliwie, po swojemu, do minimum. Idziemy dalej!"
+        ] : [
+          "Wspaniała robota, kolego! Masz {percent} drogi do rekordu. Do minimum brakuje zaledwie {gap} kg — jedziemy dalej!",
+          "Wykres miał mały objazd, ale Twoje zwycięstwa stoją na miejscu. Brawo! Zaledwie {gap} kg do minimum.",
+          "Rekord jest za rogiem: tylko {gap} kg stąd. Gratulacje za wykonaną robotę — trzymamy kurs!",
+          "To tylko zakręt w drodze, nie koniec podróży. Świetna robota! Do minimum zaledwie {gap} kg.",
+          "Houston, kurs jest dobry. Do bazy Rekord zostało {gap} kg. Brawo, dowódco — spokojnie lecimy dalej!",
+          "Twoje rekordy nie wyparowały. Nadal są Twoje! Gratulacje — do minimum brakuje tylko {gap} kg.",
+          "Dział zwycięstw przypomina: dobra robota już wykonana. Minimum czeka zaledwie {gap} kg dalej!",
+          "Brawo! Masz {percent} drogi do minimum. Waga robi swoje wygibasy, Ty trzymaj rytm. Zostało {gap} kg!",
+          "Plot twist: chwilowy wzrost nie kasuje Twojej pracy. Gratulacje! Do minimum zaledwie {gap} kg.",
+          "Szefie, dorobek zabezpieczony. Do rekordowej średniej tylko {gap} kg. Piękna robota, kontynuujemy!",
+          "Rekord nie uciekł do innego miasta. Jest {gap} kg stąd. Brawo za wszystko, co już zrobiłeś!",
+          "To odcinek serialu, w którym bohater trzyma kurs. Świetnie Ci idzie — do minimum zaledwie {gap} kg!",
+          "Mały zygzak, wielka robota za Tobą. Gratulacje! Tylko {gap} kg dzieli Cię od własnego minimum.",
+          "Twój zielony wykres pamięta każde zwycięstwo. Brawo! Do minimum brakuje zaledwie {gap} kg.",
+          "Oto człowiek, który dalej robi swoje. Szacunek za konsekwencję! Minimum jest {gap} kg dalej.",
+          "Progres zapisany, osiągnięcia zachowane. Gratulacje za robotę! Do minimum tylko {gap} kg — idziemy dalej.",
+          "Waga wrzuciła poboczny quest. Główna misja trwa! Brawo — minimum jest zaledwie {gap} kg stąd.",
+          "Nie trzeba codziennie bić rekordu, żeby robić dobrą robotę. Brawo! Zostało {gap} kg do minimum.",
+          "Twoja konsekwencja zasługuje na oklaski także dziś. Do minimum zaledwie {gap} kg. Lecimy po swoje!",
+          "Rekord czeka, kawa stygnie, a Ty dalej budujesz formę. Piękna robota! Do minimum tylko {gap} kg.",
+          "To nadal Twoja historia zwycięstw. Gratulacje za dotychczasową pracę — minimum jest {gap} kg dalej!",
+          "Wykres pamięta. Ty też pamiętaj, ile już zrobiłeś! Brawo — do minimum brakuje tylko {gap} kg.",
+          "Mały przystanek nie cofa całej podróży. Dobra robota, kolego! Do minimum zaledwie {gap} kg.",
+          "Zawodnik nadal w grze i nadal robi robotę. Brawo! Od własnego minimum dzieli Cię tylko {gap} kg.",
+          "Gratulacje! {percent} drogi do rekordu już jest. Zaledwie {gap} kg do minimum — następny krok przed nami!",
+          "Waga podskoczyła? Twoje osiągnięcia nadal siedzą wygodnie na podium. Brawo! Do minimum tylko {gap} kg.",
+          "Rekordowe dni już pokazały, co potrafisz. Świetna robota! Teraz zaledwie {gap} kg do minimum i dalej po swoje.",
+          "Dzisiaj piątka za wytrwałość. Dorobek masz, kierunek masz. Do minimum brakuje tylko {gap} kg!",
+          "Brawo, kapitanie! Fala trochę podniosła statek, ale kurs trzymamy. Minimum jest {gap} kg stąd.",
+          "KOLEGO, WSPANIAŁA ROBOTA! Wszystkie rekordy są Twoje. Do minimum zaledwie {gap} kg — spokojnie ciśniemy dalej!"
+        ];
+      }
+
+      function buildWinnerState(points) {
+        const today = todayKey();
+        const timeline = points.filter(point => point.date <= today && Number.isFinite(point.value));
+        const todayAverage = weightAverage7(today);
+        if (Number.isFinite(todayAverage) && !timeline.some(point => point.date === today)) {
+          timeline.push({ date: today, label: formatDate(today), fullLabel: `${formatDate(today)} · średnia z 7 dni`, value: todayAverage });
+        }
+        const records = [];
+        let minimum = Infinity;
+        timeline.forEach(point => {
+          if (point.value < minimum) { minimum = point.value; records.push(point); }
+        });
+        const current = timeline.at(-1);
+        if (!current) return { records, timeline, current: null, todayAverage: null };
+        const baseline = records[0].value;
+        const gap = Math.max(0, current.value - minimum);
+        const atMinimum = gap < 1e-9;
+        const bestLoss = baseline - minimum;
+        const progress = atMinimum ? 100 : bestLoss > 1e-9 ? clamp((baseline - current.value) / bestLoss * 100, 0, 99.9) : 0;
+        return { records, timeline, current, todayAverage, minimum, baseline, gap, atMinimum, progress };
+      }
+
+      function renderWinnerSummary(state) {
+        const summary = $("#winner-summary");
+        if (!state.current) { summary.textContent = "Pierwszy pomiar otworzy Twoją historię zwycięstw. Zaczynamy!"; return; }
+        const percent = `${state.atMinimum || state.progress === 0 ? Math.round(state.progress) : format1(state.progress)}%`;
+        const gap = state.gap > 0 && state.gap < .01 ? "mniej niż 0,01" : format2(state.gap);
+        const messages = getWinnerMessages(state.atMinimum);
+        const messageIndex = ((calendarDayNumber(todayKey()) % messages.length) + messages.length) % messages.length;
+        const message = messages[messageIndex].replaceAll("{gap}", gap).replaceAll("{percent}", percent);
+        summary.innerHTML = `
+          <div class="winner-progress-row"><strong class="winner-progress-value">${percent}</strong><p class="winner-message">${escapeHtml(message)}</p></div>`;
+      }
+
+      $("#winner-mode-toggle").addEventListener("change", async event => {
+        if (winnerTransitioning) return;
+        const nextMode = event.target.checked;
+        const stage = $("#winner-chart-stage");
+        const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        winnerTransitioning = true;
+        event.target.disabled = true;
+        if (!reducedMotion) {
+          stage.classList.add("flip-out");
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        winnerMode = nextMode;
+        storageSet(WINNER_MODE_KEY, winnerMode ? "1" : "0");
+        renderMetricChart();
+        if (!reducedMotion) {
+          stage.classList.replace("flip-out", "flip-in");
+          void stage.offsetHeight;
+          stage.classList.remove("flip-in");
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        winnerTransitioning = false;
+        $("#winner-mode-toggle").disabled = false;
+      });
 
       function overallHistoryMarkup(records, ariaLabel) {
         if (!records.length) {
